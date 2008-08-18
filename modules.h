@@ -7,7 +7,6 @@
 class Module;
 class ModuleFactory;
 template <class Iface> class Interface;
-//template <class Iface> class Instantiator;
 
 
 /** A common base class for all modules */
@@ -171,7 +170,7 @@ public: \
 		sizeof((SettingsTypeItem[]){setType}) / sizeof(SettingsTypeItem) \
 	}; \
 	virtual const SettingsTypeItem* settingsType() const { \
-		static SettingsTypeItem settingsType_[]={setType,SettingsTypeItem::stopper}; \
+		static SettingsTypeItem settingsType_[]= {setType,SettingsTypeItem::stopper}; \
 		return settingsType_; \
 	} \
 
@@ -181,7 +180,7 @@ public: \
 		static const SettingsItem defaults[]={setDefault}; \
 		LOKI_STATIC_CHECK( sizeof(defaults)/sizeof(SettingsItem) == settingsLength_ \
 		, Wrong_number_of_default_settings_specified ); \
-		SettingsItem *result=new SettingsItem[settingsLength_]; \
+		SettingsItem *result= new SettingsItem[settingsLength_]; \
 		std::copy( defaults, defaults+settingsLength_, result ); \
 		return result; \
 	} \

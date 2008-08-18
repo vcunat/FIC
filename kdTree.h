@@ -3,7 +3,7 @@
 
 #include "util.h"
 
-namespace {
+namespace NOSPACE {
 	using namespace std;
 }
 
@@ -37,7 +37,7 @@ namespace FieldMath {
 		return b;
 	}
 
-	namespace {
+	namespace NOSPACE {
 		template<class T> struct MoveToBounds {
 			T sqrError;
 
@@ -64,7 +64,7 @@ namespace FieldMath {
 		return transform4( point, point+length, bounds[0], bounds[1]
 			, result, MoveToBounds<float>() ) .sqrError;
 	}
-//	namespace {
+//	namespace NOSPACE {
 //		template<class T> struct Min {
 //			const T& operator()(const T &a,const T &b) const
 //				{ return min(a,b); }
@@ -95,7 +95,7 @@ namespace FieldMath {
 //		return true;
 //	}
 	/*
-	namespace {
+	namespace NOSPACE {
 		template<class T> struct Adder {
 			void operator()(const T &a,const T &b,T &c)
 				{ c=a+b; }
@@ -114,7 +114,7 @@ namespace FieldMath {
 	*/
 }
 
-namespace {
+namespace NOSPACE {
 	/** Expands a valid bounding box to contain a point (one coordinate at once) */
 	template<class T> struct BoundsExpander {
 		void operator()(const T &data,T &lower,T &upper) const {
@@ -146,7 +146,7 @@ void getBounds(const T *data,int length,const int *beginIDs,const int *endIDs,T 
 	}
 }
 
-namespace {
+namespace NOSPACE {
 	/** Compares vectors (given by their indices) according to a given coordinate */
 	template<class T> class IndexComparator {
 		const T *data;
@@ -337,7 +337,7 @@ public:
 
 namespace KDCoordChoosers {
 
-	namespace {
+	namespace NOSPACE {
 		template<class T> struct MaxDiffCoord {
 			T maxDiff;
 			int best,next;

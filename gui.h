@@ -39,9 +39,9 @@ class ImageViewer: public QMainWindow { Q_OBJECT
 /**	\name Actions
  *	@{ */
 	QAction
-        openAct, saveAct, compareAct, exitAct,
-        settingsAct, encodeAct,
-        clearAct, iterateAct;
+        readAct, writeAct, compareAct, exitAct,
+        settingsAct, encodeAct, saveAct,
+        loadAct, clearAct, iterateAct;
 ///	@}
 /**	\name Menus
  *	@{ */
@@ -58,11 +58,13 @@ class ImageViewer: public QMainWindow { Q_OBJECT
 private slots:
 /**	\name Methods performing the actions
 	@{ */
-	void open();
-	void save();
+	void read();
+	void write();
 	void compare();
 	void settings();
 	void encode();
+	void save();
+	void load();
 	void clear();
 	void iterate();
 ///	@}
@@ -74,6 +76,15 @@ public:
 		{ delete modules_settings; }
 };
 
+inline void aConnect( const QObject *sender, const char *signal, const QObject *receiver
+, const char *slot, Qt::ConnectionType type=Qt::AutoCompatConnection ) {
+	#ifndef NDEBUG
+		bool result=
+	#endif	
+	QObject::connect(sender,signal,receiver,slot,type);
+	assert(result);
+}
+
 /** Represents the encoding-settings dialog  */
 class SettingsDialog: public QDialog { Q_OBJECT
 	QGroupBox *setBox;
@@ -81,8 +92,46 @@ class SettingsDialog: public QDialog { Q_OBJECT
 	IRoot *settings;
 private slots:
 	void currentItemChanged(QTreeWidgetItem *current,QTreeWidgetItem *previous);
+	void settingChanges(int which);
 public:
 	SettingsDialog(ImageViewer *parent,IRoot *settingsHolder);
+};
+
+
+class SignalChanger: public QObject { Q_OBJECT
+	int signal;
+public:
+	SignalChanger( int whichSignal, QWidget *parent=0, Module::ChoiceType type=Module::Stop )
+	: QObject(parent), signal(whichSignal) {
+		if (!parent)
+			return;
+	//	connect widget's changing signal to my notifyXxx slot
+		const char *signalString=0, *slotString=0;
+		switch (type) {
+			case Module::Int:
+			case Module::IntLog2:
+				signalString= SIGNAL(valueChanged(int));
+				slotString= SLOT(notifyInt(int));
+				break;
+			case Module::Float:
+				signalString= SIGNAL(valueChanged(double));
+				slotString= SLOT(notifyDouble(double));
+				break;
+			case Module::ModuleCombo:
+			case Module::Combo:
+				signalString= SIGNAL(currentIndexChanged(int));
+				slotString= SLOT(notifyInt(int));
+				break;
+			default:
+				assert(false);
+		}//	switch
+		aConnect( parent, signalString, this, slotString );
+	}
+public slots:
+	void notifyInt(int)			{ emit notify(signal); }
+	void notifyDouble(double)	{ emit notify(signal); }
+signals:
+	void notify(int);
 };
 
 class EncodingProgress: public QProgressDialog { Q_OBJECT
@@ -107,7 +156,7 @@ public:
 		setValue(0);
 		setAutoClose(false);
 		setAutoReset(false);
-		connect( this, SIGNAL(canceled()), this, SLOT(setTerminate()) );
+		aConnect( this, SIGNAL(canceled()), this, SLOT(setTerminate()) );
 		instance= this;
 	}
 	UpdatingInfo getUpdatingInfo() const

@@ -5,7 +5,7 @@ enum { MinRangeSize=4, DiamondOverlay=MinRangeSize-1 };
 using namespace std;
 
 
-namespace {
+namespace NOSPACE {
 	struct PoolTypeLevelComparator {
 		typedef MStandardDomains::Pool Pool;
 		bool operator()(const Pool &a,const Pool &b) {
@@ -64,7 +64,7 @@ void MStandardDomains::initPools(int width_,int height_) {
 	sort( pools.begin(), pools.end(), PoolTypeLevelComparator() );
 }
 
-namespace {
+namespace NOSPACE {
 	typedef MStandardDomains::Pools::const_iterator PoolIt;
 	static inline bool halfShrinkOK(PoolIt src,PoolIt dest) {
 		return src->level+1==dest->level
@@ -157,7 +157,7 @@ void MStandardDomains::fillPixelsInPools(const PlaneBlock &ranges) {
 
 }//	::fillPixelsInPools
 
-namespace {
+namespace NOSPACE {
 	/** Computes the ideal domain density for pool, level and max. domain count,
 	 *	the density is push_back-ed, returns the generated domain count (used once) */
 	inline static int bestDomainDensity( PoolIt pool, int level, int maxCount
@@ -257,7 +257,7 @@ void MStandardDomains::readSettings(std::istream &file) {
 
 
 /** Implementations of forward-declared functions */
-namespace {
+namespace NOSPACE {
 	/** Performs a simple 50%^2 image shrink (dimensions belong to the destination) */
 	void shrinkToHalf( const float **src, int srcYadd, float **dest, int width, int height ) {
 	//	iterate over columns of the destination matrix

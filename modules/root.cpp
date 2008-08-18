@@ -4,6 +4,9 @@
 
 #include <QImage>
 
+using namespace std;
+
+
 QImage MRoot::toImage() {
 	assert( getMode()!=Clear && settings && moduleColor() && moduleShape() );
 	return moduleColor()->planes2image( moduleShape()->collectJobs() , width, height );
@@ -23,7 +26,7 @@ bool MRoot::encode(const QImage &toEncode) {
 		try {
 			for (int i=0; i<jobCount; ++i)
 				moduleShape()->jobEncode(i);
-		} catch (std::exception &e) {
+		} catch (exception &e) {
 			return false;
 		}
 	else
@@ -31,7 +34,7 @@ bool MRoot::encode(const QImage &toEncode) {
 	// TODO (admin#7#): Multi-threaded encoding
 		return assert(false),false;
 
-	myMode=Encode;
+	myMode= Encode;
 	return true;
 }
 
@@ -44,11 +47,10 @@ void MRoot::decodeAct(DecodeAct action,int count) {
 }
 
 bool MRoot::toFile(const char *fileName) {
-	using namespace std;
-//	open the file and check the successfullness
 	assert( getMode()==Encode && settings && moduleColor() && moduleShape() );
+//	open the file and check the successfullness
 	ofstream file( fileName, ios_base::binary|ios_base::trunc|ios_base::out );
-	if (!file.good())
+	if ( !file.good() )
 		return false;
 	try {
 	//	put the magic, the dimensions and child-module IDs
@@ -58,6 +60,7 @@ bool MRoot::toFile(const char *fileName) {
 		file_saveModuleType( file, ModuleColor );
 		file_saveModuleType( file, ModuleShape );
 	//	put settings common for all the jobs
+		put<Uchar>( file, settingsInt(DomainCountLog2) );
 		moduleColor()->writeData(file);
 		moduleShape()->writeSettings(file);
 	//	put the workers' data
@@ -69,30 +72,28 @@ bool MRoot::toFile(const char *fileName) {
 }
 
 bool MRoot::fromFile(const char *fileName) {
-//	open the file and check the successfullness
-	using namespace std;
 	assert( getMode()==Clear && settings && !moduleColor() && !moduleShape() );
+//	open the file and check the successfullness
 	ifstream file( fileName, ios_base::binary|ios_base::in );
-	if (!file.good())
+	if ( !file.good() )
 		return false;
 	try {
 	//	check the magic number, load the dimensions and child-module types
-		if (get<Uint16>(file)!=Magic)
+		if (get<Uint16>(file) != Magic)
 			return false;
-		this->width=get<Uint16>(file);
-		this->height=get<Uint16>(file);
+		this->width= get<Uint16>(file);
+		this->height= get<Uint16>(file);
 		file_loadModuleType( file, ModuleColor );
 		file_loadModuleType( file, ModuleShape );
-	//	get settings common for all the jobs
-		int planeCount=moduleColor()->readData(file);
+	//	create the planes and get settings common for all the jobs
+		Plane planeProto(Plane::Empty);
+		planeProto.domainCountLog2= settingsInt(DomainCountLog2)= get<Uchar>(file);
+		PlaneList planes= moduleColor()->readData(file,planeProto,width,height);
 		moduleShape()->readSettings(file);
-	//	create the jobs (from a temporary plane list) and get their data
-		PlaneList planes( planeCount, Plane::Empty );
-		for (int i=0; i<planeCount; ++i)
-			planes[i].pixels=newMatrix<float>(width,height);
+	//	create the jobs (the plane list) and get their data
 		moduleShape()->createJobs(planes,width,height);
-
 		moduleShape()->readJobs(file);
+		myMode= Decode;
 		return true;
 	} catch(exception &e) {
 		return false;

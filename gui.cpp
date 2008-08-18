@@ -16,75 +16,78 @@ static inline int getGray(QRgb color) {
 	return res;
 }
 static vector<double> getColorPSNR(const QImage &a,const QImage &b) {
-    int width= a.width(), height= a.height();
-    int x, y;
-    QRgb *line1, *line2;
-    int sum, sumR, sumG, sumB;
-    sum= sumR= sumG= sumB= 0;
-    for (y=0; y<height; ++y) {
-        line1= (QRgb*)a.scanLine(y);
-        line2= (QRgb*)b.scanLine(y);
-        for (x=0; x<width; ++x) {
-            sum+= sqr( getGray(line1[x]) - getGray(line2[x]) );
-            sumR+= sqr( qRed(line1[x]) - qRed(line2[x]) );
-            sumG+= sqr( qGreen(line1[x]) - qGreen(line2[x]) );
-            sumB+= sqr( qBlue(line1[x]) - qBlue(line2[x]) );
-        }
-    }
-    vector<double> result(4);
-    result[0]= sumR;
-    result[1]= sumG;
-    result[2]= sumB;
-    result[3]= sum;
-    double mul= double(width*height) * double(sqr(255));
-    for (vector<double>::iterator it=result.begin(); it!=result.end(); ++it)
-        *it= 10.0*log10( mul / *it );
-    return result;
+	int width= a.width(), height= a.height();
+	int x, y;
+	QRgb *line1, *line2;
+	int sum, sumR, sumG, sumB;
+	sum= sumR= sumG= sumB= 0;
+	for (y=0; y<height; ++y) {
+		line1= (QRgb*)a.scanLine(y);
+		line2= (QRgb*)b.scanLine(y);
+		for (x=0; x<width; ++x) {
+			sum+= sqr( getGray(line1[x]) - getGray(line2[x]) );
+			sumR+= sqr( qRed(line1[x]) - qRed(line2[x]) );
+			sumG+= sqr( qGreen(line1[x]) - qGreen(line2[x]) );
+			sumB+= sqr( qBlue(line1[x]) - qBlue(line2[x]) );
+		}
+	}
+	vector<double> result(4);
+	result[0]= sumR;
+	result[1]= sumG;
+	result[2]= sumB;
+	result[3]= sum;
+	double mul= double(width*height) * double(sqr(255));
+	for (vector<double>::iterator it=result.begin(); it!=result.end(); ++it)
+		*it= 10.0*log10( mul / *it );
+	return result;
 }
 
 ////	Public members
 ImageViewer::ImageViewer(QApplication &app)
 : modules_settings( IRoot::newCompatibleModule() ), modules_encoding(0)
-, openAct(this), saveAct(this), compareAct(this), exitAct(this)
-, settingsAct(this), encodeAct(this), clearAct(this), iterateAct(this) {
+, readAct(this), writeAct(this), compareAct(this), exitAct(this)
+, settingsAct(this), encodeAct(this), saveAct(this)
+, loadAct(this), clearAct(this), iterateAct(this) {
 //	try to load guessed language translation
 	if ( translator.load( "lang-"+QLocale::system().name(), app.applicationDirPath() ) )
 		app.installTranslator(&translator);
 //	create a scrolling area with a label for viewing images
 	imageLabel= new QLabel(this);
-    imageLabel->setBackgroundRole(QPalette::Dark);
-    imageLabel->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Ignored);
+	imageLabel->setBackgroundRole(QPalette::Dark);
+	imageLabel->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Ignored);
 
 	QScrollArea *scrollArea= new QScrollArea(this);
-    scrollArea->setBackgroundRole(QPalette::Dark);
-    scrollArea->setWidget(imageLabel);
-    setCentralWidget(scrollArea);
+	scrollArea->setBackgroundRole(QPalette::Dark);
+	scrollArea->setWidget(imageLabel);
+	setCentralWidget(scrollArea);
 
-    setStatusBar(new QStatusBar(this));
+	setStatusBar(new QStatusBar(this));
 
-    createActions();
-    createMenus();
-    translateUi();
-    updateActions();
+	createActions();
+	createMenus();
+	translateUi();
+	updateActions();
 
-    resize(800,600);
+	resize(800,600);
 }
 
 ////	Private methods
 void ImageViewer::createActions() {
 //	create all actions and connect them to the appropriate slots
 	#define A(name) \
-		connect(&name##Act,SIGNAL(triggered()),this,SLOT(name()));
+		aConnect( &name##Act, SIGNAL(triggered()), this, SLOT(name()) );
 	#define AS(name,signal) \
-		connect(&name##Act,SIGNAL(triggered()),this,SLOT(signal()));
-	A(open)
-	A(save)
+		aConnect( &name##Act, SIGNAL(triggered()), this, SLOT(signal()) );
+	A(read)
+	A(write)
 	A(compare)
 	AS(exit,close)
 
 	A(settings)
 	A(encode)
+	A(save)
 
+	A(load)
 	A(clear)
 	A(iterate)
 
@@ -92,24 +95,26 @@ void ImageViewer::createActions() {
 	#undef AS
 }
 void ImageViewer::createMenus() {
-    imageMenu.addAction(&openAct);
-    imageMenu.addAction(&saveAct);
-    imageMenu.addSeparator();
-    imageMenu.addAction(&compareAct);
-    imageMenu.addSeparator();
-    imageMenu.addAction(&exitAct);
+	imageMenu.addAction(&readAct);
+	imageMenu.addAction(&writeAct);
+	imageMenu.addSeparator();
+	imageMenu.addAction(&compareAct);
+	imageMenu.addSeparator();
+	imageMenu.addAction(&exitAct);
 
-    compMenu.addAction(&settingsAct);
-    compMenu.addAction(&encodeAct);
+	compMenu.addAction(&settingsAct);
+	compMenu.addAction(&encodeAct);
+	compMenu.addAction(&saveAct);
 
-    decompMenu.addAction(&clearAct);
-    decompMenu.addAction(&iterateAct);
+	decompMenu.addAction(&loadAct);
+	decompMenu.addAction(&clearAct);
+	decompMenu.addAction(&iterateAct);
 
-    menuBar()->addMenu(&imageMenu);
-    menuBar()->addMenu(&compMenu);
-    menuBar()->addMenu(&decompMenu);
-    //menuBar()->addMenu(langMenu);
-    //menuBar()->addMenu(helpMenu);
+	menuBar()->addMenu(&imageMenu);
+	menuBar()->addMenu(&compMenu);
+	menuBar()->addMenu(&decompMenu);
+	//menuBar()->addMenu(langMenu);
+	//menuBar()->addMenu(helpMenu);
 }
 void ImageViewer::translateUi() {
 	setWindowTitle(tr("Fractal Image Compressor"));
@@ -117,14 +122,16 @@ void ImageViewer::translateUi() {
 	#define A(name,shortcut,text) \
 		name##Act.setText(tr(text)); \
 		name##Act.setShortcut(tr(shortcut));
-	A(open,		"Ctrl+R",	"Read...")
-	A(save,		"Ctrl+W",	"Write...")
+	A(read,		"Ctrl+R",	"Read...")
+	A(write,	"Ctrl+W",	"Write...")
 	A(compare,	"",			"Compare to...")
 	A(exit,		"Ctrl+Q",	"Quit")
 
 	A(settings,	"",			"Settings")
 	A(encode,	" ",		"Start encoding")
+	A(save,		"Ctrl+S",	"Save FIC...")
 
+	A(load,		"Ctrl+L", 	"Load FIC...")
 	A(clear,	"Ctrl+C", 	"Clear image")
 	A(iterate,	"Ctrl+I",	"Iterate image")
 	#undef A
@@ -141,72 +148,74 @@ void ImageViewer::updateActions() {
 	bool pixmapOk= imageLabel->pixmap();
 	IRoot::Mode mode= modules_encoding ? modules_encoding->getMode() : IRoot::Clear;
 
-	//openAct.setEnabled(true);
-    saveAct.setEnabled(pixmapOk);
-    compareAct.setEnabled(pixmapOk);
-    //exitAct.setEnabled(true);
+	//readAct.setEnabled(true);
+	writeAct.setEnabled(pixmapOk);
+	compareAct.setEnabled(pixmapOk);
+	//exitAct.setEnabled(true);
 
-    //settingsAct.setEnabled(true);
-    encodeAct.setEnabled(pixmapOk);
+	//settingsAct.setEnabled(true);
+	encodeAct.setEnabled(pixmapOk);
+	saveAct.setEnabled( mode != IRoot::Clear );
 
-    clearAct.setEnabled( mode != IRoot::Clear );
-    iterateAct.setEnabled( mode != IRoot::Clear );
+	//loadAct.setEnabled(true);
+	clearAct.setEnabled( mode != IRoot::Clear );
+	iterateAct.setEnabled( mode != IRoot::Clear );
 }
 
 ////	Private slots
-void ImageViewer::open() {
+void ImageViewer::read() {
 //	get the file name
-	QString fname= QFileDialog::getOpenFileName( this, tr("Open file")
+	QString fname= QFileDialog::getOpenFileName( this, tr("Read image file")
 	, QDir::currentPath(), tr("PNG images (*.png)\nAll files (*.*)") );
-    if (fname.isEmpty())
-    //	no file selected
-        return;
+	if (fname.isEmpty())
+	//	no file selected
+		return;
 //	try to load, check for errors
-    QImage image(fname);
-    if (image.isNull()) {
-        QMessageBox::information( this, tr("Error"), tr("Cannot open %1.").arg(fname) );
-        return;
-    }
+	QImage image(fname);
+	if (image.isNull()) {
+		QMessageBox::information( this, tr("Error"), tr("Cannot open %1.").arg(fname) );
+		return;
+	}
 //	convert to 32-bits
-    if (image.depth()<32)
+	if (image.depth()<32)
 		image= image.convertToFormat(QImage::Format_RGB32);
 //  display it
-    changePixmap(QPixmap::fromImage(image));
-    updateActions();
+	changePixmap(QPixmap::fromImage(image));
+	updateActions();
 }
-void ImageViewer::save() {
-	QString fname= QFileDialog::getSaveFileName( this, tr("Save file")
+void ImageViewer::write() {
+	QString fname= QFileDialog::getSaveFileName( this, tr("Write image file")
 	, QDir::currentPath(), tr("PNG images (*.png)\nAll files (*.*)") );
-    if (!fname.isEmpty()) {
-        if (!imageLabel->pixmap()->save(fname)) {
-            QMessageBox::information( this, tr("Error"), tr("Cannot save %1.").arg(fname) );
-            return;
-        }
-        updateActions();
-    }
+	if (fname.isEmpty())
+		return; 
+	if ( !imageLabel->pixmap()->save(fname) ) {
+		QMessageBox::information( this, tr("Error"), tr("Cannot write file %1.").arg(fname) );
+		return;
+	}
+	updateActions();
 }
 void ImageViewer::compare() {
-    QString fname= QFileDialog::getOpenFileName
-    ( this, tr("Compare to image"), QDir::currentPath()
-    , tr("PNG images (*.png)\nJFIF images (*.jpg *.jpeg)\nAll files (*.*)") );
-    if (fname.isEmpty())
-        return;
-    QImage image(fname);
-    image= image.convertToFormat(QImage::Format_RGB32);
-    if (image.isNull()) {
-        QMessageBox::information( this, tr("Error"), tr("Cannot open %1.").arg(fname) );
-        return;
-    }
-    if ( image.width()!=imageLabel->pixmap()->width()
+	QString fname= QFileDialog::getOpenFileName
+	( this, tr("Compare to image"), QDir::currentPath()
+	, tr("PNG images (*.png)\nJFIF images (*.jpg *.jpeg)\nAll files (*.*)") );
+	if (fname.isEmpty())
+		return;
+	QImage image(fname);
+	image= image.convertToFormat(QImage::Format_RGB32);
+	if (image.isNull()) {
+		QMessageBox::information( this, tr("Error"), tr("Cannot open %1.").arg(fname) );
+		return;
+	}
+	if ( image.width()!=imageLabel->pixmap()->width()
 	|| image.height()!=imageLabel->pixmap()->height() ) {
-        QMessageBox::information
-        ( this, tr("Error"), tr("Images don't have the same dimensions.").arg(fname) );
-        return;
-    }
-    vector<double> psnr= getColorPSNR( image, imageLabel->pixmap()->toImage() );
-    QString message= tr("gray PSNR: %3 dB\nR,G,B: %4,%5,%6 dB") .arg(psnr[3],0,'f',2)
-        .arg(psnr[0],0,'f',2) .arg(psnr[1],0,'f',2) .arg(psnr[2],0,'f',2);
-    QMessageBox::information( this, tr("Comparison"), message );
+		QMessageBox::information
+		( this, tr("Error"), tr("Images don't have the same dimensions.").arg(fname) );
+		return;
+	}
+	vector<double> psnr= getColorPSNR( image, imageLabel->pixmap()->toImage() );
+	QString message= tr("gray PSNR: %3 dB\nR,G,B: %4,%5,%6 dB") .arg(psnr[3],0,'f',2)
+		.arg(psnr[0],0,'f',2) .arg(psnr[1],0,'f',2) .arg(psnr[2],0,'f',2);
+	QMessageBox::information( this, tr("Comparison"), message );
 }
 void ImageViewer::settings() {
 	IRoot *newSettings= clone(modules_settings);
@@ -216,7 +225,7 @@ void ImageViewer::settings() {
 		swap(newSettings,modules_settings);
 	delete newSettings;
 }
-namespace {
+namespace NOSPACE {
 	class EncThread: public QThread {
 		IRoot *root;
 		QImage image;
@@ -238,7 +247,7 @@ void ImageViewer::encode() {
 	EncodingProgress encDialog(this);
 	EncThread encThread( modules_encoding, imageLabel->pixmap()->toImage() );
 //	ensure the dialog is closed when the encoding finishes
-	connect( &encThread, SIGNAL(finished()), &encDialog, SLOT(accept()) );
+	aConnect( &encThread, SIGNAL(finished()), &encDialog, SLOT(accept()) );
 //	start the thread and execute the dialog
 	#ifdef NDEBUG
 		encThread.start(QThread::LowPriority);
@@ -256,6 +265,31 @@ void ImageViewer::encode() {
 	delete modules_old;
 	updateActions();
 }
+void ImageViewer::save() {
+	QString fname= QFileDialog::getSaveFileName
+	( this, tr("Save encoded image"), QDir::currentPath(), tr("FIC images (*.fic)") );
+	if (fname.isEmpty())
+		return;
+	if ( !modules_encoding->toFile( fname.toStdString().c_str() ) ) 
+		QMessageBox::information( this, tr("Error"), tr("Cannot write file %1.").arg(fname) );
+}
+void ImageViewer::load() {
+	QString fname= QFileDialog::getOpenFileName
+	( this, tr("Load encoded image"), QDir::currentPath(), tr("FIC images (*.fic)") );
+	if (fname.isEmpty())
+		return;
+//	IRoot needs to be loaded from cleared state
+	IRoot *modules_old= modules_encoding;
+	modules_encoding= clone(modules_settings,Module::ShallowCopy);
+	
+	if ( !modules_encoding->fromFile( fname.toStdString().c_str() ) ) {
+		QMessageBox::information( this, tr("Error"), tr("Cannot load file %1.").arg(fname) );
+		swap(modules_encoding,modules_old);
+	} else 
+		updateActions();
+	
+	delete modules_old;
+}
 void ImageViewer::clear() {
 	modules_encoding->decodeAct(Clear);
 	imageLabel->setPixmap( QPixmap::fromImage(modules_encoding->toImage()) );
@@ -267,7 +301,7 @@ void ImageViewer::iterate() {
 
 ////	SettingsDialog class
 
-SettingsDialog::SettingsDialog(ImageViewer *parent,IRoot *settingsHolder)
+SettingsDialog::SettingsDialog( ImageViewer *parent, IRoot *settingsHolder )
 : QDialog(parent,Qt::Dialog), settings(settingsHolder) {
 	setWindowTitle(tr("Compression settings"));
 	setModal(true);
@@ -279,23 +313,24 @@ SettingsDialog::SettingsDialog(ImageViewer *parent,IRoot *settingsHolder)
 	treeWidget->setHeaderLabel(tr("Modules"));
 	layout->addWidget(treeWidget,0,0);
 //	add a group-box
-	setBox= new QGroupBox(tr("Module settings"),this);
+	setBox= new QGroupBox(this);
 	layout->addWidget(setBox,0,1);
 //	add a button-box and connect the clicking actions
 	QDialogButtonBox *buttons= new QDialogButtonBox
 	( QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this );
 	layout->addWidget(buttons,1,0,1,-1); //	span across the bottom
-	connect( buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-	connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+	aConnect( buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+	aConnect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
 //	create the tree
 	QTreeWidgetItem *treeRoot= new QTreeWidgetItem;
 	treeRoot->setText( 0, tr("Root") );
 	settings->adjustSettings(-1,treeRoot,setBox);
 	treeWidget->addTopLevelItem(treeRoot);
+	treeWidget->expandAll();
 
-	treeWidget->setCurrentItem(treeRoot);
-	connect( treeWidget, SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*))
+	aConnect( treeWidget, SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*))
 	, this, SLOT(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)) );
+	treeWidget->setCurrentItem(treeRoot);
 }
 void SettingsDialog::currentItemChanged(QTreeWidgetItem *curItem,QTreeWidgetItem*) {
 //	get the module that should show its settings
@@ -304,27 +339,36 @@ void SettingsDialog::currentItemChanged(QTreeWidgetItem *curItem,QTreeWidgetItem
 	assert(curMod);
 //	clear the settings box and make the module fill it
 	clearContainer( setBox->children() );
+	setBox->setTitle( tr("%1 module settings") .arg(curMod->moduleName()) );
 	curMod->adjustSettings(-1,0,setBox);
+}
+void SettingsDialog::settingChanges(int which) {
+	QTreeWidgetItem *tree= treeWidget->currentItem();
+	Module *module= static_cast<Module*>( tree->data(0,Qt::UserRole).value<void*>() );
+	module->adjustSettings(which,tree,setBox);
 }
 
 
-EncodingProgress *EncodingProgress::instance= 0;
-
 ////	GUI-related Module members
-namespace {
-	QWidget* newWidget(Module::ChoiceType type,QWidget *parent) {
+namespace NOSPACE {
+	QWidget* newSettingsWidget(Module::ChoiceType type,QWidget *parent) {
+		QWidget *result=0;
 		switch (type) {
 		case Module::Int:
 		case Module::IntLog2:
-			return new QSpinBox(parent);
+			result= new QSpinBox(parent);
+			break;
 		case Module::Float:
-			return new QDoubleSpinBox(parent);
+			result= new QDoubleSpinBox(parent);
+			break;
 		case Module::ModuleCombo:
 		case Module::Combo:
-			return new QComboBox(parent);
+			result= new QComboBox(parent);
+			break;
 		default:
-			return assert(false),(QWidget*)0;
+			assert(false);
 		}//	switch
+		return result;
 	}
 }
 void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox) {
@@ -335,8 +379,10 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 		//	I should create the subtree -> store this-pointer as data
 			assert( myTree->childCount() == 0 );
 			myTree->setData( 0, Qt::UserRole, QVariant::fromValue((void*)this) );
-			if (!settings)
+			if (!settings) {
+				delete myTree;
 				return;
+			}
 		//	find child modules and make them create their subtrees
 			const SettingsTypeItem *setType= settingsType();
 			const SettingsItem *setItem= settings;
@@ -362,13 +408,18 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 				QString desc(typeItem->desc);
 				QLabel *label= new QLabel( typeItem->label, setBox );
 				label->setToolTip(desc);
-				QWidget *widget= newWidget( typeItem->type, setBox );
+				
+				QWidget *widget= newSettingsWidget( typeItem->type, setBox );		
 				settingsType2widget( widget, *typeItem );
 				settings2widget( widget, i );
 				widget->setToolTip(desc);
 				label->setBuddy(widget);
 				layout->addWidget( label, i, 0 );
 				layout->addWidget( widget, i, 1 );
+				
+				SignalChanger *changer= new SignalChanger(i,widget,typeItem->type);
+				aConnect( changer, SIGNAL(notify(int))			// assuming the setBox's
+				, setBox->parent(), SLOT(settingChanges(int)) ); // parent is SettingsDialog
 			}//	for loop
 		}//	filling the box
 	} else {
@@ -378,7 +429,7 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 		assert(item);
 		widget2settings( item->widget() , which );
 	//	handle module-type settings
-		const SettingsTypeItem *setType=settingsType();
+		const SettingsTypeItem *setType= settingsType();
 		if ( setType[which].type == ModuleCombo ) {
 		//	update the child-tree: get the right child-tree
 			int childCount=0;
@@ -387,6 +438,7 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 					++childCount;
 				++setType;
 			}
+			assert(myTree);
 			QTreeWidgetItem *childTree= myTree->child(childCount);
 			assert(childTree);
 		//	get the new module id and check whether it has really changed
@@ -397,15 +449,14 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 		//	replace the child module
 			clearContainer( childTree->takeChildren() );
 			delete setItem.m;
-			(setItem.m= ModuleFactory::newModule(newId))
-			->adjustSettings( -1, childTree, 0 );
+			(setItem.m= ModuleFactory::newModule(newId)) ->adjustSettings( -1, childTree, 0 );
 		}
 	//	update module defaults
 		ModuleFactory::changeDefaultSettings(*this);
 	}
 }
 void Module::widget2settings(const QWidget *widget,int which) {
-	assert( which>=0 && settingsLength()<which );
+	assert( 0<=which && which<settingsLength() );
 	switch( settingsType()[which].type ) {
 	case Int:
 	case IntLog2:
@@ -423,7 +474,7 @@ void Module::widget2settings(const QWidget *widget,int which) {
 	}//	switch
 }
 void Module::settings2widget(QWidget *widget,int which) {
-	assert( which>=0 && which<settingsLength() );
+	assert( 0<=which && which<settingsLength() );
 	switch( settingsType()[which].type ) {
 	case Int:
 	case IntLog2:
@@ -440,7 +491,7 @@ void Module::settings2widget(QWidget *widget,int which) {
 		assert(false);
 	}//	switch
 }
-namespace {
+namespace NOSPACE {
 	class ItemAdder {
 		QComboBox *box;
 	public:
@@ -462,13 +513,13 @@ void Module::settingsType2widget(QWidget *widget,const SettingsTypeItem &typeIte
 		debugCast<QSpinBox*>(widget)->setRange( typeItem.data.i[0], typeItem.data.i[1] );
 		break;
 	case Float:
-		debugCast<QDoubleSpinBox*>(widget)->setRange
-		( typeItem.data.f[0], typeItem.data.f[1] );
+		debugCast<QDoubleSpinBox*>(widget)->setRange( typeItem.data.f[0], typeItem.data.f[1] );
 		break;
 	case ModuleCombo: {
-		const vector<int> &modules=*typeItem.data.compatIDs;
+		const vector<int> &modules= *typeItem.data.compatIDs;
 		for_each( modules.begin(), modules.end(), ItemAdder(widget) );
-		} break;
+		break;
+		} 
 	case Combo:
 		debugCast<QComboBox*>(widget)->addItems( QString(typeItem.data.text).split('\n') );
 		break;
@@ -476,3 +527,6 @@ void Module::settingsType2widget(QWidget *widget,const SettingsTypeItem &typeIte
 		assert(false);
 	}//	switch
 }
+
+
+EncodingProgress *EncodingProgress::instance= 0;

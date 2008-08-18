@@ -1,10 +1,11 @@
 #include "colorModel.h"
-#include "fileUtil.h"
-#include <QTreeWidgetItem>
+#include "../fileUtil.h"
+
+#include <QImage>
 using namespace std;
 
 const float
-    MColorModel::YCbCrCoeffs[][4]={
+    MColorModel::YCbCrCoeffs[][4]= {
         { 0.299,     0.587,     0.114,    0   },
         {-0.168736, -0.331264,  0.5,      0.5 },
         { 0.5,      -0.418688, -0.081312, 0.5 },
@@ -13,52 +14,48 @@ const float
         { 0,        -0.34414,   1.772,   -0.5 },
         { 1.402,    -0.71414,   0,       -0.5 }
     },
-    MColorModel::RGBCoeffs[][4]={
+    MColorModel::RGBCoeffs[][4]= {
         {1,0,0,0},{0,1,0,0},{0,0,1,0},
         {1,0,0,0},{0,1,0,0},{0,0,1,0}
     };
 
 
-MColorModel::PlaneList MColorModel::image2planes
-( const QImage &image, const Plane &prototype ) {
-//	get the correct coeffitients and plane count
-	assert( colorModel()>=0 && colorModel()<numOfModels() );
-	const float (*coeffs)[4]= ( colorModel()==0 ? RGBCoeffs : YCbCrCoeffs );
-	int planeCount=3;
-//	create all planes
-	PlaneList result( planeCount, prototype );
-	int width=image.width(), height=image.height();
+MColorModel::PlaneList MColorModel::image2planes(const QImage &image,const Plane &prototype) {
+	assert( !image.isNull() );
+	int width= image.width(), height= image.height();
+	PlaneList result= createPlanes(IRoot::Encode,prototype,width,height);
+//	get the correct coefficients and plane count
+	const float (*coeffs)[4]= (colorModel() ? YCbCrCoeffs : RGBCoeffs);
+	int planeCount= result.size();
+//	fill pixels in all planes
 	for (int i=0; i<planeCount; ++i,++coeffs) {
-	//	get one plane
-		float **pixels=newMatrix<float>(width,height);
-		result[i].pixels=pixels;
-	//	fill the pixels
+		float **pixels= result[i].pixels;
+	//	fill the pixels in this plane
 		for (int y=0; y<height; ++y) {
-			const QRgb *line=(QRgb*)image.scanLine(y);
+			const QRgb *line= (QRgb*)image.scanLine(y);
 			for (int x=0; x<width; ++x,++line)
-				pixels[x][y]=getColor(*line,*coeffs);
+				pixels[x][y]= getColor(*line,*coeffs);
 		}
-	//	TODO (admin#4#): We don't adjust quality and max. domain count
 	}
 	return result;
 }
 
 QImage MColorModel::planes2image(const MatrixList &pixels,int width,int height) {
-//	get the correct coeffitients
 	assert( colorModel()>=0 && colorModel()<numOfModels() );
-	const float (*coeffs)[4]= 3+( colorModel()==0 ? RGBCoeffs : YCbCrCoeffs );
+//	get the correct coefficients
+	const float (*coeffs)[4]= 3 + (colorModel() ? YCbCrCoeffs : RGBCoeffs);
 //	create and fill the image
 	QImage result( width, height, QImage::Format_RGB32 );
 
 	for (int y=0; y<height; ++y) {
-		QRgb *line=(QRgb*)result.scanLine(y);
+		QRgb *line= (QRgb*)result.scanLine(y);
 		for (int x=0; x<width; ++x,++line) {
-			float vals[3]={
+			float vals[3]= {
 				pixels[0][x][y],
 				pixels[1][x][y],
 				pixels[2][x][y]
 			};
-			*line=getColor( coeffs, vals );
+			*line= getColor( coeffs, vals );
 		}
 	}
 	return result;
@@ -68,13 +65,23 @@ void MColorModel::writeData(std::ostream &file) {
 	put<Uchar>( file , colorModel() );
 }
 
-int MColorModel::readData(std::istream &file) {
+MColorModel::PlaneList MColorModel::readData
+( std::istream &file, const Plane &prototype, int width, int height ) {
 //	read the color-model identifier and check it
-	colorModel()=get<Uchar>( file );
-	if ( colorModel()<0 || colorModel()>=numOfModels() )
-		throw std::exception();
-//	return the number of planes
-	return 3;
+	colorModel()= get<Uchar>(file);
+	checkThrow( colorModel()<0 || colorModel()>=numOfModels() );
+	return createPlanes(IRoot::Decode,prototype,width,height);
 }
 
-
+MColorModel::PlaneList MColorModel::createPlanes
+( IRoot::Mode mode, const Plane &prototype, int width, int height ) {
+	assert( colorModel()>=0 && colorModel()<numOfModels() 
+	&& width>0 && height>0 && mode!=IRoot::Clear );
+//	create the plane list	
+	int planeCount= 3;
+	PlaneList result( planeCount, prototype );
+	for (int i=0; i<planeCount; ++i)
+		result[i].pixels= newMatrix<float>(width,height);
+	//	TODO (admin#4#): We don't adjust max. domain count and quality
+	return result;
+}

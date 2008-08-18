@@ -7,6 +7,7 @@
 #include "modules/stdEncoder.h"
 #include "modules/vliCodec.h"
 #include "modules/saupePredictor.h"
+#include "modules/noPredictor.h"
 
 #include "util.h"
 #include "fileUtil.h"
@@ -15,35 +16,9 @@
 
 using namespace std;
 
-/** MODLIST macro definition */
-#define MODLIST_1(T1) 		class T1;
-#define MODLIST_2(T1,T...)	class T1; MODLIST_1(T)
-#define MODLIST_3(T1,T...)	class T1; MODLIST_2(T)
-#define MODLIST_4(T1,T...)	class T1; MODLIST_3(T)
-#define MODLIST_5(T1,T...)	class T1; MODLIST_4(T)
-#define MODLIST_6(T1,T...)	class T1; MODLIST_5(T)
-#define MODLIST_7(T1,T...)	class T1; MODLIST_6(T)
-#define MODLIST_8(T1,T...)	class T1; MODLIST_7(T)
-#define MODLIST_9(T1,T...)	class T1; MODLIST_8(T)
-#define MODLIST_10(T1,T...)	class T1; MODLIST_9(T)
-#define MODLIST_11(T1,T...)	class T1; MODLIST_10(T)
-#define MODLIST_12(T1,T...)	class T1; MODLIST_11(T)
-#define MODLIST_13(T1,T...)	class T1; MODLIST_12(T)
-#define MODLIST_14(T1,T...)	class T1; MODLIST_13(T)
-#define MODLIST_15(T1,T...)	class T1; MODLIST_14(T)
-#define MODLIST_16(T1,T...)	class T1; MODLIST_15(T)
-#define MODLIST_17(T1,T...)	class T1; MODLIST_16(T)
-#define MODLIST_18(T1,T...)	class T1; MODLIST_17(T)
-#define MODLIST_19(T1,T...)	class T1; MODLIST_18(T)
-#define MODLIST_20(T1,T...)	class T1; MODLIST_19(T)
-#define MODLIST_21(T1,T...)	class T1; MODLIST_20(T)
-
-#define MODLIST(count,args...) MODLIST_##count(args) \
-	typedef LOKI_TYPELIST_##count(args)
-
-MODLIST( 9, MRoot, MColorModel, MSquarePixels, MQuadTree, MStandardDomains
-, MQuality2SE_std, MStandardEncoder, MDifferentialVLICodec, MSaupePredictor )
-Modules;
+typedef Loki::TL::MakeTypelist< MRoot, MColorModel, MSquarePixels, MQuadTree, MStandardDomains
+, MQuality2SE_std, MStandardEncoder, MDifferentialVLICodec, MSaupePredictor, NoPredictor >
+::Result Modules;
 
 const int powers[]={1,2,4,8,16,32,64,128,256,512,1024,2*1024,4*1024,8*1024,16*1024
     ,32*1024,64*1024,128*1024,256*1024,512*1024,1024*1024,2*1024*1024,4*1024*1024
@@ -51,7 +26,7 @@ const int powers[]={1,2,4,8,16,32,64,128,256,512,1024,2*1024,4*1024,8*1024,16*10
 
 ////	Compatible<TypeList,Iface> struct template - leaves in the TypeList only derivates
 ////	of Iface class parameter - used by Inteface<Iface>, hidden for others
-namespace {
+namespace NOSPACE {
 	using namespace Loki;
 	using namespace Loki::TL;
 
@@ -97,6 +72,8 @@ const Module::SettingsTypeItem Module::SettingsTypeItem:: stopper= { Stop, {}, 0
 Module::SettingsItem* Module::copySettings(CloneMethod method) const {
 //	copy the settings array
 	int length= settingsLength();
+	if (!length)
+		return 0;
 	SettingsItem *result= new SettingsItem[length];
 	copy( settings, settings+length, result );
 
@@ -110,14 +87,16 @@ Module::SettingsItem* Module::copySettings(CloneMethod method) const {
 		}
 	else // ShallowCopy
 	//	null module links
-		while (item!=itemEnd)
+		while (item!=itemEnd) {
 			item->m= 0;
+			++item;
+		}
 
 	return result;
 }
 void Module::initDefaultModuleLinks() {
 //	iterate over all settings
-	const SettingsTypeItem *setType=settingsType();
+	const SettingsTypeItem *setType= settingsType();
 	for (int i=0; setType[i].type!=Stop; ++i )
 		if (setType[i].type==ModuleCombo) {
 		//	it is a module link -> initialize it with the right prototype
@@ -142,27 +121,25 @@ template<class M> M* Module::concreteClone(CloneMethod method) const {
 void Module::file_saveModuleType( ostream &os, int which ) {
 //	do some assertions - we expect to have the child module, etc.
 	assert( which>=0 && which<settingsLength() );
-	SettingsItem &setItem=settings[which];
+	SettingsItem &setItem= settings[which];
 	assert( settingsType()[which].type==ModuleCombo && setItem.m );
 //	put the module's identifier
 	put<Uchar>( os, setItem.m->moduleId() );
 }
 void Module::file_loadModuleType( istream &is, int which ) {
-//	do some assertions - we expect to have not the child module, etc.
+//	do some assertions - we expect not to have the child module, etc.
 	assert( which>=0 && which<settingsLength() );
-	const SettingsTypeItem &setType=settingsType()[which];
-	SettingsItem &setItem=settings[which];
+	const SettingsTypeItem &setType= settingsType()[which];
+	SettingsItem &setItem= settings[which];
 	assert( setType.type==ModuleCombo && !setItem.m );
-//	get module identifier and check it against the bounds
-	int newId=get<Uchar>(is);
-	if ( newId<0 || newId>=Loki::TL::Length<Modules>::value )
-		throw exception();
+//	get module identifier and check its existence
+	int newId= get<Uchar>(is);
+	checkThrow( newId<0 || newId>=Loki::TL::Length<Modules>::value );
 //	check module compatibility
-	const vector<int> &v=*setType.data.compatIDs;
-	if ( find(v.begin(),v.end(),newId) == v.end() )
-		throw exception();
+	const vector<int> &v= *setType.data.compatIDs;
+	checkThrow( find(v.begin(),v.end(),newId) == v.end() );
 //	create a new correct empty module
-	setItem.m=ModuleFactory::newModule(newId,ShallowCopy);
+	setItem.m= ModuleFactory::newModule(newId,ShallowCopy);
 }
 
 

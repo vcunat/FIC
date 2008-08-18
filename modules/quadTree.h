@@ -7,7 +7,7 @@
 class BitWriter;
 class BitReader;
 
-namespace { struct NodeExtremes; }
+namespace NOSPACE { struct NodeExtremes; }
 
 class MQuadTree: public ISquareRanges {
 

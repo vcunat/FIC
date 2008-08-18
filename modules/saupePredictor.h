@@ -2,9 +2,9 @@
 #define SAUPEPREDICTOR_HEADER_
 
 #include "../interfaces.h"
-//namespace {
+namespace NOSPACE {
 	#include "../kdTree.h"
-//}
+}
 
 class MSaupePredictor: public IStdEncPredictor {
 

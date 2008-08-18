@@ -36,10 +36,12 @@ public:
 public:
 //	IColorTransformer interface
 	PlaneList image2planes(const QImage &toEncode,const Plane &prototype);
-	QImage planes2image( const MatrixList &pixels, int width, int height );
+	QImage planes2image(const MatrixList &pixels,int width,int height);
 
 	void writeData(std::ostream &file);
-	int readData(std::istream &file);
+	PlaneList readData(std::istream &file,const Plane &prototype,int width,int height);
+private:
+	PlaneList createPlanes(IRoot::Mode mode,const Plane &prototype,int width,int height);
 };
 
 
@@ -48,7 +50,7 @@ inline float getColor( QRgb color, const float *koefs ) {
     return koefs[3]+std::ldexp
     ( 0.5+qRed(color)*koefs[0]+qGreen(color)*koefs[1]+qBlue(color)*koefs[2], -8	);
 }
-/** Converts color from a model (coeffitients as a parameter) to RGB */
+/** Converts color from a model (coefficients as a parameter) to RGB */
 inline QRgb getColor( const float (*coeffs)[4], const float *planes ) {
 	float rgb[3]={0,0,0};
 	for (int i=0; i<3; ++i) {
@@ -64,4 +66,4 @@ inline QRgb getColor( const float (*coeffs)[4], const float *planes ) {
 	);
 }
 
-#endif // COLORMODEL_HEADER_
+#endif

@@ -1,46 +1,48 @@
 #include "squarePixels.h"
 #include "../fileUtil.h"
 
+using namespace std;
+
 int MSquarePixels::createJobs( const PlaneList &planes, int width, int height ) {
 	assert( ownedMatrices.empty() && jobs.empty()
 	&& moduleRanges() && moduleDomains() && moduleEncoder() );
 
 //	create the joblist
-	int maxPixels=powers[maxPartSize()];
-	if ( width*height<=maxPixels )
+	int maxPixels= powers[maxPartSize()];
+	if ( width*height <= maxPixels )
 	//	not dividing the planes -> pass them as they are
 		for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it)
 			jobs.push_back(makeJob( *it, Block(0,0,width,height) ));
-	else {
-	//  compute the dividing pattern
-		std::vector<Block> pattern;
+	else { // dividing the planes
+	//	compute the dividing pattern
+		vector<Block> pattern;
 		pattern.push_back( Block(0,0,width,height) );
 
-		size_t i=0;
+		size_t i= 0;
 		while ( i < pattern.size() )
 			if ( pattern[i].size() <= maxPixels )
 			//	the part is small enough, move on
 				++i;
 			else {
 			//	divide the part
-				bool xdiv=( pattern[i].width() >= pattern[i].height() );
-				int longer=( xdiv ? pattern[i].width() : pattern[i].height() );
-				int bits=log2ceil(longer);
-				int divsize=( longer >= powers[bits-1]+powers[bits-2]
+				bool xdiv= ( pattern[i].width() >= pattern[i].height() );
+				int longer= ( xdiv ? pattern[i].width() : pattern[i].height() );
+				int bits= log2ceil(longer);
+				int divsize= ( longer >= powers[bits-1]+powers[bits-2]
 					? powers[bits-1]
 					: powers[bits-2] );
 
 				pattern.push_back(pattern[i]);
 				if (xdiv) {
-					pattern[i].xend-=divsize;
-					pattern.back().x0+=divsize;
+					pattern[i].xend-= divsize;
+					pattern.back().x0+= divsize;
 				} else {
-					pattern[i].yend-=divsize;
-					pattern.back().y0+=divsize;
+					pattern[i].yend-= divsize;
+					pattern.back().y0+= divsize;
 				}
 			}
 	//	we have the pattern, apply it to every plane (jobs sharing pixel matrices)
-		std::vector<Block>::iterator patIt;
+		vector<Block>::iterator patIt;
 		for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it)
 			for (patIt=pattern.begin(); patIt!=pattern.end(); ++patIt)
 				jobs.push_back(makeJob( *it, *patIt ));
@@ -53,7 +55,7 @@ int MSquarePixels::createJobs( const PlaneList &planes, int width, int height ) 
 	return jobs.size();
 }
 
-void MSquarePixels::writeSettings(std::ostream &file) {
+void MSquarePixels::writeSettings(ostream &file) {
 	assert( moduleRanges() && moduleDomains() && moduleEncoder() );
 //	put settings and ID's of child modules
 	put<Uchar>( file, maxPartSize() );
@@ -66,10 +68,10 @@ void MSquarePixels::writeSettings(std::ostream &file) {
 	moduleEncoder()->writeSettings(file);
 }
 
-void MSquarePixels::readSettings(std::istream &file) {
+void MSquarePixels::readSettings(istream &file) {
 	assert( !moduleRanges() && !moduleDomains() && !moduleEncoder() );
 //	get settings and create the right child modules
-	maxPartSize()=get<Uchar>(file);
+	maxPartSize()= get<Uchar>(file);
 	file_loadModuleType( file, ModuleRanges );
 	file_loadModuleType( file, ModuleDomains );
 	file_loadModuleType( file, ModuleEncoder );
@@ -79,7 +81,7 @@ void MSquarePixels::readSettings(std::istream &file) {
 	moduleEncoder()->readSettings(file);
 }
 
-void MSquarePixels::writeJobs(std::ostream &file,int phaseBegin,int phaseEnd) {
+void MSquarePixels::writeJobs(ostream &file,int phaseBegin,int phaseEnd) {
 	assert( !jobs.empty() && phaseBegin>=0 && phaseEnd<=phaseCount() );
 //	if writing phase 0, for each job: write data of domain and range modules
 	if (!phaseBegin)
@@ -93,19 +95,17 @@ void MSquarePixels::writeJobs(std::ostream &file,int phaseBegin,int phaseEnd) {
 			it->encoder->writeData(file,phase);
 }
 
-void MSquarePixels::readJobs(std::istream &file,int phaseBegin,int phaseEnd) {
+void MSquarePixels::readJobs(istream &file,int phaseBegin,int phaseEnd) {
 	assert( !jobs.empty() && phaseBegin>=0 && phaseEnd<=phaseCount() );
 //	if reading phase 0, for each job: read data of domain and range modules
 	if (!phaseBegin)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) {
 			it->ranges->readData_buildRanges(file,*it);
 			it->domains->readData(file);
+			it->encoder->initialize(IRoot::Decode,*it);
 		}
 //	read all the requested phases of all jobs (phase-sequentially)
 	for (int phase=phaseBegin; phase<phaseEnd; ++phase)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it)
 			it->encoder->readData(file,phase);
-
-	for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it)
-		it->encoder->initialize( IRoot::Decode, *it );
 }

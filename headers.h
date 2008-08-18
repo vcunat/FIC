@@ -4,12 +4,13 @@
 
 /** Standard C++ includes */
 #include <algorithm>
-#include <climits>
 #include <cmath>
 #include <exception>
 #include <fstream>
 #include <functional>
+#include <limits>		// numeric_limits
 #include <memory>
+#include <sstream>		// c++ conversions through streams
 #include <vector>
 
 #include "FerrisLoki/static_check.h"

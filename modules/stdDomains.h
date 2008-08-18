@@ -1,7 +1,7 @@
 #ifndef STDDOMAINS_HEADER_
 #define STDDOMAINS_HEADER_
 
-#include "interfaces.h"
+#include "../interfaces.h"
 
 class MStandardDomains: public ISquareDomains {
 

@@ -38,7 +38,7 @@ namespace MTypes {
 
 	enum DecodeAct { Clear, Iterate }; ///< Possible decoding actions
 }
-namespace {
+namespace NOSPACE {
 	using namespace std;
 	using namespace MTypes;
 }
@@ -66,7 +66,7 @@ struct IRoot: public Interface<IRoot> {
 
 	/** Saves an encoded image to a file - returns true on success */
 	virtual bool toFile(const char *fileName) =0;
-	/** Loads image from a file - returns true on success */
+	/** Loads image from a file - returns true on success (to be run on a shallow module) */
 	virtual bool fromFile(const char *fileName) =0;
 };
 
@@ -92,11 +92,11 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 	/** Splits an image into color-planes and adjusts their quality and max. domain count */
 	virtual PlaneList image2planes(const QImage &toEncode,const Plane &prototype) =0;
 	/** Merges planes back into a color image */
-	virtual QImage planes2image( const MatrixList &pixels, int width, int height ) =0;
+	virtual QImage planes2image(const MatrixList &pixels,int width,int height) =0;
 
 	/** Writes/reads any data needed for plane reconstruction to/from a stream */
 	virtual void writeData(std::ostream &file) =0;
-	virtual int readData(std::istream &file) =0;
+	virtual PlaneList readData(std::istream &file,const Plane &prototype,int width,int height) =0;
 };
 
 /** Interface for modules handling pixel-shape changes
@@ -294,8 +294,8 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 	/** Contains information about one predicted domain block */
 	struct Prediction {
-		Prediction()
-		: domainID(-1), rotation(-1) {}
+		explicit Prediction( int domainID_=-1, char rotation_=-1 )
+		: domainID(domainID_), rotation(rotation_) {}
 
 		int domainID;
 		char rotation; ///<	the rotation of the domain
@@ -359,8 +359,7 @@ namespace MTypes {
 
 		PlaneBlock( const Plane &plane, const Block &range
 		, ISquareRanges *ranges_, ISquareDomains *domains_, ISquareEncoder *encoder_ )
-			: Plane(plane), Block(range)
-			, ranges(ranges_), domains(domains_), encoder(encoder_)
+			: Plane(plane), Block(range), ranges(ranges_), domains(domains_), encoder(encoder_)
 				{ assert( ranges && domains && encoder ); }
 		void free() {
 			delete ranges;
@@ -380,10 +379,8 @@ namespace MTypes {
 			constCast(summers[0]).invalidate();
 			constCast(summers[1]).invalidate();
 		}
-		BlockSummer::result_type getSum
-		( const Block &block, BlockSummer::SumType type ) const {
-			return summers[type].getSum
-			( block.x0-x0, block.y0-y0, block.xend-x0, block.yend-y0 );
+		BlockSummer::result_type getSum( const Block &block, BlockSummer::SumType type ) const {
+			return summers[type].getSum( block.x0-x0, block.y0-y0, block.xend-x0, block.yend-y0 );
 		}
 	};// PlaneBlock struct
 }

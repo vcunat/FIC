@@ -1,9 +1,9 @@
 #include "quadTree.h"
-#include "fileUtil.h"
+#include "../fileUtil.h"
 
 using namespace std;
 
-namespace {
+namespace NOSPACE {
 	struct NodeExtremes {
 		int min,max;
 
@@ -47,12 +47,14 @@ void MQuadTree::readData_buildRanges(istream &file,const Block &block) {
 	assert( fringe.empty() && !root );
 //	get from the stream the minimal and the maximal used level
 	NodeExtremes extremes;
-	extremes.min=get<Uchar>(file);
-	extremes.max=get<Uchar>(file);
-
+	extremes.min= get<Uchar>(file);
+	extremes.max= get<Uchar>(file);
+//	build the range tree
 	BitReader bitReader(file);
-	root=new Node(block);
+	root= new Node(block);
 	root->fromFile(bitReader,extremes);
+//	generate the fringe of the range tree
+	root->getHilbertList(fringe);
 }
 
 
@@ -173,13 +175,14 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 //	the range needs to be divided, try to encode the sons
 	divide();
 	Node *now= son;
-	do
-		tryEncode|= now->encode(toEncode);
-	while ( (now=now->brother) != son );
+	do {// if any of the sons is divided, set tryEncode to true
+		bool divided= now->encode(toEncode);
+		tryEncode= tryEncode || divided;
+	} while ( (now=now->brother) != son );
 //	if (I unsuccessfully tried to encode or a son was divided) or (I have too big level), return
 	if ( tryEncode || level > mod->maxLevel() )
 		return true;
-//	this range has a chance, try to encode it
+//	this range still has a chance, try to encode it
 	if ( toEncode.encoder->findBestSE(*this) <= maxSE ) {
 		deleteSons();
 		return false;
@@ -207,7 +210,7 @@ void MQuadTree::Node::fromFile(BitReader &file,NodeExtremes extremes) {
 	bool div= level>extremes.max || level>extremes.min && file.getBits(1) ;
 	if (div) {
 		divide();
-		Node *now=son;
+		Node *now= son;
 		do {
 			now->fromFile(file,extremes);
 		} while ( (now=now->brother) != son );

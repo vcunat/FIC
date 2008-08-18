@@ -86,7 +86,7 @@ public:
 
 	void jobEncode(int jobIndex) {
 		assert( jobIndex>=0 && jobIndex<jobCount() );
-		Job &job=jobs[jobIndex];
+		Job &job= jobs[jobIndex];
 		job.encoder->initialize( IRoot::Encode, job );
 		job.ranges->encode(job);
 	}

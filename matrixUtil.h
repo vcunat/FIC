@@ -123,7 +123,7 @@ namespace MatrixWalkers {
 		void innerStep()	{ ++col; }
 	};
 
-	namespace {
+	namespace NOSPACE {
 		template<class T> struct RBase_it {
 			T **row;
 			size_t colAddBegin;
@@ -299,13 +299,13 @@ namespace MatrixWalkers {
 			{ res= (f+toAdd)*toMul; }
 	};
 
-	template<class T> struct AddMulCopyChecked {
-		const T toAdd, toMul, min, max;
+	template<class T> struct MulAddCopyChecked {
+		const T toMul, toAdd, min, max;
 
-		AddMulCopyChecked(T add,T mul,T minVal,T maxVal)
-		: toAdd(add), toMul(mul), min(minVal), max(maxVal) {}
+		MulAddCopyChecked(T mul,T add,T minVal,T maxVal)
+		: toMul(mul), toAdd(add), min(minVal), max(maxVal) {}
 		void operator()(float &res,float f) const
-			{ res= checkBoundsFunc( min, (f+toAdd)*toMul, max ); }
+			{ res= checkBoundsFunc( min, f*toMul+toAdd, max ); }
 		void endLine() const {};
 	};
 }

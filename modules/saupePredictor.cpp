@@ -1,5 +1,4 @@
 #include "saupePredictor.h"
-#include "../kdTree.h"
 
 using namespace std;
 
@@ -66,7 +65,7 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 	return result;
 }
 
-namespace {
+namespace NOSPACE {
 	template<class T> struct AddMulCopyTo2nd {
 		T toAdd, toMul;
 

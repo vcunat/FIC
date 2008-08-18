@@ -32,7 +32,7 @@ class MRoot: public IRoot {
 		type:	Int,
 		data: {	i:{0,100} },
 		label:	"Encoding quality",
-		desc:	"Quality - how big loss will by tolerated by the encoder"
+		desc:	"Quality - how big loss will be tolerated by the encoder"
 	}, {
 		type:	ModuleCombo,
 		data: {	compatIDs: &IQuality2SquareError::getCompMods() },

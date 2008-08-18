@@ -69,7 +69,7 @@ public:
 	})
 
 	DECLARE_M_settings_default(
-		0,		// predictor
+		1,		// predictor - using brute-force predictor as the default one for debugging 
 		0,		// rotations and symmetries
 		1,		// color value inversion
 		0.35,	// big-scale penalty coefficient

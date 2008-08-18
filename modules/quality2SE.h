@@ -1,7 +1,7 @@
 #ifndef QUALITY2SE_HEADER_
 #define QUALITY2SE_HEADER_
 
-#include "interfaces.h"
+#include "../interfaces.h"
 
 class MQuality2SE_std: public IQuality2SquareError {
 
