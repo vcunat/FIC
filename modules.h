@@ -15,16 +15,16 @@ class Module {
 
 //	Type definitions
 public:
-	/** Two types of cloning, used in clone() */
+	/** Two types of cloning, used in #clone */
 	enum CloneMethod { ShallowCopy, DeepCopy };
 	/** Types of a setting */
 	enum ChoiceType {
-		Stop,		///< A list-terminator
-		Int,		///< Integer from an interval
-		IntLog2,	///< Integer from an interval prefixed with 2^
-		Float,		///< Real number from an interval
-		ModuleCombo,///< A connection to another module (shown as a combo-box)
-		Combo		///  Choice from a list of strings
+		Stop,		///< a list-terminator
+		Int,		///< integer from an interval
+		IntLog2,	///< integer from an interval prefixed with 2^
+		Float,		///< real number from an interval
+		ModuleCombo,///< a connection to another module (shown as a combo-box)
+		Combo		///  choice from a list of strings
 	};
 	/** Represents the type of one setting - including label, description, etc.\ */
 	struct SettingsTypeItem {
@@ -32,22 +32,22 @@ public:
 
 		ChoiceType type; ///< The type of the item
 		union {
-			int i[2]; ///< Lower and upper bound (type==Int)
-			float f[2]; ///< Lower and upper bound (type==Float)
-			const char *text; ///< Lines of the combo-box (type==Combo)
+			int i[2];			///< Lower and upper bound (type==Int)
+			float f[2];			///< Lower and upper bound (type==Float)
+			const char *text;	///< Lines of the combo-box (type==Combo)
 			/** Pointer to the vector of IDs of compatible modules (type==ModuleCombo),
 			 *	meant to be one of Interface::getCompMods() */
 			const std::vector<int> *compatIDs;
-		} data;				///< Additional data, differs for different ::type
-		const char *label	///  The label of the setting
+		} data;				///< Additional data, differs for different #type
+		const char *label	///  The text label of the setting
 		, *desc;			///< Description text
 	};
 	/** Represents one setting value */
 	struct SettingsItem {
 		Module *m;	///< Pointer to the connected module (if type is Module::ModuleCombo)
 		union {
-			int i;		///< Setting value for integer types (see Module::ChoiceType)
-			float f;	///< Setting value for real-number type (see Module::ChoiceType)
+			int i;	///< Setting value for integer types (see Module::ChoiceType)
+			float f;///< Setting value for real-number type (see Module::ChoiceType)
 		};			///< The setting value
 
 		SettingsItem()			: m(0) 	{}			///< Just nulls the module pointer
@@ -61,7 +61,7 @@ protected:
 	SettingsItem *settings; ///< The current setting values of this Module
 
 /** \name Construction, destruction and related methods
- *	@{	- only to be used by ModuleFactory */
+ *	@{	- all private, only to be used by ModuleFactory */
 private:
 	/**	Creates a deep copy of module's settings (includes the whole module subtree) */
 	SettingsItem* copySettings(CloneMethod method) const;
@@ -91,7 +91,7 @@ public:
 	template<class M> friend M* clone( const M *module, CloneMethod method=DeepCopy )
 		{ return debugCast<M*>( module->abstractClone(method) ); }
 
-	/** Deletes the settings, destroying child modules as well. */
+	/** Deletes the settings, destroying child modules as well */
 	virtual ~Module()
 		{ delete[] settings; }
 ///	@}
@@ -129,7 +129,7 @@ protected:
 ///	@}
 
 //	Other methods
-public:
+protected:
 	/** Puts a module-identifier in a stream (which = the index in settings) */
 	void file_saveModuleType( std::ostream &os, int which );
 	/** Gets an module-identifier from the stream, initializes the pointer in settings
@@ -144,9 +144,9 @@ public:
 /** Macros for easier Module-writing */
 #define DECLARE_M_cloning_name_desc(Cname,name,desc) \
 protected: \
-/**	\name Macro-generated */ \
-/**	@{ */ \
-	friend class Module; \
+/**	\name Macro-generated
+	@{ - an enum, two friends and trivial implementations of virtual "static" methods */ \
+	friend class Module; /**< Friend needed for template cloning */ \
 	friend class ModuleFactory; \
 public: /* redefining virtual functions */ \
 	Cname* abstractClone(CloneMethod method=DeepCopy) const \
@@ -157,18 +157,20 @@ public: /* redefining virtual functions */ \
 	int moduleId() const					{ return ModuleFactory::getModuleID<Cname>(); } \
 
 #define DECLARE_M_settings_none() \
+private: \
+	enum { settingsLength_=0 /**< the number of settings */ }; \
 public: \
-	enum { settingsLength_=0 }; \
 	virtual const SettingsTypeItem* settingsType() const \
 		{ return &SettingsTypeItem::stopper; } \
 	virtual SettingsItem* newDefaultSettings() const { return 0; } \
 /**	@} */
 
 #define DECLARE_M_settings_type(setType...) \
-public: \
-	enum { settingsLength_= \
+private: \
+	enum { settingsLength_= /**< the number of settings \hideinitializer */ \
 		sizeof((SettingsTypeItem[]){setType}) / sizeof(SettingsTypeItem) \
 	}; \
+public: \
 	virtual const SettingsTypeItem* settingsType() const { \
 		static SettingsTypeItem settingsType_[]= {setType,SettingsTypeItem::stopper}; \
 		return settingsType_; \
@@ -231,7 +233,7 @@ public:
 	static Module* newModule( int id, Module::CloneMethod method=Module::DeepCopy )
 		{ return prototype(id).abstractClone(method); }
 
-	/** Set's the defaults to given module's settings */
+	/** Sets the defaults to given module's settings */
 	static void changeDefaultSettings(const Module &module);
 
 private:
@@ -248,9 +250,9 @@ private:
 
 /**	A base class for all interfaces, parametrized by the interface's type */
 template<class Iface> class Interface: public Module {
-	static std::vector<int> compMods_; ///< ID's of modules derived from this interface
+	static std::vector<int> compMods_; ///< IDs of modules derived from this interface
 public:
-	/** Returns a reference to ::compMods_ (initializes it if empty) */
+	/** Returns a reference to #compMods_ (initializes it if empty) */
 	static const std::vector<int>& getCompMods();
 	/** Returns a reference to the index-th prototype implementing this interface */
 	static const Iface& compatiblePrototype(int index=0) {

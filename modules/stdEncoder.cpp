@@ -4,16 +4,31 @@
 using namespace std;
 
 namespace Quantizer {
+	/** Quantizes f that belongs to 0..possib/2^scale into 0..possib-1 */
+	inline int quantizeByPower(float f,int scale,int possib) {
+		assert( f>=0 && f<= possib/(double)powers[scale] );
+		int result= (int)ldexp(f,scale);
+		assert( result>=0 && result<=possib );
+		return result<possib ? result : --result;
+	}
+	/** Performs the opposite to #quantizeByPower */
+	inline float dequantizeByPower(int i,int scale,int DEBUG_ONLY(possib)) {
+		assert( i>=0 && i<possib );
+		float result= ldexp(i+0.5f,-scale);
+		assert( result>=0 && result<= possib/(double)powers[scale] );
+		return result;
+	}
+	
 	class Average {
-		int scale,possib;
+		int scale, possib;
 	public:
 		Average(int possibLog2) {
 			assert(possibLog2>0);
 		//	the average is from [0,1]
-			scale=possibLog2;
-			possib=powers[possibLog2];
+			scale= possibLog2;
+			possib= powers[possibLog2];
 		}
-		int quant(float avg)
+		int quant(float avg) 
 			{ return quantizeByPower(avg,scale,possib); }
 		float dequant(int i)
 			{ return dequantizeByPower(i,scale,possib); }
@@ -27,8 +42,8 @@ namespace Quantizer {
 		Deviation(int possibLog2) {
 			assert(possibLog2>0);
 		//	the deviation is from [0,0.5] -> we have to scale twice more (log2+=1)
-			scale=possibLog2+1;
-			possib=powers[possibLog2];
+			scale= possibLog2+1;
+			possib= powers[possibLog2];
 		}
 		int quant(float dev)
 			{ return quantizeByPower(dev,scale,possib); }
@@ -47,7 +62,7 @@ namespace NOSPACE {
 	};
 }
 static const ISquareDomains::Pool&
-getDomainData( int level, const ISquareDomains::Pools &pools
+getDomainData( int level, const ISquareDomains::PoolList &pools
 , const MStandardEncoder::PoolInfos &poolInfos, int domIndex, Block &block ) {
 //	do some checks
 	assert( domIndex>=0 && domIndex<poolInfos.back().indexBegin );
@@ -99,12 +114,9 @@ void MStandardEncoder::initialize( IRoot::Mode mode, const PlaneBlock &planeBloc
 	levelPoolInfos.resize(maxLevel);
 
 	if (mode==IRoot::Encode) {
-		typedef ISquareDomains::Pools Pools;
-	//	fill domains' pixels and initialize their summers
+		typedef ISquareDomains::PoolList PoolList;
+	//	prepare the domains
 		planeBlock->domains->fillPixelsInPools(*planeBlock);
-		const Pools &pools= planeBlock->domains->getPools();
-		for_each( pools.begin(), pools.end()
-		, mem_fun_ref(&Pools::value_type::summers_makeValid) );
 	//	initialize the range summers
 		planeBlock->summers_makeValid();
 
@@ -115,7 +127,7 @@ void MStandardEncoder::initialize( IRoot::Mode mode, const PlaneBlock &planeBloc
 	}
 }
 
-void debugStop(Real denom) {
+inline static void debugStop(Real denom) {
 	return;
 }
 
@@ -244,8 +256,8 @@ namespace NOSPACE {
 			else
 				optSE= common*denom + stable.r2Sum;
 		}
-	//	test if the error is acceptable and the best so far
-		if ( optSE < maxSE2Predict ) {
+	//	test if the error is the best so far
+		if ( optSE < best.error ) {
 			best.prediction()= prediction;
 			best.error= maxSE2Predict= optSE;
 			best.inverted= nRDs_RsDs<0;
@@ -253,14 +265,13 @@ namespace NOSPACE {
 	}
 }
 float MStandardEncoder::findBestSE(const RangeNode &range) {
-	assert( planeBlock && !stdRangeSEs.empty() );
-	assert( !range.encoderData );
+	assert( planeBlock && !stdRangeSEs.empty() && !range.encoderData );
 
 //	initialize an encoding-info object
 	EncodingInfo info;
 
 	info.stable.rangeBlock=		&range;
-	info.stable.rangePixels=	(const float**)planeBlock->pixels;
+	info.stable.rangePixels=	bogoCast(planeBlock->pixels);
 	info.stable.pools=			&planeBlock->domains->getPools();
 	info.stable.poolInfos=		&levelPoolInfos[range.level];
 	
@@ -334,7 +345,7 @@ void MStandardEncoder::buildPoolInfos4aLevel(int level) {
 	vector<short> densities= planeBlock->domains->getLevelDensities( level, domainCountLog2 );
 //	store it in the this-level infos with beginIndex values for all pools
 	vector<LevelPoolInfo> &poolInfos= levelPoolInfos[level];
-	const ISquareDomains::Pools &pools= planeBlock->domains->getPools();
+	const ISquareDomains::PoolList &pools= planeBlock->domains->getPools();
 
 	int domainSize= powers[level];
 	int poolCount= pools.size();
@@ -414,7 +425,8 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				assert( *it && (*it)->encoderData );
 				const RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
-				devs.push_back( quant.quant(sqrt(info->rDev2)) );
+				int dev= ( info->domainID>=0 ? quant.quant(sqrt(info->rDev2)) : 0 );
+				devs.push_back(dev);
 			}
 		//	pass it to the codec
 			moduleCodec(false)->setPossibilities( powers[settingsInt(QuantStepLog_dev)] );
@@ -523,13 +535,12 @@ void MStandardEncoder::readData(istream &file,int phase) {
 						info->inverted= stream.getBits(1);
 				}
 		//	get the rotation bits if rotations are allowed
-			if ( settingsInt(AllowedRotations) )
-				for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
-					assert( *it && (*it)->encoderData );
-					RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
-					if (info->rDev2)
-						info->rotation=stream.getBits(3);
-				}
+			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
+				assert( *it && (*it)->encoderData );
+				RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+				if (info->rDev2)
+					info->rotation= settingsInt(AllowedRotations) ? stream.getBits(3) : 0;
+			}
 		//	find out bits needed to store IDs of domains for every level
 			vector<int> domBits( levelPoolInfos.size(), -1 );
 		//	get the domain bits
@@ -549,7 +560,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 				}
 			//	get the domain ID, check it's OK and store it in the range's info
 				int domID= stream.getBits(bits);
-				checkThrow( domID >= levelPoolInfos[level].back().indexBegin );
+				checkThrow( domID < levelPoolInfos[level].back().indexBegin );
 				info->domainID= domID;
 			}
 		//	initialize decoding accelerators for domain-to-range mappings
@@ -574,14 +585,13 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 		assert(count==1);
 		fillSubMatrix( planeBlock->pixels, *planeBlock, 0.5f );
 		planeBlock->summers_invalidate();
-		planeBlock->domains->invalidatePoolSummers();
 		break;
 	case Iterate:
 		assert(count>0);
 		do {
-		//	validate the domain pool summers, iterate each range block
-			planeBlock->domains->validatePoolSummers();
-			for(RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it) {
+		//	prepare the domains, iterate each range block
+			planeBlock->domains->fillPixelsInPools(*planeBlock);
+			for (RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				const RangeInfo &info= *(const RangeInfo*) (*it)->encoderData;
 				if ( info.domainID < 0 ) {
 					fillSubMatrix<float>( planeBlock->pixels, **it, info.rAvg );
@@ -612,7 +622,7 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 void MStandardEncoder::initRangeInfoAccelerators() {
 //	get references that are the same for all range blocks
 	const RangeList &ranges= planeBlock->ranges->getRangeList();
-	const ISquareDomains::Pools &pools= planeBlock->domains->getPools();
+	const ISquareDomains::PoolList &pools= planeBlock->domains->getPools();
 //	iterate over the ranges (and their accelerators)
 	for ( RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it ) {
 	//	get range level, reference to the range's info and to the level's pool infos

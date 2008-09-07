@@ -7,8 +7,7 @@
 class BitWriter;
 class BitReader;
 
-namespace NOSPACE { struct NodeExtremes; }
-
+/** Module dividing range blocks with a quad-tree, can use heuristic dividing */
 class MQuadTree: public ISquareRanges {
 
 	DECLARE_M_cloning_name_desc( MQuadTree, "Quad-tree"
@@ -38,6 +37,7 @@ class MQuadTree: public ISquareRanges {
 		1	// heuristic dividing
 	)
 private:
+	/** Indices for settings */
 	enum Settings { MinLevel, MaxLevel, HeuristicAllowed };
 //	Settings-retrieval methods
 	int minLevel()			{ return settings[MinLevel].i; }
@@ -48,29 +48,35 @@ protected:
 	friend class Node;
 private:
 //	Module's data
-	Node *root;
-	std::vector<RangeNode*> fringe;
+	Node *root;						///< Quad-tree's root node
+	std::vector<RangeNode*> fringe;	///< List of quad-tree's leaves
 protected:
 //	Construction and destruction
+	/** Only zeroes #root */
 	MQuadTree(): root(0) {}
+	/** Only deletes #root */
 	~MQuadTree() { delete root; }
 public:
-//	ISquareRanges interface
+/** \name ISquareRanges interface
+ *	@{ */
 	void encode(const PlaneBlock &toEncode);
 	const RangeList& getRangeList() const
 		{ return fringe; }
 
-	/** The module doesn't need to preserve any settings */
+	/* The module doesn't need to preserve any settings */
 	void writeSettings(std::ostream&) {}
 	void readSettings(std::istream&) {}
 
 	void writeData(std::ostream &file);
 	void readData_buildRanges(std::istream &file,const Block &block);
+///	@}
 protected:
+	struct NodeExtremes;
 	/** Class used for tree nodes in the quad-tree structure */
 	class Node: public RangeNode {
-		/** Pointers to first son, first brother and father in the tree */
-		Node *father,*brother,*son;
+		Node *father	///< Pointer to the father-node of this node in the tree
+		, *brother		///< Pointer to the next brother-node of this node in the tree
+		, *son;			///  Pointer to the first son-node of this node in the tree
 
 		/** Constructor for son initialization - used in dividing method */
 		Node( const Block &block, Node *father_, Node* brother_ )
@@ -83,11 +89,12 @@ protected:
 		Node(const Block &block)
 		: RangeNode( block, log2ceil(std::max(block.width(),block.height())) )
 		, father(0), brother(this), son(0) {}
-		/** Destructor only deletes the sons - they do the same recursively */
+		/** Only calls #deleteSons */
 		~Node() { deleteSons(); }
+		/** Only deletes the sons - they do the same recursively */
 		void deleteSons();
 
-		/** Divides the Range */
+		/** Divides the Range in four */
 		void divide();
 		/** Recursively walks the Ranges in the QuadTree according to a Hilbert curve
 		 *	and fills the vector with pointers to leaves in this order */

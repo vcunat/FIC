@@ -25,18 +25,6 @@ template<> inline Uint16 get(std::istream &is) {
 }
 
 
-/** Quantizes f that belongs to 0..possib/2^scale into 0..possib-1 */
-inline int quantizeByPower(float f,int scale,int possib) {
-	int result= (int)ldexp(f,scale);
-	assert( result>=0 && result<=possib );
-	return result<possib ? result : --result;
-}
-/** Performs the opposite to ::quantizeByPower */
-inline float dequantizeByPower(int i,int scale,int DEBUG_ONLY(possib)) {
-	assert( i>=0 && i<possib );
-	return ldexp(i+0.5f,-scale);
-}
-
 inline int float01ToBits(float f,int bitCount) {
 	int result= (int)std::ldexp(f,bitCount);
 	return result==powers[bitCount] ? result-1 : result;

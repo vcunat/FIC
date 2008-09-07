@@ -3,21 +3,22 @@
 
 using namespace std;
 
-namespace NOSPACE {
-	struct NodeExtremes {
-		int min,max;
+/** Struct for computing (acts as a functor) and storing max.\ and min.\ 
+ *	levels of leaf range blocks */
+struct MQuadTree::NodeExtremes {
+	int min, max;
 
-		NodeExtremes()
-		: min( numeric_limits<int>::max() ), max( numeric_limits<int>::min() ) {}
-		void operator()(const MQuadTree::RangeNode *node) {
-			int now=node->level;
-			if (now<min)
-				min=now;
-			if (now>max)
-				max=now;
-		}
-	};
-}
+	NodeExtremes()
+	: min( numeric_limits<int>::max() ), max( numeric_limits<int>::min() ) {}
+	void operator()(const MQuadTree::RangeNode *node) {
+		int now= node->level;
+		if (now<min)
+			min= now;
+		if (now>max)
+			max= now;
+	}
+};
+
 
 void MQuadTree::encode(const PlaneBlock &toEncode) {
 	assert( !root && fringe.empty() && toEncode.ranges==this && toEncode.isReady() );
@@ -35,7 +36,7 @@ void MQuadTree::encode(const PlaneBlock &toEncode) {
 void MQuadTree::writeData(ostream &file) {
 	assert( !fringe.empty() && root );
 //	put in the stream the minimal and the maximal used level
-	NodeExtremes extremes=for_each( fringe.begin(), fringe.end(), NodeExtremes() );
+	NodeExtremes extremes= for_each( fringe.begin(), fringe.end(), NodeExtremes() );
 	put<Uchar>(file,extremes.min);
 	put<Uchar>(file,extremes.max);
 //	put the tree structure in the stream
@@ -104,7 +105,7 @@ void MQuadTree::Node::divide() {
 	son->brother= last;
 }
 void MQuadTree::Node::getHilbertList(RangeList &list,char start,char cw) {
-	if ( !son ) {
+	if (!son) {
 		list.push_back(this);
 		return;
 	}
@@ -195,11 +196,10 @@ void MQuadTree::Node::toFile(BitWriter &file,NodeExtremes extremes) {
 		if (level<=extremes.max)
 			file.putBits(1,1);
 	//	recurse
-		Node *now=son;
-		do {
+		Node *now= son;
+		do
 			now->toFile(file,extremes);
-			now=now->brother;
-		} while (now!=son);
+		while ( (now= now->brother) != son );
 	} else
 	//  Node isn't divided
 		if (level>extremes.min)
@@ -211,8 +211,8 @@ void MQuadTree::Node::fromFile(BitReader &file,NodeExtremes extremes) {
 	if (div) {
 		divide();
 		Node *now= son;
-		do {
+		do
 			now->fromFile(file,extremes);
-		} while ( (now=now->brother) != son );
+		while ( (now=now->brother) != son );
 	}
 }

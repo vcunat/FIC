@@ -77,8 +77,12 @@ template <class T> inline T* constCast(const T* toCast) { return const_cast<T*>(
 /** Automatic version of const_cast for references */
 template <class T> inline T& constCast(const T& toCast)	{ return const_cast<T&>(toCast); }
 
+/** Automatic helper cast from "T**" to "const T**" */
+template <class T> inline const T** bogoCast(T** toCast) 
+	{ return const_cast<const T**>(toCast); }
+
 /** Checking a condition - throws an exception if false */
-inline void checkThrow(bool check) { if (check) throw std::exception(); }
+inline void checkThrow(bool check) { if (!check) throw std::exception(); }
 
 
 /* Auto-release pointer template altered to work more like an ordinary pointer *//*

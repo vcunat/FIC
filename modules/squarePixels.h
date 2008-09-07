@@ -4,6 +4,7 @@
 #include "../interfaces.h"
 #include "../fileUtil.h"
 
+/** A simple shape transformer - using square pixels, only splits the planes into rectangles */
 class MSquarePixels: public IShapeTransformer {
 
 	DECLARE_M_cloning_name_desc( MSquarePixels, "Square-pixel"
@@ -40,6 +41,7 @@ class MSquarePixels: public IShapeTransformer {
 		0	// Encoder
 	);
 private:
+	/** Indices for settings */
 	enum Settings { MaxPartSize, ModuleRanges, ModuleDomains, ModuleEncoder };
 //	Settings-retrieval methods
 	int& maxPartSize()
@@ -58,22 +60,25 @@ private:
 
 private:
 //	Module's data
-	std::vector<Job> jobs;
-	MatrixList ownedMatrices;
+	std::vector<Job> jobs;		///< Encoding jobs - one part of one color plane makes one job
+	MatrixList ownedMatrices;	///< List of owned pixel matrices
 
 private:
+	/** Creates a new job on a block in a plane - the three modules are cloned from this object */
 	Job makeJob(const Plane &plane,const Block &block) {
 		return Job( plane, block, clone(moduleRanges()), clone(moduleDomains())
-			, clone(moduleEncoder()) );
+		, clone(moduleEncoder()) );
 	}
 protected:
 //	Construction and destruction
+	/** Only deletes #ownedMatrices and frees #jobs */
 	~MSquarePixels() {
 		for_each( ownedMatrices.begin(), ownedMatrices.end(), delMatrix<float> );
 		for_each( jobs.begin(), jobs.end(), mem_fun_ref(&Job::free) );
 	}
 public:
-//	IShapeTransformer interface
+/**	\name IShapeTransformer interface
+ *	@{ */
 	int createJobs( const PlaneList &planes, int width, int height );
 
 	int jobCount() {
@@ -104,6 +109,7 @@ public:
 	}
 	void writeJobs(std::ostream &file,int phaseBegin,int phaseEnd);
 	void readJobs(std::istream &file,int phaseBegin,int phaseEnd);
+///	@}
 };
 
 #endif // SQUAREPIXELS_HEADER_

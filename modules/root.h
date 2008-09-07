@@ -56,6 +56,7 @@ class MRoot: public IRoot {
 		12	// max. domain count
 	);
 private:
+	/** Indices for settings */
 	enum Settings { MaxThreads, ModuleColor, ModuleShape, Quality, ModuleQuality
 	, DomainCountLog2 };
 //	Settings-retrieval methods
@@ -85,8 +86,7 @@ protected:
 public:
 /**	\name IRoot interface
  *	@{ */
-	Mode getMode()
-		{ return myMode; }
+	Mode getMode()		{ return myMode; }
 	QImage toImage();
 
 	bool encode(const QImage &toEncode);

@@ -3,6 +3,7 @@
 
 #include "../interfaces.h"
 
+/** Standard domain-pool generator */
 class MStandardDomains: public ISquareDomains {
 
 	DECLARE_M_cloning_name_desc( MStandardDomains, "Standard generator"
@@ -57,32 +58,37 @@ class MStandardDomains: public ISquareDomains {
 		1	// vertical domains portion
 	);
 private:
+	/** Indices for settings */
 	enum Settings { MaxDomCountLevelDivisor, MultiDownScaling
 	, DomPortion_Standard, DomPortion_Diamond, DomPortion_Horiz, DomPortion_Vert  };
 private:
 //	Module's data
-	/** The list of domain pools, pool IDs are the indices, the pixels are owned */
-	Pools pools;
-	int width, height;
+	/** The list of domain pools, pool IDs are the indices, the Pool::pixels are owned */
+	PoolList pools;
+	int width	/// Width of the original image
+	, height;	///< Height of the original image
 protected:
 //	Construction and destruction
+	/** Only frees the #pools */
 	~MStandardDomains()
 		{ for_each( pools.begin(), pools.end(), mem_fun_ref(&Pool::free) ); }
 
 public:
-//	ISquareDomains interface
+/**	\name ISquareDomains interface
+ *	@{ */
 	void initPools(int width_,int height_);
 	void fillPixelsInPools(const PlaneBlock &ranges);
 
-	const Pools& getPools() const
+	const PoolList& getPools() const
 		{ return pools; }
 	std::vector<short> getLevelDensities(int level,int stdDomCountLog2);
 
 	void writeSettings(std::ostream &file);
 	void readSettings(std::istream &file);
-	/** We have no data that need to be preserved */
+	/* We have no data that need to be preserved */
 	void writeData(std::ostream &) {}
 	void readData(std::istream &) {}
+///	@}
 };
 
 #endif // STDDOMAINS_HEADER_

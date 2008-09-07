@@ -23,15 +23,16 @@ int MSquarePixels::createJobs( const PlaneList &planes, int width, int height ) 
 			if ( pattern[i].size() <= maxPixels )
 			//	the part is small enough, move on
 				++i;
-			else {
-			//	divide the part
+			else { // divide the part
+			//	splitting the longer coordinate
 				bool xdiv= ( pattern[i].width() >= pattern[i].height() );
 				int longer= ( xdiv ? pattern[i].width() : pattern[i].height() );
+			//	get the place to split (at least one of the parts will have size 2^q)
 				int bits= log2ceil(longer);
 				int divsize= ( longer >= powers[bits-1]+powers[bits-2]
 					? powers[bits-1]
 					: powers[bits-2] );
-
+			//	split the part in the pattern (reusing the splitted-one's space)
 				pattern.push_back(pattern[i]);
 				if (xdiv) {
 					pattern[i].xend-= divsize;
@@ -82,7 +83,7 @@ void MSquarePixels::readSettings(istream &file) {
 }
 
 void MSquarePixels::writeJobs(ostream &file,int phaseBegin,int phaseEnd) {
-	assert( !jobs.empty() && phaseBegin>=0 && phaseEnd<=phaseCount() );
+	assert( !jobs.empty() && 0<=phaseBegin && phaseBegin<phaseEnd && phaseEnd<=phaseCount() );
 //	if writing phase 0, for each job: write data of domain and range modules
 	if (!phaseBegin)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) {
@@ -96,7 +97,7 @@ void MSquarePixels::writeJobs(ostream &file,int phaseBegin,int phaseEnd) {
 }
 
 void MSquarePixels::readJobs(istream &file,int phaseBegin,int phaseEnd) {
-	assert( !jobs.empty() && phaseBegin>=0 && phaseEnd<=phaseCount() );
+	assert( !jobs.empty() && 0<=phaseBegin && phaseBegin<phaseEnd && phaseEnd<=phaseCount() );
 //	if reading phase 0, for each job: read data of domain and range modules
 	if (!phaseBegin)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) {
@@ -106,6 +107,7 @@ void MSquarePixels::readJobs(istream &file,int phaseBegin,int phaseEnd) {
 		}
 //	read all the requested phases of all jobs (phase-sequentially)
 	for (int phase=phaseBegin; phase<phaseEnd; ++phase)
-		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it)
+		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) 
 			it->encoder->readData(file,phase);
+		
 }

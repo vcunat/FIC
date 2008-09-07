@@ -252,16 +252,14 @@ void ImageViewer::encode() {
 	#ifdef NDEBUG
 		encThread.start(QThread::LowPriority);
 		encDialog.exec();
+		0=0; // waiting for the thread, etc.
 	#else
 		encThread.run(); // no threading in debug mode
 	#endif
-	if ( !encThread.getSuccess() ) {
-	//	the encoding was interrupted
-		delete modules_encoding;
-		modules_encoding= modules_old;
-		return;
-	}
-//	the encoding was successful
+	if ( !encThread.getSuccess() ) 
+	//	the encoding was interrupted - return to the backup
+		swap(modules_encoding,modules_old);
+//	delete the unneeded modules (either the backup or the unsuccessful)
 	delete modules_old;
 	updateActions();
 }
@@ -292,11 +290,11 @@ void ImageViewer::load() {
 }
 void ImageViewer::clear() {
 	modules_encoding->decodeAct(Clear);
-	imageLabel->setPixmap( QPixmap::fromImage(modules_encoding->toImage()) );
+	changePixmap( QPixmap::fromImage(modules_encoding->toImage()) );
 }
 void ImageViewer::iterate() {
 	modules_encoding->decodeAct(Iterate);
-	imageLabel->setPixmap( QPixmap::fromImage(modules_encoding->toImage()) );
+	changePixmap( QPixmap::fromImage(modules_encoding->toImage()) );
 }
 
 ////	SettingsDialog class

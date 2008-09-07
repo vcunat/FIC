@@ -17,7 +17,6 @@ bool MRoot::encode(const QImage &toEncode) {
 //	get the plane list, create the jobs from it
 	Plane planeProto( 0, quality(), settingsInt(DomainCountLog2), moduleQuality() );
 	PlaneList planes= moduleColor()->image2planes( toEncode, planeProto );
-
 	this->width= toEncode.width();
 	this->height= toEncode.height();
 	int jobCount= moduleShape()->createJobs( planes, width, height );
@@ -40,8 +39,9 @@ bool MRoot::encode(const QImage &toEncode) {
 
 void MRoot::decodeAct(DecodeAct action,int count) {
 	assert( getMode()!=Clear && settings && moduleColor() && moduleShape() );
-	int jobCount=moduleShape()->jobCount();
+	int jobCount= moduleShape()->jobCount();
 	assert(jobCount>0);
+//	there will be probably no need to parallelize decoding
 	for (int i=0; i<jobCount; ++i)
 		moduleShape()->jobDecodeAct(i,action,count);
 }
@@ -90,7 +90,7 @@ bool MRoot::fromFile(const char *fileName) {
 		planeProto.domainCountLog2= settingsInt(DomainCountLog2)= get<Uchar>(file);
 		PlaneList planes= moduleColor()->readData(file,planeProto,width,height);
 		moduleShape()->readSettings(file);
-	//	create the jobs (the plane list) and get their data
+	//	create the jobs (from the plane list) and get their data
 		moduleShape()->createJobs(planes,width,height);
 		moduleShape()->readJobs(file);
 		myMode= Decode;

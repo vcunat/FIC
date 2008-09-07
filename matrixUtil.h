@@ -26,80 +26,94 @@ template<class T> inline void delMatrix(T **m) {
 /** Fills a submatrix with a value */
 template<class T,class Block> void fillSubMatrix(T **m,const Block &block,T value) {
 	T **mend= m+block.xend;
-	m+= block.x0;
-    for (; m!=mend; ++m )
+    for (m+=block.x0; m!=mend; ++m)
 		std::fill( *m+block.y0, *m+block.yend, value );
 }
 
-
+/** MatrixSummer objects store partial sums of a matrix, allowing quick computation
+ *	of sum of any rectangle in the matrix */
 template<class T,class U,class I> class MatrixSummer {
 public:
 	typedef T result_type;
+	/** The type of filling the summer - normal sums, sums of squares */
 	enum SumType { Values=0, Squares=1 };
 
 private:
-	result_type **sums;
+	result_type **sums; ///< Internal matrix containing precomputed partial sums
 
 public:
+	/** Creates an empty summer */
 	MatrixSummer()
 	: sums(0) {}
+	/** Creates a summer filled from a matrix */
 	MatrixSummer( const U **m, SumType sumType, I width, I height )
 	: sums(0)
 		{ fill(m,sumType,width,height); }
+	/** Frees the resources */
 	~MatrixSummer()
 		{ free(); }
 
+	/** Only empty objects are allowed to be copied (assertion) */
 	MatrixSummer( const MatrixSummer &DEBUG_ONLY(other) )
 	: sums(0)
 		{ assert(!other.sums); }
+	/** Only empty objects are allowed to be assigned (assertion) */
 	MatrixSummer& operator=( const MatrixSummer &DEBUG_ONLY(other) )
 		{ return assert( !other.sums && !sums ), *this; }
 
+	/** Returns whether the object is filled with data */
 	bool isValid() const
 		{ return sums; }
+	/** Clears the object */
 	void invalidate()
 		{ free(); };
 
-	void allocate(I width,I height) {
-		assert( width>0 && height>0 );
-		delMatrix(sums);
-		sums=newMatrix<T>(width+1,height+1);
-	}
-	void free() {
-		delMatrix(sums);
-		sums=0;
-	}
+	/** Prepares object to make sums for a matrix. If the summer has already been used before,
+	 *	the method assumes it was for a matrix with the same size */
 	void fill(const U **m,SumType sumType,I width,I height,I x0=0,I y0=0) {
-		m+=x0;
 		assert( m && (sumType==Values || sumType==Squares) );
+		m+= x0;
 		if (!sums)
 			allocate(width,height);
-		I yEnd=height+y0;
+		I yEnd= height+y0;
 	//	fill the edges with zeroes
 		for (I i=0; i<=width; ++i)
-			sums[i][0+y0]=0;
+			sums[i][0+y0]= 0;
 		for (I j=1+y0; j<=yEnd; ++j)
-			sums[0][j]=0;
+			sums[0][j]= 0;
 	//	acummulate in the y-growing direction
 		if (sumType==Values)
 			for (I i=1; i<=width; ++i)
 				for (I j=1+y0; j<=yEnd; ++j)
-					sums[i][j]=sums[i][j-1]+m[i-1][j-1];
+					sums[i][j]= sums[i][j-1]+m[i-1][j-1];
 		else // sumType==Squares
 			for (I i=1; i<=width; ++i)
 				for (I j=1+y0; j<=yEnd; ++j)
-					sums[i][j]=sums[i][j-1]+sqr<result_type>(m[i-1][j-1]);
+					sums[i][j]= sums[i][j-1]+sqr<result_type>(m[i-1][j-1]);
 	//	acummulate in the x-growing direction
 		for (I i=2; i<=width; ++i)
 			for (I j=1+y0; j<=yEnd; ++j)
-				sums[i][j]+=sums[i-1][j];
+				sums[i][j]+= sums[i-1][j];
 	}
+	/** Just a shortcut for filling from a non-const matrix */
 	void fill(U **m,SumType sumType,I width,I height,I x0=0,I y0=0)
-		{ fill( (const U**)m, sumType, width, height, x0, y0 ); }
+		{ fill( bogoCast(m), sumType, width, height, x0, y0 ); }
 
 	result_type getSum(I x0,I y0,I xend,I yend) const {
-		assert( sums && x0>=0 && y0>=0 && xend>=0 && yend>=0 );
+		assert( sums && x0>=0 && y0>=0 && xend>=0 && yend>=0 && xend>x0 && yend>y0 );
 		return sums[xend][yend] -sums[x0][yend] -sums[xend][y0] +sums[x0][y0];
+	}
+private:
+	/** Allocates internal matrix */
+	void allocate(I width,I height) {
+		assert( width>0 && height>0 );
+		delMatrix(sums);
+		sums= newMatrix<T>(width+1,height+1);
+	}
+	/** Frees all resources */
+	void free() {
+		delMatrix(sums);
+		sums= 0;
 	}
 };
 

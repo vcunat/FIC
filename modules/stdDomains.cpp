@@ -2,25 +2,26 @@
 #include "../fileUtil.h"
 
 enum { MinRangeSize=4, DiamondOverlay=MinRangeSize-1 };
+
 using namespace std;
 
-
 namespace NOSPACE {
+	/** Pool ordering according to Pool::type (primary key) and Pool::level (secondary) */
 	struct PoolTypeLevelComparator {
 		typedef MStandardDomains::Pool Pool;
 		bool operator()(const Pool &a,const Pool &b) {
 			if (a.type!=b.type)
 				return a.type<b.type;
-			else
-				return a.level<b.level;
+			else 
+				return assert(a.level!=b.level), a.level<b.level;
 		}
 	};
 }
 void MStandardDomains::initPools(int width_,int height_) {
-	width=width_;
-	height=height_;
+	width= width_;
+	height= height_;
 //	checks some things
-	assert( width>0 &&height>0 && this && settings && pools.empty() );
+	assert( width>0 && height>0 && this && settings && pools.empty() );
 	if ( width<MinRangeSize*2 || height<MinRangeSize*2 )
 	//	no domains possible
 		return;
@@ -34,17 +35,12 @@ void MStandardDomains::initPools(int width_,int height_) {
 //	create the first set of domain pools for diamond domains
 	if ( settingsInt(DomPortion_Diamond) ) {
 	//	get longer and shorter dimension
-		int longer,shorter;
-		if (width>=height) {
-			longer=width/2;
-			shorter=height/2;
-		} else {
-			longer=height/2;
-			shorter=width/2;
-		}
+		int longer= width/2, shorter= height/2;
+		if (width<height)
+			swap(longer,shorter);
 	//	generate the pools
 		while (longer>=MinRangeSize) {
-			int side=std::min(longer,shorter);
+			int side= min(longer,shorter);
 			pools.push_back(Pool( side, side, DomPortion_Diamond, 1, M_SQRT1_2 ));
 			longer-= side-DiamondOverlay;
 		}
@@ -65,10 +61,11 @@ void MStandardDomains::initPools(int width_,int height_) {
 }
 
 namespace NOSPACE {
-	typedef MStandardDomains::Pools::const_iterator PoolIt;
+	typedef MStandardDomains::PoolList::const_iterator PoolIt;
 	static inline bool halfShrinkOK(PoolIt src,PoolIt dest) {
-		return src->level+1==dest->level
-		&& src->width/2==dest->width && src->height/2==dest->height;
+		return src->level+1 == dest->level
+		&& src->width/2 == dest->width 
+		&& src->height/2 == dest->height;
 	}
 //	forwards, implemeted and described at the end of the file
 	static void shrinkToHalf
@@ -80,11 +77,12 @@ namespace NOSPACE {
 	static void shrinkToDiamond( const float **src, float **dest, int side, int sx0, int sy0 );
 }
 void MStandardDomains::fillPixelsInPools(const PlaneBlock &ranges) {
-	assert( !pools.empty() );
+	assert( !pools.empty() ); // assuming initPools has already been called
 //	iterate over pool types
-	for ( Pools::iterator end=pools.begin(); end!=pools.end(); ) {
-		Pools::iterator begin=end;
-		char type=begin->type;
+	PoolList::iterator end= pools.begin();
+	while ( end != pools.end() ) {
+		PoolList::iterator begin= end;
+		char type= begin->type;
 	//	find the end of the same-pool-type block and invalidate the summers on the way
 		while ( end!=pools.end() && end->type==type ) {
 			end->summers[0].invalidate();
@@ -93,59 +91,59 @@ void MStandardDomains::fillPixelsInPools(const PlaneBlock &ranges) {
 		}
 
 	//	we've got the interval, find out about the type
-		if ( type!=DomPortion_Diamond ) {
+		if (type!=DomPortion_Diamond) {
 		//	non-diamond domains all behave similarly
 			void (*shrinkProc)(const float**,int,float**,int,int);
 			if (type==DomPortion_Standard)
-				shrinkProc=&shrinkToHalf; else
+				shrinkProc= &shrinkToHalf; else
 			if (type==DomPortion_Horiz)
-				shrinkProc=&shrinkHorizontally; else
+				shrinkProc= &shrinkHorizontally; else
 			if (type==DomPortion_Vert)
-				shrinkProc=&shrinkVertically;
+				shrinkProc= &shrinkVertically;
 			else
 				assert(false),shrinkProc=0;
 		//	we have the right procedure -> fill the first pool
-			assert( begin->level==1 );
-			shrinkProc( (const float**)ranges.pixels+ranges.x0, ranges.y0
+			assert( begin->level == 1 );
+			shrinkProc( bogoCast(ranges.pixels+ranges.x0), ranges.y0
 			, begin->pixels, begin->width, begin->height );
 		//	fill the rest (in the same-type interval)
-			while ( ++begin!=end ) {
+			while (++begin != end) {
 				assert( halfShrinkOK(begin-1,begin) );
-				shrinkToHalf( (const float**)(begin-1)->pixels, 0
+				shrinkToHalf( bogoCast((begin-1)->pixels), 0
 				, begin->pixels, begin->width, begin->height );
 			}
 
 		} else { //	handle diamond-type domains
 		//	fill the first set of diamond-type domain pools
-			Pools::iterator it=begin;
+			PoolList::iterator it= begin;
 			if (width>=height) {
-				int xEnd=width-2*MinRangeSize;
-				int xStep=height-2*DiamondOverlay;
-				for (int x=0; x<=xEnd; x+=xStep) {
+				int xEnd= width -2*MinRangeSize;
+				int xStep= height -2*DiamondOverlay;
+				for (int x=0; x<=xEnd; ++it,x+=xStep) {
 					assert( it!=end && it->level==1 );
-					shrinkToDiamond( (const float**)ranges.pixels, it->pixels, it->width
+					shrinkToDiamond( bogoCast(ranges.pixels), it->pixels, it->width
 					, x+ranges.x0, 0+ranges.y0 );
-					++it;
 				}
 			} else {
-				int yEnd=height-2*MinRangeSize;
-				int yStep=width-2*DiamondOverlay;
-				for (int y=0; y<=yEnd; y+=yStep) {
+				int yEnd= height -2*MinRangeSize;
+				int yStep= width -2*DiamondOverlay;
+				for (int y=0; y<=yEnd; ++it,y+=yStep) {
 					assert( it!=end && it->level==1 );
-					shrinkToDiamond( (const float**)ranges.pixels, it->pixels, it->width
+					shrinkToDiamond( bogoCast(ranges.pixels), it->pixels, it->width
 					, 0+ranges.x0, y+ranges.y0 );
-					++it;
 				}
 			}
 		//	now fill the multiscaled diamond pools
-			while ( it!=end ) {
-			//	skip too small pools
+			while (it!=end) {
+			//	too small pools are skipped
 				while ( begin->width<2*MinRangeSize || begin->height<2*MinRangeSize )
 					++begin;
 				assert( halfShrinkOK(begin,it) );
 				shrinkToHalf( (const float**)begin->pixels, 0
 				, it->pixels, it->width, it->height );
+			//	move on
 				++it;
+				++begin;
 			}
 		}//	if non-diamond else diamond
 
@@ -153,112 +151,149 @@ void MStandardDomains::fillPixelsInPools(const PlaneBlock &ranges) {
 
 	}//	for (iterate over single-type intervals)
 
-//	we filled all pools
-
+//	we filled all pools, let's prepare the summers
+	for_each( pools.begin(), pools.end(), mem_fun_ref(&Pool::summers_makeValid) );
 }//	::fillPixelsInPools
 
 namespace NOSPACE {
-	/** Computes the ideal domain density for pool, level and max. domain count,
-	 *	the density is push_back-ed, returns the generated domain count (used once) */
+	/** Computes the ideal domain density for pool, level and max.\ domain count,
+	 *	the density is push_back-ed, returns the generated domain count (used once)
+	 *	\relates MStandardDomains */
 	inline static int bestDomainDensity( PoolIt pool, int level, int maxCount
-	, std::vector<short> &result ) {
-		int wms=pool->width-powers[level];
-		int hms=pool->height-powers[level];
+	, vector<short> &result ) {
+		assert(maxCount>0 && level>0);
+		int wms= pool->width -powers[level];
+		int hms= pool->height -powers[level];
 	//	check whether any domain can fit
 		if ( wms<0 || hms<0 ) {
 			result.push_back(0);
 			return 0;
 		}
-		int dens=1+(int)floor(sqrt( float(wms*hms)/maxCount ));
-		int wdd=wms/dens, hdd=hms/dens;
-		int count=(wdd+1)*(hdd+1);
+	/*
+		int dens= 1+(int)floor(sqrt( float(wms*hms)/maxCount ));
+		int wdd= wms/dens, hdd= hms/dens;
+		int count= (wdd+1)*(hdd+1);
 		if (count>maxCount) {
-			int wdiff=wms-wdd*dens, hdiff=hms-hdd*dens;
+			int wdiff= wms-wdd*dens, hdiff= hms-hdd*dens;
 			dens+= 1+(int)(min( wdiff/float(wdd), hdiff/float(hdd) ));
-			count=(wms/dens+1)*(hms/dens+1);
-			//assert(count<=maxCount);
+			count= (wms/dens+1)*(hms/dens+1);
+			assert(count<=maxCount)x;
 		}
 		result.push_back(dens);
 		return count;
+	*/
+	/*
+		int xLowCount= (int)floor( sqrt(maxCount*wms/(double)hms) -1 );
+		int yLowCount= (int)floor( sqrt(maxCount*hms/(double)wms) -1 );
+		int dens= (int)ceil(max( wms/(double)xLowCount, hms/(double)yLowCount ));
+		
+		if (count<=maxCount) {
+			dens= (short)floor(min( wms/xHighCount, hms/yHighCount ));
+			assert( wms/dens==xHighCount && hms/dens==yHighCount );
+		} else {
+			dens= (short)floor(max( wms/xHighCount, hms/yHighCount ));
+			count= (wms/dens+1)*(hms/dens+1);
+			
+			if (count>maxCount) {
+				dens= (short)floor(min( wms/xLowCount, hms/yLowCount ));
+				count= (xLowCount+1)*(yLowCount+1);
+				assert( wms/dens==xLowCount && hms/dens==yLowCount );
+			}
+		}
+	*/
+		//int dens= (int)ceil(sqrt( wms*hms/(double)maxCount ));
+		int dens= (int)ceil(
+			(  wms+hms+sqrt( sqr<double>(wms+hms) +4*wms*hms*(maxCount-1) )  )
+			/ ( 2*(maxCount-1) )
+		);
+		int count= dens ? (wms/dens+1)*(hms/dens+1) : 0;
+		assert(count<=maxCount);
+		
+		result.push_back(dens);
+		return count;
 	}
-	/** Generates (results.push_back) densities for same-scale domain pools (interval),
-	 *	supports 2+1 ways of dividing (divType), returns the number of generated domains */
+	/** Generates (\a results.push_back) densities for domains on level \a level for
+	 *	all pools of one type. It distributes at most \a maxCount domains among 
+	 *	the pools' scale-levels in one of three ways (\a divType) 
+	 *	and returns the number of generated domains \relates MStandardDomains */
 	static int divideDomsInType( PoolIt begin, PoolIt end, int maxCount, int level
-	, char divType, std::vector<short> &results ) {
+	, char divType, vector<short> &results ) {
 		assert( begin!=end && divType>=0 && divType<=2 );
 		int scaleLevels= (end-1)->level - begin->level + 1;
-		int genCount=0;
+		int genCount= 0;
 	//	iterate over same-scaleLevel intervals
 		for (; begin!=end; --scaleLevels) {
-			PoolIt it=begin+1;
+			PoolIt it= begin+1;
 			while ( it!=end && it->level==begin->level )
 				++it;
 		//	we have the same-scale interval, find out how many domains to generate for it
 			int toGenerate= divType==2
-			//	half per scale
+			//	half per scale level
 				? (maxCount-genCount)/2
 			//	uniform dividing or no multiscaling (then scaleLevels==1)
 				: (maxCount-genCount)/scaleLevels ;
-		//	distribute it uniformly among the interval (there are more for diamonds only)
-			genCount+=toGenerate;
+		//	distribute it uniformly among the interval 
+		//	(there are more than one for diamond-type only)
+			genCount+= toGenerate;	// genCount: "assume" we generate exactly toGenerate
 			for (; begin!=it; ++begin)
 				toGenerate-=
 					bestDomainDensity( begin, level, toGenerate/(it-begin), results );
-			genCount-=toGenerate;
+			genCount-= toGenerate;	// genCount: correct the count
 		}
 		return genCount;
 	}
 }
-std::vector<short> MStandardDomains::getLevelDensities(int level,int stdDomCountLog2) {
+vector<short> MStandardDomains::getLevelDensities(int level,int stdDomCountLog2) {
 	assert(level>=2);
 //	compute the sum of shares, check for no-domain situations
 	int totalShares= settingsInt(DomPortion_Standard) + settingsInt(DomPortion_Horiz)
 	+ settingsInt(DomPortion_Vert) + settingsInt(DomPortion_Diamond);
-	stdDomCountLog2-=(level-2)*settingsInt(MaxDomCountLevelDivisor);
+	stdDomCountLog2-= (level-2)*settingsInt(MaxDomCountLevelDivisor);
 
 	if ( pools.empty() || !totalShares || stdDomCountLog2<0 )
-		return std::vector<short>( pools.size(), 0 );
+		return vector<short>( pools.size(), 0 );
 //	get the real domain count for this level
-	int domCountLeft=powers[stdDomCountLog2];
+	int domCountLeft= powers[stdDomCountLog2];
 
-	std::vector<short> result;
+	vector<short> result;
 	result.reserve(pools.size());
-	Pools::iterator begin,end;
-	end=pools.begin();
+	PoolList::iterator begin, end;
+	end= pools.begin();
 //	iterate over single-type domain-pool intervals
 	while ( end!=pools.end() ) {
-		begin=end;
+		begin= end;
 		while ( end!=pools.end() && begin->type==end->type )
 			++end;
 	//	we've got a single-type interval
-		int share=settingsInt( (Settings)begin->type );
-		domCountLeft-=divideDomsInType( begin, end, domCountLeft*share/totalShares
-		, level, settingsInt(MultiDownScaling), result );
-		totalShares-=share;
+		int share= settingsInt( (Settings)begin->type );
+		domCountLeft-= divideDomsInType( begin, end, domCountLeft*share/totalShares
+			, level, settingsInt(MultiDownScaling), result );
+		totalShares-= share;
 	}
-//	check we created the correct number of densities (at least)
+//	check we created the correct number of densities
 	assert( result.size()==pools.size() );
 	return result;
 }
 
-void MStandardDomains::writeSettings(std::ostream &file) {
+void MStandardDomains::writeSettings(ostream &file) {
 	assert( this && settings );
-//	all settings are form int:{0..8}
+//	all settings are from int:{0..8}
 	for (int i=0; i<settingsLength_; ++i)
 		put<Uchar>( file, settings[i].i );
 }
 
-void MStandardDomains::readSettings(std::istream &file) {
+void MStandardDomains::readSettings(istream &file) {
 	assert( this && settings );
-//	all settings are form int:{0..8}
+//	all settings are from int:{0..8}
 	for (int i=0; i<settingsLength_; ++i)
-		settings[i].i=get<Uchar>(file);
+		settings[i].i= get<Uchar>(file);
 }
 
 
 /** Implementations of forward-declared functions */
 namespace NOSPACE {
-	/** Performs a simple 50%^2 image shrink (dimensions belong to the destination) */
+	/** Performs a simple 50\%^2 image shrink (dimensions belong to the destination)
+	 *	\relates MStandardDomains */
 	void shrinkToHalf( const float **src, int srcYadd, float **dest, int width, int height ) {
 	//	iterate over columns of the destination matrix
 		for (float **destEnd=dest+width; dest!=destEnd; ++dest ) {
@@ -266,17 +301,18 @@ namespace NOSPACE {
 			const float *srcCol1= (*src++) + srcYadd;
 			const float *srcCol2= (*src++) + srcYadd;
 		//	get begin and end of the destination column
-			float *destCol=*dest;
-			float *destColEnd=*dest+height;
+			float *destCol= *dest;
+			float *destColEnd= *dest+height;
 		//	iterate over the destination column and average the source pixels
 			for (; destCol!=destColEnd; ++destCol ) {
 				*destCol= ldexp( *srcCol1 + *(srcCol1+1) + *srcCol2 + *(srcCol2+1), -2 );
-				srcCol1+=2;
-				srcCol2+=2;
+				srcCol1+= 2;
+				srcCol2+= 2;
 			}
 		}
 	}//	shrinkToHalf
-	/** Performs a simple 50% image horizontal shrink (dimensions... destination) */
+	/** Performs a simple 50\% image horizontal shrink (dimensions belong to the destination)
+	 *	\relates MStandardDomains */
 	void shrinkHorizontally( const float **src, int srcYadd, float **dest, int width, int height ) {
 	//	iterate over columns of the destination matrix
 		for (float **destEnd=dest+width; dest!=destEnd; ++dest ) {
@@ -284,38 +320,40 @@ namespace NOSPACE {
 			const float *srcCol1= (*src++) + srcYadd;
 			const float *srcCol2= (*src++) + srcYadd;
 		//	get begin and end of the destination column
-			float *destCol=*dest;
-			float *destColEnd=*dest+height;
+			float *destCol= *dest;
+			float *destColEnd= *dest+height;
 		//	iterate over the destination column and average the source pixels
 			for (; destCol!=destColEnd; ++destCol )
 				*destCol= ldexp( (*srcCol1++)+(*srcCol2++), -1 );
 		}
 	}//	shrinkHorizontally
-	/** Performs a simple 50% image vertical shrink (dimensions... destination) */
+	/** Performs a simple 50\% image vertical shrink (dimensions belong to the destination)
+	 *	\relates MStandardDomains */
 	void shrinkVertically( const float **src, int srcYadd, float **dest, int width, int height ) {
 	//	iterate over columns of the destination matrix
 		for (float **destEnd=dest+width; dest!=destEnd; ++dest ) {
 		//	get one source column (and increment the source)
 			const float *srcCol= (*src++) + srcYadd;
 		//	get begin and end of the destination column
-			float *destCol=*dest;
-			float *destColEnd=*dest+height;
+			float *destCol= *dest;
+			float *destColEnd= *dest+height;
 		//	iterate over the destination column and average the source pixels
 			for (; destCol!=destColEnd; ++destCol ) {
 				*destCol= ldexp( *srcCol + *(srcCol+1), -1 );
-				srcCol+=2;
+				srcCol+= 2;
 			}
 		}
 	}//	shrinkVertically
-	/** Performs 50% shrink with 45-degree anticlockwise rotation (side - the length of
-	 *	the destination square; sx0,sy0 - the top-left of the enclosing source square) */
+	/** Performs 50\% shrink with 45-degree anticlockwise rotation (\a side - the length of
+	 *	the destination square; \a sx0, \a sy0 - the top-left of the enclosing source square)
+	 *	\relates MStandardDomains */
 	void shrinkToDiamond( const float **src, float **dest, int side, int sx0, int sy0 ) {
 	//	the diamond begins on top-middle
-		sx0+=side-1;
+		sx0+= side-1;
 	//	iterate over the columns of the destination matrix (both source coords. increment)
 		for (float **destEnd=dest+side; dest!=destEnd; ++dest,++sx0,++sy0) {
-			int sx=sx0, sy=sy0;
-			float *destCol=*dest;
+			int sx= sx0, sy= sy0;
+			float *destCol= *dest;
 		//	in a column, the source-x decreases and source-y grows
 			for (float *destColEnd=destCol+side; destCol!=destColEnd; ++destCol,--sx,++sy)
 				*destCol=

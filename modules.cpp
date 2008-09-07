@@ -134,10 +134,10 @@ void Module::file_loadModuleType( istream &is, int which ) {
 	assert( setType.type==ModuleCombo && !setItem.m );
 //	get module identifier and check its existence
 	int newId= get<Uchar>(is);
-	checkThrow( newId<0 || newId>=Loki::TL::Length<Modules>::value );
+	checkThrow( 0<=newId && newId<Loki::TL::Length<Modules>::value );
 //	check module compatibility
 	const vector<int> &v= *setType.data.compatIDs;
-	checkThrow( find(v.begin(),v.end(),newId) == v.end() );
+	checkThrow( find(v.begin(),v.end(),newId) != v.end() );
 //	create a new correct empty module
 	setItem.m= ModuleFactory::newModule(newId,ShallowCopy);
 }

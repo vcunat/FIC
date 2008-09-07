@@ -22,26 +22,28 @@ const float
 
 MColorModel::PlaneList MColorModel::image2planes(const QImage &image,const Plane &prototype) {
 	assert( !image.isNull() );
+//	get the dimensions and create the planes
 	int width= image.width(), height= image.height();
 	PlaneList result= createPlanes(IRoot::Encode,prototype,width,height);
 //	get the correct coefficients and plane count
 	const float (*coeffs)[4]= (colorModel() ? YCbCrCoeffs : RGBCoeffs);
 	int planeCount= result.size();
 //	fill pixels in all planes
-	for (int i=0; i<planeCount; ++i,++coeffs) {
+	for (int i=0; i<planeCount; ++i) {
 		float **pixels= result[i].pixels;
 	//	fill the pixels in this plane
 		for (int y=0; y<height; ++y) {
+		//	fill pixels in this line
 			const QRgb *line= (QRgb*)image.scanLine(y);
-			for (int x=0; x<width; ++x,++line)
-				pixels[x][y]= getColor(*line,*coeffs);
+			for (int x=0; x<width; ++x)
+				pixels[x][y]= getColor(line[x],coeffs[i]);
 		}
 	}
 	return result;
 }
 
 QImage MColorModel::planes2image(const MatrixList &pixels,int width,int height) {
-	assert( colorModel()>=0 && colorModel()<numOfModels() );
+	assert( colorModel()>=0 && colorModel()<numOfModels() && pixels.size()==3 );
 //	get the correct coefficients
 	const float (*coeffs)[4]= 3 + (colorModel() ? YCbCrCoeffs : RGBCoeffs);
 //	create and fill the image
@@ -49,13 +51,13 @@ QImage MColorModel::planes2image(const MatrixList &pixels,int width,int height) 
 
 	for (int y=0; y<height; ++y) {
 		QRgb *line= (QRgb*)result.scanLine(y);
-		for (int x=0; x<width; ++x,++line) {
+		for (int x=0; x<width; ++x) {
 			float vals[3]= {
 				pixels[0][x][y],
 				pixels[1][x][y],
 				pixels[2][x][y]
 			};
-			*line= getColor( coeffs, vals );
+			line[x]= getColor( coeffs, vals );
 		}
 	}
 	return result;
@@ -69,19 +71,19 @@ MColorModel::PlaneList MColorModel::readData
 ( std::istream &file, const Plane &prototype, int width, int height ) {
 //	read the color-model identifier and check it
 	colorModel()= get<Uchar>(file);
-	checkThrow( colorModel()<0 || colorModel()>=numOfModels() );
+	checkThrow( 0<=colorModel() && colorModel()<numOfModels() );
 	return createPlanes(IRoot::Decode,prototype,width,height);
 }
 
 MColorModel::PlaneList MColorModel::createPlanes
 ( IRoot::Mode mode, const Plane &prototype, int width, int height ) {
-	assert( colorModel()>=0 && colorModel()<numOfModels() 
+	assert( 0<=colorModel() && colorModel()<numOfModels() 
 	&& width>0 && height>0 && mode!=IRoot::Clear );
 //	create the plane list	
 	int planeCount= 3;
 	PlaneList result( planeCount, prototype );
 	for (int i=0; i<planeCount; ++i)
 		result[i].pixels= newMatrix<float>(width,height);
-	//	TODO (admin#4#): We don't adjust max. domain count and quality
+	//	TODO (admin#4#): We don't adjust max. domain count and quality in encoding mode
 	return result;
 }
