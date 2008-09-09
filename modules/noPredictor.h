@@ -3,6 +3,7 @@
 
 #include "../interfaces.h"
 
+/** Predictor that doesn't predict, just tries all the domains */
 class NoPredictor: public IStdEncPredictor {
 	
 	DECLARE_M_cloning_name_desc( NoPredictor, "brute force"
@@ -11,12 +12,16 @@ class NoPredictor: public IStdEncPredictor {
 	DECLARE_M_settings_none()
 	
 public:
-//	IStdEncPredictor interface
+/**	\name IStdEncPredictor interface
+ *	@{ */
 	OneRangePred* newPredictor(const NewPredictorData &data) 
 		{ return new OneRangePredictor( data.poolInfos->back().indexBegin, data.allowRotations ); }
-	void cleanUp() {};
+	void cleanUp() {}; // nothing to clean up
+///	@}
 	
 private:
+	/** Predictor class returned when calling #newPredictor
+	 *	- returns all domains in all rotations in one chunk */
 	class OneRangePredictor: public OneRangePred {
 		int domCount, rotations;
 		

@@ -4,10 +4,10 @@ using namespace std;
 
 /** Variable Length Integer - smaller integers are stored in fewer bits */
 class VLI {
-	/** Simple routine converting from all integers to non-negative integers */
+	/** Simple routine converting from all integers to non-negative integers (interleaving) */
 	static int toPositive(int value)
 		{ return value>=0 ? value*2 : value*(-2)-1 ; }
-	/** Simple routine converting from non-negative integers to all integers */
+	/** Simple converting routine, opposite to #toPositive */
 	static int fromPositive(int value) {
 		int res= value/2;
 		return value%2 ? -res-1 : res ;
@@ -27,13 +27,14 @@ public:
         int level, data;
     };
 
-	/** VLI's settings */
+ /** VLI's settings (they're const, so it doesn't matter they're public) */
     const int expAdd, maxLevel
     #ifndef NDEBUG
-    , possib 
+    , possib
     #endif
     , maxLevel_Bits; ///< The number of bits needed to encode residues in the highest level
 
+public:
 	/** Only initializes the settings */
     VLI(int possibilities,int exponentAddition=1)
     : expAdd(exponentAddition), maxLevel(getLevel( possibilities-1 , exponentAddition ))

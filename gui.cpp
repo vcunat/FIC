@@ -252,7 +252,7 @@ void ImageViewer::encode() {
 	#ifdef NDEBUG
 		encThread.start(QThread::LowPriority);
 		encDialog.exec();
-		0=0; // waiting for the thread, etc.
+		//0=0; // waiting for the thread, etc.
 	#else
 		encThread.run(); // no threading in debug mode
 	#endif

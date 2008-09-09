@@ -346,6 +346,7 @@ struct IIntCodec: public Interface<IIntCodec> {
 
 	/** Write all settings needed (doesn't include possibilities set) */
 	virtual void writeSettings(std::ostream &file) =0;
+	/** Read all settings needed (doesn't include possibilities set) */
 	virtual void readSettings(std::istream &file) =0;
 };
 

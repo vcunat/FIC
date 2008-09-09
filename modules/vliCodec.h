@@ -6,6 +6,7 @@
 
 class VLI;
 
+/** Variable-length-integer codec optimized for encoding little-changing sequences */
 class MDifferentialVLICodec: public IIntCodec {
 
 	DECLARE_M_cloning_name_desc( MDifferentialVLICodec, "Differential VLI"
@@ -23,10 +24,14 @@ class MDifferentialVLICodec: public IIntCodec {
 		1 //	first level symbols
 	)
 
+	/** Indices for settings */
 	enum Settings { VLIExponent };
 private:
-	int possib, lastSymbol;
+	int possib		/// the number of possibilities set by #setPossibilities
+	, lastSymbol;	///< the last encoded symbol (#possib/2 at the beginning)
 public:
+/**	\name IIntCodec interface
+ *	@{ */
 	void setPossibilities(int possibilities) {
 		possib= possibilities;
 		lastSymbol= possib/2;
@@ -38,7 +43,7 @@ public:
 		{ put<Uchar>( file, settingsInt(VLIExponent) ); }
 	void readSettings(std::istream &file)
 		{ settingsInt(VLIExponent)= get<Uchar>(file); }
-
+///	@}
 };
 
 #endif // VLICODEC_HEADER_
