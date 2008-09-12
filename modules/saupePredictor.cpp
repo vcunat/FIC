@@ -74,7 +74,7 @@ namespace NOSPACE {
 
 		void operator()(float f,float &res) const
 			{ res= (f+toAdd)*toMul; }
-		void endLine() const {}
+		void innerEnd() const {}
 	};
 
 	template<class T> struct SignChanger {

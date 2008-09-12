@@ -203,10 +203,13 @@ namespace NOSPACE {
 	*/
 		//int dens= (int)ceil(sqrt( wms*hms/(double)maxCount ));
 		int dens= (int)ceil(
-			(  wms+hms+sqrt( sqr<double>(wms+hms) +4*wms*hms*(maxCount-1) )  )
+			(  wms+hms+sqrt( sqr<double>(wms+hms) +double(4*wms*hms)*(maxCount-1) )  )
 			/ ( 2*(maxCount-1) )
 		);
-		int count= dens ? (wms/dens+1)*(hms/dens+1) : 0;
+		if (!dens)
+			dens= 1;
+		assert(dens>0);
+		int count= (wms/dens+1)*(hms/dens+1);
 		assert(count<=maxCount);
 		
 		result.push_back(dens);

@@ -6,7 +6,7 @@ using namespace std;
 namespace Quantizer {
 	/** Quantizes f that belongs to 0..possib/2^scale into 0..possib-1 */
 	inline int quantizeByPower(float f,int scale,int possib) {
-		assert( f>=0 && f<= possib/(double)powers[scale] );
+		assert( f>=0 && f<=possib/(double)powers[scale] );
 		int result= (int)ldexp(f,scale);
 		assert( result>=0 && result<=possib );
 		return result<possib ? result : --result;
@@ -61,10 +61,11 @@ namespace NOSPACE {
 			{ return a.indexBegin < b.indexBegin; }
 	};
 }
+/** Considers a domain on a #level number #domIndex (in #pools and #poolInfos)
+ *	and sets #block to the domain's block and returns a reference to its pool */
 static const ISquareDomains::Pool&
 getDomainData( int level, const ISquareDomains::PoolList &pools
 , const MStandardEncoder::PoolInfos &poolInfos, int domIndex, Block &block ) {
-//	do some checks
 	assert( domIndex>=0 && domIndex<poolInfos.back().indexBegin );
 //	get the right pool
 	MStandardEncoder::PoolInfos::value_type toFind;
@@ -75,7 +76,7 @@ getDomainData( int level, const ISquareDomains::PoolList &pools
 //	get the coordinates
 	int indexInPool= domIndex - it->indexBegin;
 	int size= powers[level];
-	int domsInRow= getCountForDensity(pool.width,it->density,size);
+	int domsInRow= getCountForDensity( pool.width, it->density, size );
 	block.x0= (indexInPool%domsInRow)*it->density;
 	block.y0= (indexInPool/domsInRow)*it->density;
 	block.xend= block.x0+size;
@@ -84,20 +85,26 @@ getDomainData( int level, const ISquareDomains::PoolList &pools
 	return pool;
 }
 
+/** Adjust block of a domain to be mapped equally on an incomplete range (depends on rotation) */
 inline static Block adjustDomainForIncompleteRange
 ( int size, int rotation, Block block ) {
+	// 0, 0T: top left
+	// 1, 1T: top right
+	// 2, 2T: bottom right
+	// 3, 3T: bottom left
+	
 	int rotID= rotation/2;
 
 	int yShift= size - block.height();
-	if ( rotID>1 ) // domain rotations 2, 3, 2T, 3T -> aligned to the bottom
+	if ( rotID>1 )	// domain rotations 2, 3, 2T, 3T -> aligned to the bottom
 		block.y0+= yShift;
-	else
+	else			// other rotations are aligned to the top
 		block.yend-= yShift;
 
 	int xShift= size - block.width();
-	if ( rotID==1 || rotID==2 ) // rotations 1, 2, 1T, 2T -> aligned to the right
+	if ( rotID==1 || rotID==2 )	// rotations 1, 2, 1T, 2T -> aligned to the right
 		block.x0+= xShift;
-	else
+	else						// other rotations are aligned to the left
 		block.xend-= xShift;
 	return block;
 }
@@ -218,7 +225,7 @@ namespace NOSPACE {
 	//	compute the sum of products of pixels
 		Real rdSum= walkOperateCheckRotate
 		( (const float**)stable.rangePixels, *stable.rangeBlock, RDSummer<Real>()
-		, (const float**)pool.pixels, domBlock, prediction.rotation ) .totalSum;
+		, (const float**)pool.pixels, domBlock, prediction.rotation ) .result();
 	//	compute domain sums (rdSum computed, I can change domBlock)
 		if (!isRegular)
 			domBlock= adjustDomainForIncompleteRange
@@ -273,6 +280,8 @@ float MStandardEncoder::findBestSE(const RangeNode &range) {
 	info.stable.rangeBlock=		&range;
 	info.stable.rangePixels=	bogoCast(planeBlock->pixels);
 	info.stable.pools=			&planeBlock->domains->getPools();
+	
+	assert( range.level < levelPoolInfos.size() );
 	info.stable.poolInfos=		&levelPoolInfos[range.level];
 	
 //	check the level has been initialized
@@ -297,10 +306,8 @@ float MStandardEncoder::findBestSE(const RangeNode &range) {
 		Quantizer::Deviation quantDev( settingsInt(QuantStepLog_dev) );
 		info.stable.rAvg= quantAvg.qRound( info.stable.rSum / info.stable.pixCount );
 
-		int qrDev= quantDev.quant(
-			sqrt( info.stable.pixCount*info.stable.r2Sum - sqr(info.stable.rSum) )
-			/ info.stable.pixCount
-		);
+		Real square= info.stable.pixCount*info.stable.r2Sum - sqr(info.stable.rSum);
+		int qrDev= square>0 ? quantDev.quant( sqrt(square) / info.stable.pixCount ) : 0;
 	//	if we have too little deviance or no domain pool for that big level or no domain in the pool
 		if ( !qrDev || range.level >= (int)levelPoolInfos.size()
 		|| !info.stable.poolInfos->back().indexBegin ) { // -> no domain block, only average
@@ -457,9 +464,11 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 		//	find out bits needed to store IDs of domains for every level
 			vector<int> domBits;
 			domBits.resize( levelPoolInfos.size() );
-			for (size_t i=0; i<levelPoolInfos.size(); ++i)
-				domBits[i]= levelPoolInfos[i].empty() ? 0
-				: log2ceil( levelPoolInfos[i].back().indexBegin );
+			for (size_t i=0; i<levelPoolInfos.size(); ++i) {
+				int count= levelPoolInfos[i].empty() ? 0 : levelPoolInfos[i].back().indexBegin;
+				assert(count>=0);
+				domBits[i]= count ? log2ceil(count) : 0;
+			}
 		//	put the domain bits
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				assert( *it && (*it)->encoderData );

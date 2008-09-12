@@ -52,10 +52,10 @@ class MStandardDomains: public ISquareDomains {
 	DECLARE_M_settings_default(
 		1,	// per-level divisor
 		0,	// more-downscaled-domain count decrease
-		4,	// standard domains portion
+		2,	// standard domains portion
 		1,	// diamond domains portion
-		1,	// horizontal domains portion
-		1	// vertical domains portion
+		0,	// horizontal domains portion
+		0	// vertical domains portion
 	);
 private:
 	/** Indices for settings */

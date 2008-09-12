@@ -121,148 +121,172 @@ namespace MatrixWalkers {
 	using MTypes::Block;
 
 	template<class T> struct Checked {
-		T **row, **rowEnd;
-		size_t colAddBegin,colAddEnd;
-		T *col, *colEnd;
+		T **list			///  pointer the current column
+		, **listsEnd;		///< pointer to the end column
+		size_t addElem		///  offset of the first row from the top
+		, addElemsEnd;		///< offset of the end row from the top
+		T *elem				///  pointer to the current element
+		, *elemsEnd;		///< pointer to the end element of the current column
+		
 
-		Checked(T **pixels,const Block &block)
-		: row(pixels+block.x0), rowEnd(pixels+block.xend)
-		, colAddBegin(block.y0), colAddEnd(block.yend)
-		, col(*row+colAddBegin), colEnd(*row+colAddEnd) {}
+		Checked( T **pixels, const Block &block )
+		: list(pixels+block.x0), listsEnd(pixels+block.xend)
+		, addElem(block.y0), addElemsEnd(block.yend) { 
+			DEBUG_ONLY( elem=elemsEnd=0; ) 
+			assert( block.xend>block.x0 && block.yend>block.y0 ); 
+		}
 
-		T& get() 			{ return *col; }
-		bool outerCond()	{ return row!=rowEnd; }
-		void outerStep()	{ ++row; col= *row+colAddBegin; colEnd= *row+colAddEnd; }
-		bool innerCond()	{ return col!=colEnd; }
-		void innerStep()	{ ++col; }
+		bool outerCond()	{ return list!=listsEnd; }
+		void outerStep()	{ ++list; }
+		
+		void innerInit()	{ elem= *list+addElem; elemsEnd= *list+addElemsEnd; }
+		bool innerCond()	{ return elem!=elemsEnd; }
+		void innerStep()	{ ++elem; }
+		
+		T& get() 			{ return *elem; }
 	};
 
 	namespace NOSPACE {
+		/** Base structure for walkers changing 'x' in the outer and 'y' in the inner loop */
 		template<class T> struct RBase_it {
-			T **row;
-			size_t colAddBegin;
-			T *col;
+			T **list;
+			const size_t addElem;
+			T *elem;
 
-			RBase_it(T **rowBegin,size_t colAdd)
-			: row(rowBegin), colAddBegin(colAdd)
-				{ restart(); }
+			RBase_it( T **listsBegin, size_t addElem_ )
+			: list(listsBegin), addElem(addElem_)
+				{ DEBUG_ONLY(elem=0;) }
 
-			T& get()		{ return *col; }
-			void restart()	{ col=*row+colAddBegin; }
+			void innerInit()	{ elem= *list+addElem; }
+			T& get()			{ return *elem; }
 		};
+	}
+	
+	/** No rotation: x->, y-> */
+	template<class T> struct Rotation_0: public RBase_it<T> {
+		using RBase_it<T>::list; using RBase_it<T>::elem;
 
+		Rotation_0( T **pixels, const Block &block )
+		: RBase_it<T>( pixels+block.x0, block.y0 ) {}
+
+		void outerStep() { ++list; }
+		void innerStep() { ++elem; }
+	};
+	
+	/** Rotated 90deg. cw., transposed: x<-, y-> */
+	template<class T> struct Rotation_1_T: public RBase_it<T> {
+		using RBase_it<T>::list; using RBase_it<T>::elem;
+
+		Rotation_1_T( T **pixels, const Block &block )
+		: RBase_it<T>( pixels+block.xend-1, block.y0 ) {}
+
+		void outerStep() { --list; }
+		void innerStep() { ++elem; }
+	};
+	
+	/** Rotated 180deg. cw.: x<-, y<- */
+	template<class T> struct Rotation_2: public RBase_it<T> {
+		using RBase_it<T>::list; using RBase_it<T>::elem;
+
+		Rotation_2( T **pixels, const Block &block )
+		: RBase_it<T>( pixels+block.xend-1, block.yend-1 ) {}
+
+		void outerStep() { --list; }
+		void innerStep() { --elem; }
+	};
+	
+	/** Rotated 270deg. cw., transposed: x->, y<- */
+	template<class T> struct Rotation_3_T: public RBase_it<T> {
+		using RBase_it<T>::list; using RBase_it<T>::elem;
+
+		Rotation_3_T( T **pixels, const Block &block )
+		: RBase_it<T>( pixels+block.x0, block.yend-1 ) {}
+
+		void outerStep() { ++list; }
+		void innerStep() { --elem; }
+	};
+	
+	
+	namespace NOSPACE {	
+		/** Base structure for walkers changing 'y' in the outer and 'x' in the inner loop */
 		template<class T> struct RBase_ix {
-			T **px;
-			size_t xStart,x,y;
+			T *lineBegin;
+			const size_t elemStep;
+			T *elem;
 
-			RBase_ix(T **pixels,size_t x_start,size_t y_start)
-			: px(pixels), xStart(x_start), x(x_start), y(y_start) {}
+			RBase_ix( T **pixels, size_t x_start, size_t y_start )
+			: lineBegin(pixels[x_start]+y_start), elemStep(pixels[1]-pixels[0]) {
+				DEBUG_ONLY(elem=0;)
+				assert( size_t(pixels[2]-pixels[1]) == elemStep );
+			}
 
-			T& get()		{ return px[x][y]; }
-			void restart()	{ x=xStart; }
+			void innerInit()	{ elem= lineBegin; }
+			T& get()			{ return *elem; }
 		};
 	}
 
-	/** No rotation: x->, y-> */
-	template<class T> struct Rotation_0: public RBase_it<T> {
-		using RBase_it<T>::row; using RBase_it<T>::col; using RBase_it<T>::restart;
+	/** No rotation, transposed: y->, x-> */
+	template<class T> struct Rotation_0_T: public RBase_ix<T> {
+		using RBase_ix<T>::lineBegin; using RBase_ix<T>::elemStep; using RBase_ix<T>::elem;
 
-		Rotation_0(T **pixels,const Block &block)
-		: RBase_it<T>( pixels+block.x0, block.y0 ) {}
+		Rotation_0_T( T **pixels, const Block &block )
+		: RBase_ix<T>( pixels, block.x0, block.y0 ) {}
 
-		void outerStep() { ++row; restart(); }
-		void innerStep() { ++col; }
+		void outerStep() { ++lineBegin; }
+		void innerStep() { elem+= elemStep; }
 	};
 
 	/** Rotated 90deg. cw.: y->, x<- */
 	template<class T> struct Rotation_1: public RBase_ix<T> {
-		using RBase_ix<T>::x; using RBase_ix<T>::y; using RBase_ix<T>::restart;
+		using RBase_ix<T>::lineBegin; using RBase_ix<T>::elemStep; using RBase_ix<T>::elem;
 
-		Rotation_1(T **pixels,const Block &block)
+		Rotation_1( T **pixels, const Block &block )
 		: RBase_ix<T>( pixels, block.xend-1, block.y0 ) {}
 
-		void outerStep() { ++y; restart(); }
-		void innerStep() { --x; }
-	};
-
-	/** Rotated 180deg. cw.: x<-, y<- */
-	template<class T> struct Rotation_2: public RBase_it<T> {
-		using RBase_it<T>::row; using RBase_it<T>::col; using RBase_it<T>::restart;
-
-		Rotation_2(T **pixels,const Block &block)
-		: RBase_it<T>( pixels+block.xend-1, block.yend-1 ) {}
-
-		void outerStep() { --row; restart(); }
-		void innerStep() { --col; }
-	};
-
-	/** Rotated 270deg. cw.: y<-, x-> */
-	template<class T> struct Rotation_3: public RBase_ix<T> {
-		using RBase_ix<T>::x; using RBase_ix<T>::y; using RBase_ix<T>::restart;
-
-		Rotation_3(T **pixels,const Block &block)
-		: RBase_ix<T>( pixels, block.x0, block.yend-1 ) {}
-
-		void outerStep() { --y; restart(); }
-		void innerStep() { ++x; }
-	};
-
-	/** No rotation, transposed: y->, x-> */
-	template<class T> struct Rotation_0_T: public RBase_ix<T> {
-		using RBase_ix<T>::x; using RBase_ix<T>::y; using RBase_ix<T>::restart;
-
-		Rotation_0_T(T **pixels,const Block &block)
-		: RBase_ix<T>( pixels, block.x0, block.y0 ) {}
-
-		void outerStep() { ++y; restart(); }
-		void innerStep() { ++x; }
-	};
-
-	/** Rotated 90deg. cw., transposed: x<-, y-> */
-	template<class T> struct Rotation_1_T: public RBase_it<T> {
-		using RBase_it<T>::row; using RBase_it<T>::col; using RBase_it<T>::restart;
-
-		Rotation_1_T(T **pixels,const Block &block)
-		: RBase_it<T>( pixels+block.xend-1, block.y0 ) {}
-
-		void outerStep() { --row; restart(); }
-		void innerStep() { ++col; }
+		void outerStep() { ++lineBegin; }
+		void innerStep() { elem-= elemStep; }
 	};
 
 	/** Rotated 180deg. cw., transposed: y<-, x<- */
 	template<class T> struct Rotation_2_T: public RBase_ix<T> {
-		using RBase_ix<T>::x; using RBase_ix<T>::y; using RBase_ix<T>::restart;
+		using RBase_ix<T>::lineBegin; using RBase_ix<T>::elemStep; using RBase_ix<T>::elem;
 
 		Rotation_2_T(T **pixels,const Block &block)
 		: RBase_ix<T>( pixels, block.xend-1, block.yend-1 ) {}
 
-		void outerStep() { --y; restart(); }
-		void innerStep() { --x; }
+		void outerStep() { --lineBegin; }
+		void innerStep() { elem-= elemStep; }
 	};
 
-	/** Rotated 270deg. cw., transposed: x->, y<- */
-	template<class T> struct Rotation_3_T: public RBase_it<T> {
-		using RBase_it<T>::row; using RBase_it<T>::col; using RBase_it<T>::restart;
+	/** Rotated 270deg. cw.: y<-, x-> */
+	template<class T> struct Rotation_3: public RBase_ix<T> {
+		using RBase_ix<T>::lineBegin; using RBase_ix<T>::elemStep; using RBase_ix<T>::elem;
 
-		Rotation_3_T(T **pixels,const Block &block)
-		: RBase_it<T>( pixels+block.x0, block.yend-1 ) {}
+		Rotation_3( T **pixels, const Block &block )
+		: RBase_ix<T>( pixels, block.x0, block.yend-1 ) {}
 
-		void outerStep() { ++row; restart(); }
-		void innerStep() { --col; }
+		void outerStep() { --lineBegin; }
+		void innerStep() { elem+= elemStep; }
 	};
+	
 
 	template<class T,class U,template<class> class Unchecked,class Operator>
 	Operator walkOperate( Checked<T> checked, Unchecked<U> unchecked, Operator oper ) {
-		while ( checked.outerCond() ) {
-			while ( checked.innerCond() ) {
+		do {
+			checked.innerInit();
+			unchecked.innerInit();
+			do {
 				oper( checked.get(), unchecked.get() );
+				
 				checked.innerStep();
 				unchecked.innerStep();
-			}
-			oper.endLine();
+			} while ( checked.innerCond() );
+			
+			oper.innerEnd();
 			checked.outerStep();
 			unchecked.outerStep();
-		}
+		} while ( checked.outerCond() );
+			
 		return oper;
 	}
 
@@ -298,9 +322,11 @@ namespace MatrixWalkers {
 		RDSummer()
 		: totalSum(0), lineSum(0) {}
 		void operator()(const Real &num1,const Real& num2)
-			{ lineSum+=num1*num2; }
-		void endLine()
-			{ totalSum+=lineSum; lineSum=0; }
+			{ lineSum+= num1*num2; }
+		void innerEnd()
+			{ totalSum+= lineSum; lineSum= 0; }
+		Real result()
+			{ assert(!lineSum); return totalSum; }
 	};
 
 	template<class T> struct AddMulCopy {
@@ -320,7 +346,7 @@ namespace MatrixWalkers {
 		: toMul(mul), toAdd(add), min(minVal), max(maxVal) {}
 		void operator()(float &res,float f) const
 			{ res= checkBoundsFunc( min, f*toMul+toAdd, max ); }
-		void endLine() const {};
+		void innerEnd() const {};
 	};
 }
 

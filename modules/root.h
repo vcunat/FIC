@@ -51,7 +51,7 @@ class MRoot: public IRoot {
 		1,	//abs(QThread::idealThreadCount()), // the max. number of threads
 		0,	// deafult color transformer
 		0,	// default shape transformer
-		50,	// encoding quality
+		80,	// encoding quality
 		0,	// quality converter
 		12	// max. domain count
 	);

@@ -91,7 +91,6 @@ void MDifferentialVLICodec::encode(vector<int> &data,ostream &file) {
 	for (vector<VLI::Type>::iterator it=vlis.begin(); it!=vlis.end(); ++it)
 		out.putBits( it->data, vli.bitsForLevel(it->level) );
 }
-DEBUG_CONTAINER(vector<VLI::Type>)
 
 void MDifferentialVLICodec::decode(istream &file,int count,vector<int> &data) {
 	VLI vli( possib, settingsInt(VLIExponent) );

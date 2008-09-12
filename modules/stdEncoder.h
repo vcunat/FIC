@@ -75,8 +75,8 @@ public:
 		0.35,	// big-scale penalty coefficient
 		1,		// take quant-errors into account
 		MaxLinCoeff_none, //	the maximum linear coefficient
-		7,		// average possibilities
-		8,		// deviation possibilities
+		8,		// average possibilities
+		7,		// deviation possibilities
 		0,		// average codec
 		0,		// deviation codec
 	)
