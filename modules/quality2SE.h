@@ -15,7 +15,7 @@ public:
  *	@{ */
 	float rangeSE(float quality,int /*pixelCount*/) {
 		assert( quality>=0 && quality<=1 );
-		return 1-sqr(quality);
+		return 1-cbrt(quality);
 	}
 ///	@}
 };

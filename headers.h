@@ -20,7 +20,10 @@ class QImage;
 class QGroupBox;
 class QTreeWidgetItem;
 class QWidget;
-
+#ifndef NDEBUG
+	class QPixmap;
+	class QPoint;
+#endif
 
 typedef unsigned char Uchar;
 typedef unsigned short Uint16;

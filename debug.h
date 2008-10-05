@@ -1,4 +1,5 @@
-
+#ifndef DEBUG_HEADER_
+#define DEBUG_HEADER_
 
 /** Defining my own assert macro */
 #undef assert
@@ -29,3 +30,12 @@ template <class T,class U> inline T debugCast(U toCast) {
 		return result;
 	#endif
 }
+
+#ifdef NDEBUG
+	#define DECLARE_debugModule
+#else
+	#define DECLARE_debugModule public: \
+		virtual QWidget* debugModule(QPixmap &pixmap,const QPoint &click)
+#endif
+
+#endif // DEBUG_HEADER_

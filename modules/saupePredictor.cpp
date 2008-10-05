@@ -105,8 +105,9 @@ OneRangePredictor(const NewPredictorData &data,int chunkSize_,const Tree &tree)
 			float *currRangeLin= points+rot*tree.length;
 			float **currRangeMatrix= rotMatrices[rot];
 			initMatrixPointers( sideLength, sideLength, currRangeLin, currRangeMatrix );
-			MatrixWalkers::walkOperateCheckRotate
-			( data.rangePixels, *data.rangeBlock, oper, currRangeMatrix, localBlock, rot );
+			using namespace MatrixWalkers;
+			walkOperateCheckRotate( Checked<const float>(data.rangePixels, *data.rangeBlock)
+			, oper, currRangeMatrix, localBlock, rot );
 		}
 	}
 //	create inverse of the rotations if needed

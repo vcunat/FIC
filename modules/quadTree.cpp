@@ -156,6 +156,7 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 	}
 
 	int pixCount= size();
+//	TODO: regular ranges optimization
 	float maxSE= toEncode.moduleQ2SE->rangeSE( toEncode.quality, pixCount );
 	bool tryEncode= true;
 
@@ -172,23 +173,35 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 	//	if we decided to try to encode, do it and return if the quality is sufficient
 		if ( tryEncode && toEncode.encoder->findBestSE(*this) <= maxSE )
 			return false;
+		#ifndef NDEBUG
+		else // tried to encode, but unsuccessfully and forced to be divided
+			++debugCast<MQuadTree*>(toEncode.ranges)->badTries;
+		#endif
 	}
 //	the range needs to be divided, try to encode the sons
 	divide();
+	bool aSonDivided= false;
 	Node *now= son;
 	do {// if any of the sons is divided, set tryEncode to true
 		bool divided= now->encode(toEncode);
-		tryEncode= tryEncode || divided;
+		aSonDivided= aSonDivided || divided;
 	} while ( (now=now->brother) != son );
 //	if (I unsuccessfully tried to encode or a son was divided) or (I have too big level), return
-	if ( tryEncode || level > mod->maxLevel() )
+	if ( aSonDivided || tryEncode || level > mod->maxLevel() )
 		return true;
 //	this range still has a chance, try to encode it
 	if ( toEncode.encoder->findBestSE(*this) <= maxSE ) {
+		#ifndef NDEBUG
+			++debugCast<MQuadTree*>(toEncode.ranges)->badDivides;
+		#endif
 		deleteSons();
 		return false;
-	} else
+	} else {
+		#ifndef NDEBUG
+			++debugCast<MQuadTree*>(toEncode.ranges)->triedMerges;
+		#endif
 		return true;
+	}
 }
 void MQuadTree::Node::toFile(BitWriter &file,NodeExtremes extremes) {
 	if (son) {

@@ -16,7 +16,7 @@
 
 using namespace std;
 
-typedef Loki::TL::MakeTypelist< MRoot, MColorModel, MSquarePixels, MQuadTree, MStandardDomains
+typedef Loki::TL::MakeTypelist< MRoot, MColorModel, MSquarePixels, MQuadTree, MStdDomains
 , MQuality2SE_std, MStandardEncoder, MDifferentialVLICodec, MSaupePredictor, NoPredictor >
 ::Result Modules;
 

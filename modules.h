@@ -52,7 +52,7 @@ public:
 
 		SettingsItem()			: m(0) 	{}			///< Just nulls the module pointer
 		SettingsItem(int i_)	: m(0), i(i_) {} 	///< Auto-init for integer settings
-		SettingsItem(double f_)	: m(0), f(f_) {}	///< Auto-init for real settings
+		SettingsItem(float f_)	: m(0), f(f_) {}	///< Auto-init for real settings
 		~SettingsItem() 		{ delete m; }		///< Deletes the module pointer
 	};
 
@@ -88,12 +88,16 @@ protected:
 	template<class M> M* concreteClone(CloneMethod method) const;
 public:
 	/** Friend non-member cloning function (returns the type it gets) */
-	template<class M> friend M* clone( const M *module, CloneMethod method=DeepCopy )
+	template<class M> friend M* clone( const M *module, CloneMethod method=Module::DeepCopy )
 		{ return debugCast<M*>( module->abstractClone(method) ); }
 
 	/** Deletes the settings, destroying child modules as well */
 	virtual ~Module()
 		{ delete[] settings; }
+		
+	#ifndef NDEBUG
+		DECLARE_debugModule { assert(false); return 0; }
+	#endif	
 ///	@}
 
 /** \name Virtual "static" const methods
@@ -148,6 +152,7 @@ protected: \
 	@{ - an enum, two friends and trivial implementations of virtual "static" methods */ \
 	friend class Module; /**< Friend needed for template cloning */ \
 	friend class ModuleFactory; \
+	friend struct ModuleFactory::Creator<Cname>; /**< Needed for GCC-3 */ \
 public: /* redefining virtual functions */ \
 	Cname* abstractClone(CloneMethod method=DeepCopy) const \
 											{ return concreteClone<Cname>(method); } \
@@ -179,7 +184,7 @@ public: \
 #define DECLARE_M_settings_default(setDefault...) \
 public: \
 	virtual SettingsItem* newDefaultSettings() const { \
-		static const SettingsItem defaults[]={setDefault}; \
+		static const SettingsItem defaults[]= {setDefault}; \
 		LOKI_STATIC_CHECK( sizeof(defaults)/sizeof(SettingsItem) == settingsLength_ \
 		, Wrong_number_of_default_settings_specified ); \
 		SettingsItem *result= new SettingsItem[settingsLength_]; \

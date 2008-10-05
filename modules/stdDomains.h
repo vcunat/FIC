@@ -4,15 +4,16 @@
 #include "../interfaces.h"
 
 /** Standard domain-pool generator */
-class MStandardDomains: public ISquareDomains {
+class MStdDomains: public ISquareDomains {
+	DECLARE_debugModule;
 
-	DECLARE_M_cloning_name_desc( MStandardDomains, "Standard generator"
+	DECLARE_M_cloning_name_desc( MStdDomains, "Standard generator"
 	, "Creates domains of many types (standard, horizontal, vertical, diamond),\n"
 		"offers many adjustment possibilities" )
 
 	DECLARE_M_settings_type({
 		type:	IntLog2,
-		data: {	i: {1,4} },
+		data: {	i: {0,4} },
 		label:	"Per-level max-domain-count divisor",
 		desc:	"How many times will the maximum domain count\n"
 				"decrease with every level\n"
@@ -50,10 +51,10 @@ class MStandardDomains: public ISquareDomains {
 	});
 
 	DECLARE_M_settings_default(
-		1,	// per-level divisor
+		0,	// per-level divisor
 		0,	// more-downscaled-domain count decrease
-		2,	// standard domains portion
-		1,	// diamond domains portion
+		1,	// standard domains portion
+		0,	// diamond domains portion
 		0,	// horizontal domains portion
 		0	// vertical domains portion
 	);
@@ -70,7 +71,7 @@ private:
 protected:
 //	Construction and destruction
 	/** Only frees the #pools */
-	~MStandardDomains()
+	~MStdDomains()
 		{ for_each( pools.begin(), pools.end(), mem_fun_ref(&Pool::free) ); }
 
 public:

@@ -99,6 +99,7 @@ public:
 	void fill(U **m,SumType sumType,I width,I height,I x0=0,I y0=0)
 		{ fill( bogoCast(m), sumType, width, height, x0, y0 ); }
 
+	/** Computes the sum of a rectangle (in constant time) */
 	result_type getSum(I x0,I y0,I xend,I yend) const {
 		assert( sums && x0>=0 && y0>=0 && xend>=0 && yend>=0 && xend>x0 && yend>y0 );
 		return sums[xend][yend] -sums[x0][yend] -sums[xend][y0] +sums[x0][y0];
@@ -119,8 +120,30 @@ private:
 
 namespace MatrixWalkers {
 	using MTypes::Block;
+	
+	/** Performs manipulations with rotation codes 0..7 (dihedral group of order eight) */
+	struct Rotation {
+		/** Asserts the parameter is within 0..7 */
+		static void check(int DEBUG_ONLY(r)) {
+			assert( 0<=r && r<8 );
+		}
+		/** Returns inverted rotation (the one that takes this one back to identity) */
+		static int invert(int r) {
+			check(r);
+			return (4-r/2)%4 *2 +r%2;
+		}
+		/** Computes rotation equal to projecting at first with \p r1 and the result with \p r2 */
+		static int compose(int r1,int r2) {
+			check(r1); check(r2);
+			if (r2%2)
+				r1= invert(r1);
+			return (r1/2 + r2/2) %4 *2+ ( (r1%2)^(r2%2) );
+		}
+	};
 
-	template<class T> struct Checked {
+	/** Checked iterator for a rectangle in a matrix, no rotation */
+	template<class T> class Checked {	
+	protected:
 		T **list			///  pointer the current column
 		, **listsEnd;		///< pointer to the end column
 		size_t addElem		///  offset of the first row from the top
@@ -128,7 +151,7 @@ namespace MatrixWalkers {
 		T *elem				///  pointer to the current element
 		, *elemsEnd;		///< pointer to the end element of the current column
 		
-
+	public:
 		Checked( T **pixels, const Block &block )
 		: list(pixels+block.x0), listsEnd(pixels+block.xend)
 		, addElem(block.y0), addElemsEnd(block.yend) { 
@@ -139,20 +162,47 @@ namespace MatrixWalkers {
 		bool outerCond()	{ return list!=listsEnd; }
 		void outerStep()	{ ++list; }
 		
-		void innerInit()	{ elem= *list+addElem; elemsEnd= *list+addElemsEnd; }
+		void innerInit()	{ elem= (*list)+addElem; elemsEnd= (*list)+addElemsEnd; }
 		bool innerCond()	{ return elem!=elemsEnd; }
 		void innerStep()	{ ++elem; }
 		
 		T& get() 			{ return *elem; }
 	};
+	
+	/** Checked iterator for a whole QImage; no rotation, but always transposed */
+	template<class T,class U> struct CheckedImage {
+		typedef T QImage;
+		typedef U QRgb;
+	protected:
+		QImage &img;	///< reference to the image
+		int lineIndex;	///< index of the current line
+		QRgb *line		///  pointer to the current pixel
+		, *lineEnd;		///< pointer to the end of the line
+		
+	public:
+		CheckedImage(QImage &image)
+		: img(image), lineIndex(0) 
+			{ DEBUG_ONLY(line=lineEnd=0;) }
+		
+		bool outerCond()	{ return lineIndex<img.height(); }
+		void outerStep()	{ ++lineIndex; }
+		
+		void innerInit()	{ line= (QRgb*)img.scanLine(lineIndex); lineEnd= line+img.width(); }
+		bool innerCond()	{ return line!=lineEnd; }
+		void innerStep()	{ ++line; }
+		
+		QRgb& get()			{ return *line; }
+	};
 
 	namespace NOSPACE {
 		/** Base structure for walkers changing 'x' in the outer and 'y' in the inner loop */
-		template<class T> struct RBase_it {
-			T **list;
-			const size_t addElem;
-			T *elem;
+		template<class T> class RBase_it {
+		protected:
+			T **list; ///< points to the beginning of the current column
+			const size_t addElem; ///< position of the first-to-be-walked elements from *#list[i]
+			T *elem; ///< points to the current element
 
+		public:
 			RBase_it( T **listsBegin, size_t addElem_ )
 			: list(listsBegin), addElem(addElem_)
 				{ DEBUG_ONLY(elem=0;) }
@@ -209,11 +259,13 @@ namespace MatrixWalkers {
 	
 	namespace NOSPACE {	
 		/** Base structure for walkers changing 'y' in the outer and 'x' in the inner loop */
-		template<class T> struct RBase_ix {
-			T *lineBegin;
-			const size_t elemStep;
-			T *elem;
+		template<class T> class RBase_ix {
+		protected:
+			T *lineBegin; ///< points to the first element of the current line (first to be walked)
+			const size_t elemStep; ///< the number of elements to get the next column (positive)
+			T *elem; ///< points to the current element
 
+		public:
 			RBase_ix( T **pixels, size_t x_start, size_t y_start )
 			: lineBegin(pixels[x_start]+y_start), elemStep(pixels[1]-pixels[0]) {
 				DEBUG_ONLY(elem=0;)
@@ -270,48 +322,46 @@ namespace MatrixWalkers {
 	};
 	
 
-	template<class T,class U,template<class> class Unchecked,class Operator>
-	Operator walkOperate( Checked<T> checked, Unchecked<U> unchecked, Operator oper ) {
+	template < class Check, class Unchecked, class Operator >
+	Operator walkOperate( Check checked, Unchecked unchecked, Operator oper ) {
+	//	outer cycle start - to be always run at least once
+		assert( checked.outerCond() );
 		do {
+		//	inner initialization
 			checked.innerInit();
 			unchecked.innerInit();
+		// inner cycle start - to be always run at least once	
+			assert( checked.innerCond() ); 
 			do {
-				oper( checked.get(), unchecked.get() );
-				
+			//	perform the operation and do the inner step for both iterators
+				oper( checked.get(), unchecked.get() );	
 				checked.innerStep();
 				unchecked.innerStep();
 			} while ( checked.innerCond() );
-			
+		
+		//	signal the end of inner cycle to the operator and do the outer step for both iterators
 			oper.innerEnd();
 			checked.outerStep();
 			unchecked.outerStep();
+		
 		} while ( checked.outerCond() );
 			
 		return oper;
 	}
 
-	template<class T,class U,class Operator>// inline
-	Operator walkOperateCheckRotate( T **pixels1, const Block &block1, Operator oper
+	template<class Check,class U,class Operator>// inline
+	Operator walkOperateCheckRotate( Check checked, Operator oper
 	, U **pixels2, const Block &block2, char rotation ) {
 		switch (rotation) {
-			case 0: return walkOperate
-				( Checked<T>(pixels1,block1), Rotation_0  <U>(pixels2,block2) , oper );
-			case 1: return walkOperate
-				( Checked<T>(pixels1,block1), Rotation_0_T<U>(pixels2,block2) , oper );
-			case 2: return walkOperate
-				( Checked<T>(pixels1,block1), Rotation_1  <U>(pixels2,block2) , oper );
-			case 3: return walkOperate
-				( Checked<T>(pixels1,block1), Rotation_1_T<U>(pixels2,block2) , oper );
-			case 4: return walkOperate
-				( Checked<T>(pixels1,block1), Rotation_2  <U>(pixels2,block2) , oper );
-			case 5: return walkOperate
-				( Checked<T>(pixels1,block1), Rotation_2_T<U>(pixels2,block2) , oper );
-			case 6: return walkOperate
-				( Checked<T>(pixels1,block1), Rotation_3  <U>(pixels2,block2) , oper );
-			case 7: return walkOperate
-				( Checked<T>(pixels1,block1), Rotation_3_T<U>(pixels2,block2) , oper );
-			default:
-				return assert(false),oper;
+			case 0: return walkOperate( checked, Rotation_0  <U>(pixels2,block2) , oper );
+			case 1: return walkOperate( checked, Rotation_0_T<U>(pixels2,block2) , oper );
+			case 2: return walkOperate( checked, Rotation_1  <U>(pixels2,block2) , oper );
+			case 3: return walkOperate( checked, Rotation_1_T<U>(pixels2,block2) , oper );
+			case 4: return walkOperate( checked, Rotation_2  <U>(pixels2,block2) , oper );
+			case 5: return walkOperate( checked, Rotation_2_T<U>(pixels2,block2) , oper );
+			case 6: return walkOperate( checked, Rotation_3  <U>(pixels2,block2) , oper );
+			case 7: return walkOperate( checked, Rotation_3_T<U>(pixels2,block2) , oper );
+			default: assert(false); return oper;
 		}
 	}
 
@@ -321,8 +371,8 @@ namespace MatrixWalkers {
 
 		RDSummer()
 		: totalSum(0), lineSum(0) {}
-		void operator()(const Real &num1,const Real& num2)
-			{ lineSum+= num1*num2; }
+		void operator()(const float &num1,const float& num2)
+			{ lineSum+= Real(num1) * Real(num2); }
 		void innerEnd()
 			{ totalSum+= lineSum; lineSum= 0; }
 		Real result()

@@ -6,6 +6,7 @@
 
 /** A simple shape transformer - using square pixels, only splits the planes into rectangles */
 class MSquarePixels: public IShapeTransformer {
+	DECLARE_debugModule;
 
 	DECLARE_M_cloning_name_desc( MSquarePixels, "Square-pixel"
 	, "Continues to work with square-shaped pixels, can divide the image" );

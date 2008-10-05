@@ -16,12 +16,14 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QMouseEvent>
 #include <QProgressDialog>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QSpinBox>
 #include <QStatusBar>
 #include <QThread>
+#include <QTime>
 #include <QTranslator>
 #include <QTreeWidgetItem>
 
@@ -31,6 +33,8 @@ class EncodingProgress;
 
 /** Represents the main window of the program, providing a GUI */
 class ImageViewer: public QMainWindow { Q_OBJECT
+	static const int AutoIterationCount= 20;
+	
 	IRoot *modules_settings	///  Module tree holding current settings
 	, *modules_encoding;	///< Module tree that's currently encoding or the last one
 
@@ -53,7 +57,7 @@ class ImageViewer: public QMainWindow { Q_OBJECT
     void updateActions();	///< Updates the availability of all actions
     void changePixmap(const QPixmap &pixmap) {
 		imageLabel->setPixmap(pixmap);
-		imageLabel->resize( imageLabel->pixmap()->size() );
+		imageLabel->resize( pixmap.size() );
 	}						///< Shows a new image
 private slots:
 /**	\name Methods performing the actions
@@ -74,6 +78,10 @@ public:
 	/** Only releases the modules */
 	virtual ~ImageViewer()
 		{ delete modules_settings; }
+private:
+#ifndef NDEBUG
+	void mousePressEvent(QMouseEvent *event);
+#endif
 };
 
 inline void aConnect( const QObject *sender, const char *signal, const QObject *receiver

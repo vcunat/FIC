@@ -1,13 +1,15 @@
 #include "stdEncoder.h"
 #include "../fileUtil.h"
 
+/// \file stdEncoder.cpp
+
 using namespace std;
 
 namespace Quantizer {
 	/** Quantizes f that belongs to 0..possib/2^scale into 0..possib-1 */
 	inline int quantizeByPower(float f,int scale,int possib) {
 		assert( f>=0 && f<=possib/(double)powers[scale] );
-		int result= (int)ldexp(f,scale);
+		int result= (int)trunc(ldexp(f,scale));
 		assert( result>=0 && result<=possib );
 		return result<possib ? result : --result;
 	}
@@ -18,7 +20,8 @@ namespace Quantizer {
 		assert( result>=0 && result<= possib/(double)powers[scale] );
 		return result;
 	}
-	
+
+	/** (De)Quantizer for range-block averages */
 	class Average {
 		int scale, possib;
 	public:
@@ -28,7 +31,7 @@ namespace Quantizer {
 			scale= possibLog2;
 			possib= powers[possibLog2];
 		}
-		int quant(float avg) 
+		int quant(float avg)
 			{ return quantizeByPower(avg,scale,possib); }
 		float dequant(int i)
 			{ return dequantizeByPower(i,scale,possib); }
@@ -36,6 +39,7 @@ namespace Quantizer {
 			{ return dequant(quant(avg)); }
 	};
 
+	/** (De)Quantizer for range-block deviations */
 	class Deviation {
 		int scale,possib;
 	public:
@@ -61,21 +65,27 @@ namespace NOSPACE {
 			{ return a.indexBegin < b.indexBegin; }
 	};
 }
-/** Considers a domain on a #level number #domIndex (in #pools and #poolInfos)
- *	and sets #block to the domain's block and returns a reference to its pool */
-static const ISquareDomains::Pool&
-getDomainData( int level, const ISquareDomains::PoolList &pools
-, const MStandardEncoder::PoolInfos &poolInfos, int domIndex, Block &block ) {
-	assert( domIndex>=0 && domIndex<poolInfos.back().indexBegin );
+MStandardEncoder::PoolInfos::const_iterator MStandardEncoder
+::getPoolFromDomID( int domID, const PoolInfos &poolInfos ) {
+	assert( domID>=0 && domID<poolInfos.back().indexBegin );
 //	get the right pool
-	MStandardEncoder::PoolInfos::value_type toFind;
-	toFind.indexBegin= domIndex;
-	MStandardEncoder::PoolInfos::const_iterator it= upper_bound
-	( poolInfos.begin(), poolInfos.end(), toFind, LevelPoolInfo_indexComparator() ) - 1;
-	const ISquareDomains::Pool &pool= pools[ it - poolInfos.begin() ];
+	PoolInfos::value_type toFind;
+	toFind.indexBegin= domID;
+	return upper_bound( poolInfos.begin(), poolInfos.end(), toFind
+		, LevelPoolInfo_indexComparator() ) -1;
+}
+
+const ISquareDomains::Pool& MStandardEncoder::getDomainData
+( const RangeNode &rangeBlock, const ISquareDomains::PoolList &pools
+, const PoolInfos &poolInfos, int domIndex, Block &block ) {
+	
+//	get the pool
+	PoolInfos::const_iterator it= getPoolFromDomID( domIndex, poolInfos );
+	const Pool &pool= pools[ it - poolInfos.begin() ];
 //	get the coordinates
 	int indexInPool= domIndex - it->indexBegin;
-	int size= powers[level];
+	assert( indexInPool>=0 && indexInPool<(it+1)->indexBegin );
+	int size= powers[rangeBlock.level];
 	int domsInRow= getCountForDensity( pool.width, it->density, size );
 	block.x0= (indexInPool%domsInRow)*it->density;
 	block.y0= (indexInPool/domsInRow)*it->density;
@@ -92,16 +102,21 @@ inline static Block adjustDomainForIncompleteRange
 	// 1, 1T: top right
 	// 2, 2T: bottom right
 	// 3, 3T: bottom left
-	
+
+	assert( 0<=rotation && rotation<8 );
 	int rotID= rotation/2;
 
 	int yShift= size - block.height();
+	int xShift= size - block.width();
+	int magic= rotID+rotation%2;
+	if ( magic==1 || magic==3 ) // for rotations 0T, 1, 2T, 3 -> swapped x and y
+		swap(xShift,yShift);
+
 	if ( rotID>1 )	// domain rotations 2, 3, 2T, 3T -> aligned to the bottom
 		block.y0+= yShift;
 	else			// other rotations are aligned to the top
 		block.yend-= yShift;
 
-	int xShift= size - block.width();
 	if ( rotID==1 || rotID==2 )	// rotations 1, 2, 1T, 2T -> aligned to the right
 		block.x0+= xShift;
 	else						// other rotations are aligned to the left
@@ -116,7 +131,7 @@ void MStandardEncoder::initialize( IRoot::Mode mode, const PlaneBlock &planeBloc
 //	prepare the domains-module
 	planeBlock->domains->initPools( planeBlock->width(), planeBlock->height() );
 
-	int maxLevel= log2ceil(max( planeBlock->width(), planeBlock->height() ));
+	int maxLevel= 1 +log2ceil(max( planeBlock->width(), planeBlock->height() ));
 //	prepare levelPoolInfos
 	levelPoolInfos.resize(maxLevel);
 
@@ -134,143 +149,209 @@ void MStandardEncoder::initialize( IRoot::Mode mode, const PlaneBlock &planeBloc
 	}
 }
 
-inline static void debugStop(Real denom) {
-	return;
-}
-
 namespace NOSPACE {
-	struct StableInfo: public IStdEncPredictor::NewPredictorData {
-	};
+	typedef IStdEncPredictor::NewPredictorData StableInfo;
 
+	/** Information about the best (found so far) domain block for a range block */
 	struct BestInfo: public IStdEncPredictor::Prediction {
-		float error;
-		bool inverted;
+		float error;	///< The square error of the mapping
+		bool inverted;	///< Whether the colours are mapped with a negative linear coefficient
+		#ifndef NDEBUG
+		Real rdSum;
+		#endif
 
 		BestInfo()
 		: error( numeric_limits<float>::max() ) {}
 		IStdEncPredictor::Prediction& prediction()
 			{ return *this; }
 	};
+} // namespace NOSPACE
 
-	struct EncodingInfo {
-		typedef IStdEncPredictor::Prediction Prediction;
-		typedef MStandardEncoder::RangeInfo RangeInfo;
-		typedef void (EncodingInfo::*ExactCompareProc)( Prediction prediction );
 
-	private:
-		static ExactCompareProc exactCompareArray[];
+struct MStandardEncoder::EncodingInfo {
+	typedef void (EncodingInfo::*ExactCompareProc)( Prediction prediction );
 
-		ExactCompareProc selectedProc;
-	public:
-		StableInfo stable;
-		BestInfo best;
-		Real dSum, d2Sum;
-		float maxSE2Predict;
+private:
+	/** Possible comparing methods */
+	static const ExactCompareProc exactCompareArray[];
 
-	public:
-		EncodingInfo()
-		: selectedProc(0) {}
+	ExactCompareProc selectedProc; ///< Selected comparing method
+public:
+	StableInfo stable;	///< Information only depending on the range (and not domain) block
+	BestInfo best;		///< Information about the best (at the moment) mapping found
+	Real bdSum			///  Sum of all pixels in best domain
+	, bd2Sum;			///< Sum of squares of all pixesl in the best domain
+	float targetSE		///	 The maximal accepted SE (square error) for the range
+	, maxSE2Predict;	///< The maximal SE that the predictor should try to predict
 
-		RangeInfo* initRangeInfo(RangeInfo *ri) const {
-			ri->bestSE=			best.error;
-			ri->prediction()=	best;
-			ri->rAvg=			stable.rAvg;
-			ri->rDev2=			stable.rDev2;
-			ri->inverted=		best.inverted;
-			return ri;
-		}
+public:
+	EncodingInfo()
+	: selectedProc(0) {}
 
-		void selectExactCompareProc() {
-			selectedProc= exactCompareArray
-			[(((  stable.quantError *2
-				+ stable.allowInversion ) *2
-				+ stable.isRegular ) *2
-				+ (stable.maxLinCoeff2 >= 0) ) *2
-				+ (stable.bigScaleCoeff != 0)
-			];
-		}
-
-		void exactCompare(Prediction prediction)
-			{ (this->* selectedProc)(prediction); }
-
-	private:
-		template< bool quantErrors, bool allowInversion, bool isRegular
-		, bool restrictMaxLinCoeff, bool bigScalePenalty >
-		void exactCompareProc( Prediction prediction );
-	}; // EncodingInfo class
-
-	#define ALTERNATE_0(name,params...) name<params>
-	#define ALTERNATE_1(name,params...) ALTERNATE_0(name,##params,false), ALTERNATE_0(name,##params,true)
-	#define ALTERNATE_2(name,params...) ALTERNATE_1(name,##params,false), ALTERNATE_1(name,##params,true)
-	#define ALTERNATE_3(name,params...) ALTERNATE_2(name,##params,false), ALTERNATE_2(name,##params,true)
-	#define ALTERNATE_4(name,params...) ALTERNATE_3(name,##params,false), ALTERNATE_3(name,##params,true)
-	#define ALTERNATE_5(name,params...) ALTERNATE_4(name,##params,false), ALTERNATE_4(name,##params,true)
-	EncodingInfo::ExactCompareProc EncodingInfo::exactCompareArray[]
-	= {ALTERNATE_5(&EncodingInfo::exactCompareProc)};
-	#undef ALTERNATE_0
-	#undef ALTERNATE_1
-	#undef ALTERNATE_2
-	#undef ALTERNATE_3
-	#undef ALTERNATE_4
-	#undef ALTERNATE_5
-
-	template< bool quantErrors, bool allowInversion, bool isRegular
-	, bool restrictMaxLinCoeff, bool bigScalePenalty >
-	void EncodingInfo::exactCompareProc( EncodingInfo::Prediction prediction ) {
-		using namespace MatrixWalkers;
-	//	find out which domain was predicted (pixel matrix and position within it)
-		Block domBlock;
-		const ISquareDomains::Pool &pool= getDomainData( stable.rangeBlock->level
-		, *stable.pools, *stable.poolInfos, prediction.domainID, domBlock );
-	//	compute the sum of products of pixels
-		Real rdSum= walkOperateCheckRotate
-		( (const float**)stable.rangePixels, *stable.rangeBlock, RDSummer<Real>()
-		, (const float**)pool.pixels, domBlock, prediction.rotation ) .result();
-	//	compute domain sums (rdSum computed, I can change domBlock)
-		if (!isRegular)
-			domBlock= adjustDomainForIncompleteRange
-			( powers[stable.rangeBlock->level], prediction.rotation, domBlock );
-		pool.getSums(domBlock,dSum,d2Sum);
-
-		Real nRDs_RsDs= stable.pixCount*rdSum - stable.rSum*dSum;
-	//	check for negative linear coefficients (if needed)
-		if (!allowInversion)
-			if (nRDs_RsDs<0)
-				return;
-		Real denom= 1/( stable.pixCount*d2Sum - sqr(dSum) );
-		
-		debugStop(denom);
-		
-	//	check for too big linear coefficients (if needed)
-		if (restrictMaxLinCoeff)
-			if ( stable.rDev2*denom*sqr(stable.pixCount) > stable.maxLinCoeff2 )
-				return;
-	//	compute the SquareError
-		float optSE;
-		if (quantErrors) {
-			Real rDev2Denom=stable.rDev2*denom;
-			optSE= stable.r2Sum + stable.pixCount*stable.rDev2
-			+ stable.rAvg*(stable.pixCount*stable.rAvg-ldexp(stable.rSum,1))
-			+ ldexp(nRDs_RsDs,1)*sqrt(rDev2Denom);
-			if (bigScalePenalty)
-				optSE+= (rDev2Denom*sqr(stable.pixCount))
-				* (stable.bigScaleCoeff*pool.contrFactor);
-		} else { // !quantErrors
-			Real common= rdSum*(stable.rSum*dSum-nRDs_RsDs) - d2Sum*sqr(stable.rSum);
-			if (bigScalePenalty)
-				optSE= ( (stable.bigScaleCoeff*sqr(nRDs_RsDs)) * (denom*pool.contrFactor)
-				+ common ) * denom + stable.r2Sum;
-			else
-				optSE= common*denom + stable.r2Sum;
-		}
-	//	test if the error is the best so far
-		if ( optSE < best.error ) {
-			best.prediction()= prediction;
-			best.error= maxSE2Predict= optSE;
-			best.inverted= nRDs_RsDs<0;
-		}
+	/** Initializes a RangeInfo object from #this */
+	RangeInfo* initRangeInfo(RangeInfo *ri) const {
+		ri->bestSE=			best.error;
+		ri->prediction()=	best;
+		ri->qrAvg=			stable.qrAvg;
+		ri->qrDev2=			stable.qrDev2;
+		ri->inverted=		best.inverted;
+		#ifndef NDEBUG
+		ri->exact.avg=	stable.rSum/stable.pixCount;
+		ri->exact.dev2=	stable.r2Sum/stable.pixCount - sqr(ri->exact.avg);
+		ri->exact.linCoeff= ( stable.pixCount*best.rdSum - stable.rSum*bdSum ) 
+		/ ( stable.pixCount*bd2Sum - sqr(bdSum) );
+		ri->exact.constCoeff= ri->exact.avg - ri->exact.linCoeff*bdSum/stable.pixCount;
+		#endif
+		return ri;
 	}
+
+	/** Selects the right comparing method according to #stable */
+	void selectExactCompareProc() {
+		selectedProc= exactCompareArray
+		[(((  stable.quantError *2
+			+ stable.allowInversion ) *2
+			+ stable.isRegular ) *2
+			+ (stable.maxLinCoeff2 >= 0) ) *2
+			+ (stable.bigScaleCoeff != 0)
+		];
+	}
+
+	/** Uses the selected comparing method */
+	void exactCompare(Prediction prediction)
+		{ (this->* selectedProc)(prediction); }
+
+private:
+	/** Template for all the comparing methods */
+	template < bool quantErrors, bool allowInversion, bool isRegular
+	, bool restrictMaxLinCoeff, bool bigScalePenalty >
+	void exactCompareProc( Prediction prediction );
+}; // EncodingInfo class
+
+#define ALTERNATE_0(name,params...) name<params>
+#define ALTERNATE_1(name,params...) ALTERNATE_0(name,##params,false), ALTERNATE_0(name,##params,true)
+#define ALTERNATE_2(name,params...) ALTERNATE_1(name,##params,false), ALTERNATE_1(name,##params,true)
+#define ALTERNATE_3(name,params...) ALTERNATE_2(name,##params,false), ALTERNATE_2(name,##params,true)
+#define ALTERNATE_4(name,params...) ALTERNATE_3(name,##params,false), ALTERNATE_3(name,##params,true)
+#define ALTERNATE_5(name,params...) ALTERNATE_4(name,##params,false), ALTERNATE_4(name,##params,true)
+const MStandardEncoder::EncodingInfo::ExactCompareProc
+MStandardEncoder::EncodingInfo::exactCompareArray[]
+= {ALTERNATE_5(&MStandardEncoder::EncodingInfo::exactCompareProc)};
+#undef ALTERNATE_0
+#undef ALTERNATE_1
+#undef ALTERNATE_2
+#undef ALTERNATE_3
+#undef ALTERNATE_4
+#undef ALTERNATE_5
+
+void debugStop() {
+	return;
 }
+
+template< bool quantErrors, bool allowInversion, bool isRegular
+, bool restrictMaxLinCoeff, bool bigScalePenalty >
+void MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
+	using namespace MatrixWalkers;
+//	find out which domain was predicted (pixel matrix and position within it)
+	Block domBlock;
+	const Pool &pool= getDomainData( *stable.rangeBlock
+	, *stable.pools, *stable.poolInfos, prediction.domainID, domBlock );
+//	compute domain sums
+	if (!isRegular)
+		domBlock= adjustDomainForIncompleteRange
+		( powers[stable.rangeBlock->level], prediction.rotation, domBlock );
+	Real dSum, d2Sum;
+	pool.getSums(domBlock,dSum,d2Sum);
+//	compute the denominator common to most formulas
+	Real test= stable.pixCount*d2Sum - sqr(dSum);
+	if (test<=0) // skip too flat domains
+		return;
+	Real denom= 1/test;
+	
+//	compute the sum of products of pixels
+	Real rdSum= walkOperateCheckRotate
+	( Checked<const float>(stable.rangePixels, *stable.rangeBlock), RDSummer<Real>()
+	, bogoCast(pool.pixels), domBlock, prediction.rotation ) .result();
+
+	Real nRDs_RsDs= stable.pixCount*rdSum - stable.rSum*dSum;
+//	check for negative linear coefficients (if needed)
+	if (!allowInversion)
+		if (nRDs_RsDs<0)
+			return;
+//	compute the square of linear coefficient if needed (for restricting or penalty)
+	Real linCoeff2 DEBUG_ONLY(= numeric_limits<Real>::quiet_NaN() );
+	if ( restrictMaxLinCoeff || bigScalePenalty )
+		linCoeff2= stable.rnDev2 * denom;
+	if (restrictMaxLinCoeff)
+		if ( linCoeff2 > stable.maxLinCoeff2 )
+			return;
+		
+	float optSE DEBUG_ONLY(= numeric_limits<Real>::quiet_NaN() );
+	
+	if (quantErrors) {
+		optSE= stable.qrAvg * ( stable.pixCount*stable.qrAvg - ldexp(stable.rSum,1) )
+			+ stable.r2Sum + stable.qrDev 
+				* ( stable.pixCount*stable.qrDev - ldexp( abs(nRDs_RsDs)*sqrt(denom), 1 ) );
+		
+		debugStop();
+	} else { // !quantErrors
+	/*
+	//	normal SE computing
+		Real nsxy= stable.pixCount*rdSum;
+	    Real sxsy= dSum*stable.rSum;
+	    optSE= ( rdSum*(ldexp(sxsy,1)-nsxy) - d2Sum*sqr(stable.rSum) ) 
+	    	*denom +stable.r2Sum;
+	*/
+		
+	//	assuming different linear coeffitient
+		Real inner= stable.rnDev2 - stable.rnDev*abs(nRDs_RsDs)*sqrt(denom);
+		optSE= ldexp( inner, 1 ) / stable.pixCount;
+	}
+	
+//	add big-scaling penalty if needed
+	if (bigScalePenalty)
+		optSE+= linCoeff2 * targetSE * sqr(pool.contrFactor) * stable.bigScaleCoeff;
+	
+/*
+//	check for too big linear coefficients (if needed)
+	if (restrictMaxLinCoeff)
+		if ( stable.qrDev2*denom*sqr(stable.pixCount) > stable.maxLinCoeff2 )
+			return;
+//	compute the SquareError
+	float optSE;
+	if (quantErrors) {
+		Real rDev2Denom= stable.qrDev2*denom;
+		optSE= stable.r2Sum + stable.pixCount*stable.qrDev2
+		+ stable.qrAvg*(stable.pixCount*stable.qrAvg-ldexp(stable.rSum,1))
+		+ ldexp(nRDs_RsDs,1)*sqrt(rDev2Denom);
+		if (bigScalePenalty)
+			optSE+= (rDev2Denom*sqr(stable.pixCount))
+			* (stable.bigScaleCoeff*pool.contrFactor);
+	} else { // !quantErrors
+		Real common= rdSum*(stable.rSum*dSum-nRDs_RsDs) - d2Sum*sqr(stable.rSum);
+		if (bigScalePenalty)
+			optSE= ( (stable.bigScaleCoeff*sqr(nRDs_RsDs)) * (denom*pool.contrFactor)
+			+ common ) * denom + stable.r2Sum;
+		else
+			optSE= common*denom + stable.r2Sum;
+	}
+	
+	*/
+//*/
+//	test if the error is the best so far
+	if ( optSE < best.error ) {
+		best.prediction()= prediction;
+		best.error= optSE;//maxSE2Predict=
+		best.inverted= nRDs_RsDs<0;
+		
+		#ifndef NDEBUG
+		best.rdSum= rdSum;
+		bdSum= dSum;
+		bd2Sum= d2Sum;
+		#endif
+	}
+} // EncodingInfo::exactCompareProc method
+
+
 float MStandardEncoder::findBestSE(const RangeNode &range) {
 	assert( planeBlock && !stdRangeSEs.empty() && !range.encoderData );
 
@@ -280,10 +361,9 @@ float MStandardEncoder::findBestSE(const RangeNode &range) {
 	info.stable.rangeBlock=		&range;
 	info.stable.rangePixels=	bogoCast(planeBlock->pixels);
 	info.stable.pools=			&planeBlock->domains->getPools();
-	
-	assert( range.level < levelPoolInfos.size() );
+
+	assert( range.level < (int)levelPoolInfos.size() );
 	info.stable.poolInfos=		&levelPoolInfos[range.level];
-	
 //	check the level has been initialized
 	if ( info.stable.poolInfos->empty() )
 		buildPoolInfos4aLevel(range.level), assert( !info.stable.poolInfos->empty() );
@@ -301,30 +381,35 @@ float MStandardEncoder::findBestSE(const RangeNode &range) {
 	info.stable.rSum=		planeBlock->getSum(range,BlockSummer::Values);
 	info.stable.r2Sum=		planeBlock->getSum(range,BlockSummer::Squares);
 	info.stable.pixCount=	range.size();
+	info.stable.rnDev2=		info.stable.pixCount*info.stable.r2Sum - sqr(info.stable.rSum);
+	info.stable.rnDev=		sqrt(info.stable.rnDev2);
 	{
 		Quantizer::Average quantAvg( settingsInt(QuantStepLog_avg) );
 		Quantizer::Deviation quantDev( settingsInt(QuantStepLog_dev) );
-		info.stable.rAvg= quantAvg.qRound( info.stable.rSum / info.stable.pixCount );
+		Real average= info.stable.rSum / info.stable.pixCount;
+		info.stable.qrAvg= quantAvg.qRound(average);
 
-		Real square= info.stable.pixCount*info.stable.r2Sum - sqr(info.stable.rSum);
-		int qrDev= square>0 ? quantDev.quant( sqrt(square) / info.stable.pixCount ) : 0;
+		Real variance= info.stable.r2Sum/info.stable.pixCount - sqr(average);
+		Real deviance= variance>0 ? sqrt(variance) : 0;
+		int qrDev= quantDev.quant(deviance);
 	//	if we have too little deviance or no domain pool for that big level or no domain in the pool
 		if ( !qrDev || range.level >= (int)levelPoolInfos.size()
 		|| !info.stable.poolInfos->back().indexBegin ) { // -> no domain block, only average
-			info.stable.rDev2= 0;
+			info.stable.qrDev= info.stable.qrDev2= 0;
 			info.best.error= info.stable.quantError
-				? info.stable.r2Sum + info.stable.rAvg
-					*( info.stable.pixCount*info.stable.rAvg - ldexp(info.stable.rSum,1) )
-				: info.stable.r2Sum - sqr(info.stable.rSum)/info.stable.pixCount;
+				? info.stable.r2Sum + info.stable.qrAvg
+					*( info.stable.pixCount*info.stable.qrAvg - ldexp(info.stable.rSum,1) )
+				: variance*info.stable.pixCount;
 			range.encoderData= info.initRangeInfo( rangeInfoAlloc.make() );
 			return range.encoderData->bestSE;
-		} else
-			info.stable.rDev2= sqr(quantDev.dequant(qrDev));
+		} else { // the regular case, with nonzero quantized deviance
+			info.stable.qrDev= quantDev.dequant(qrDev);
+			info.stable.qrDev2= sqr(info.stable.qrDev);
+		}
 	}
 
-	info.maxSE2Predict= info.stable.isRegular
-	? stdRangeSEs[range.level]
-	: planeBlock->moduleQ2SE->rangeSE( planeBlock->quality, range.size() );
+	info.targetSE= info.maxSE2Predict= info.stable.isRegular ? stdRangeSEs[range.level]
+		: planeBlock->moduleQ2SE->rangeSE( planeBlock->quality, range.size() );
 	info.selectExactCompareProc();
 
 //	create and initialize a new predictor
@@ -352,6 +437,7 @@ void MStandardEncoder::buildPoolInfos4aLevel(int level) {
 	vector<short> densities= planeBlock->domains->getLevelDensities( level, domainCountLog2 );
 //	store it in the this-level infos with beginIndex values for all pools
 	vector<LevelPoolInfo> &poolInfos= levelPoolInfos[level];
+	assert( poolInfos.empty() );
 	const ISquareDomains::PoolList &pools= planeBlock->domains->getPools();
 
 	int domainSize= powers[level];
@@ -361,9 +447,9 @@ void MStandardEncoder::buildPoolInfos4aLevel(int level) {
 	int domCount= poolInfos[0].indexBegin= 0; // accumulated count
 	for (int i=0; i<poolCount; ++i) {
 		int dens= poolInfos[i].density= densities[i];
+		assert(dens>=0);
 		if (dens) // if dens==0, there are no domains -> no increase
-			domCount+= getCountForDensity2D
-			( pools[i].width, pools[i].height, dens, domainSize );
+			domCount+= getCountForDensity2D( pools[i].width, pools[i].height, dens, domainSize );
 		poolInfos[i+1].indexBegin= domCount;
 	}
 	poolInfos[poolCount].density= -1;
@@ -416,7 +502,7 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				assert( *it && (*it)->encoderData );
 				const RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
-				averages.push_back( quant.quant(info->rAvg) );
+				averages.push_back( quant.quant(info->qrAvg) );
 			}
 		//	pass it to the codec
 			moduleCodec(true)->setPossibilities( powers[settingsInt(QuantStepLog_avg)] );
@@ -432,7 +518,7 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				assert( *it && (*it)->encoderData );
 				const RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
-				int dev= ( info->domainID>=0 ? quant.quant(sqrt(info->rDev2)) : 0 );
+				int dev= ( info->domainID>=0 ? quant.quant(sqrt(info->qrDev2)) : 0 );
 				devs.push_back(dev);
 			}
 		//	pass it to the codec
@@ -477,7 +563,8 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 				if ( domID >= 0 ) {
 					int bits= domBits[ (*it)->level ];
 					assert( 0<=domID && domID<powers[bits] );
-					stream.putBits( domID, bits );
+					if (bits>0) 
+						stream.putBits( domID, bits );
 				}
 			}
 			break;
@@ -505,8 +592,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 				assert( *it && !(*it)->encoderData );
 				RangeInfo *info= rangeInfoAlloc.make();
 				(*it)->encoderData= info;
-				info->rAvg= quant.dequant(averages[it-ranges.begin()]);
-				info->rDev2= 0;
+				info->qrAvg= quant.dequant(averages[it-ranges.begin()]);
 				info->bestSE= -1;
 			}
 			break;
@@ -524,9 +610,9 @@ void MStandardEncoder::readData(istream &file,int phase) {
 				RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
 				int quantDev= devs[it-ranges.begin()];
 				if (quantDev)
-					info->rDev2= sqr(quant.dequant(quantDev));
+					info->qrDev2= sqr(quant.dequant(quantDev));
 				else {
-					info->rDev2= 0;
+					info->qrDev2= 0;
 					//info->rotation= info->domainID= -1;  no need, they already equal -1
 				}
 			}
@@ -540,14 +626,14 @@ void MStandardEncoder::readData(istream &file,int phase) {
 				for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 					assert( *it && (*it)->encoderData );
 					RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
-					if (info->rDev2)
+					if (info->qrDev2)
 						info->inverted= stream.getBits(1);
 				}
 		//	get the rotation bits if rotations are allowed
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				assert( *it && (*it)->encoderData );
 				RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
-				if (info->rDev2)
+				if (info->qrDev2)
 					info->rotation= settingsInt(AllowedRotations) ? stream.getBits(3) : 0;
 			}
 		//	find out bits needed to store IDs of domains for every level
@@ -556,7 +642,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				assert( *it && (*it)->encoderData );
 				RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
-				if (!info->rDev2)
+				if (!info->qrDev2)
 					continue;
 				int level= (*it)->level;
 				int bits= domBits[level];
@@ -602,25 +688,30 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 			planeBlock->domains->fillPixelsInPools(*planeBlock);
 			for (RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				const RangeInfo &info= *(const RangeInfo*) (*it)->encoderData;
-				if ( info.domainID < 0 ) {
-					fillSubMatrix<float>( planeBlock->pixels, **it, info.rAvg );
+				if ( info.domainID < 0 ) { // no domain - constant color
+					fillSubMatrix<float>( planeBlock->pixels, **it, info.qrAvg );
 					continue;
 				}
+			//	get domain sums and the pixel count
 				Real dSum, d2Sum;
 				info.decAccel.pool->getSums( info.decAccel.domBlock, dSum, d2Sum );
 				Real pixCount= (*it)->size();
-
-				Real linCoeff= (info.inverted ? -pixCount : pixCount) * sqrt
-				( info.rDev2 / ( pixCount*d2Sum - sqr(dSum) ) );
-				if ( !isnormal(linCoeff) ) {
-					fillSubMatrix<float>( planeBlock->pixels, **it, info.rAvg );
+				
+				
+				Real linCoeff=(info.inverted ? -pixCount : pixCount)
+					* sqrt( info.qrDev2 / ( pixCount*d2Sum - sqr(dSum) ) );
+				 /*
+					info.exact.linCoeff;
+				*/
+				if ( !isnormal(linCoeff) || !linCoeff ) {
+					fillSubMatrix<float>( planeBlock->pixels, **it, info.qrAvg );
 					continue;
 				}
-				Real constCoeff= info.rAvg - linCoeff*dSum/pixCount;
+				Real constCoeff= info.qrAvg/*info.exact.avg*/ - linCoeff*dSum/pixCount;
 
 				using namespace MatrixWalkers;
 				MulAddCopyChecked<Real> oper( linCoeff, constCoeff, 0, 1 );
-				walkOperateCheckRotate( planeBlock->pixels, **it, oper
+				walkOperateCheckRotate( Checked<float>(planeBlock->pixels, **it), oper
 				, info.decAccel.pool->pixels, info.decAccel.domBlock, info.rotation );
 			}
 		} while (--count);
@@ -636,14 +727,17 @@ void MStandardEncoder::initRangeInfoAccelerators() {
 	for ( RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it ) {
 	//	get range level, reference to the range's info and to the level's pool infos
 		int level= (*it)->level;
-		RangeInfo &info= *(RangeInfo*)(*it)->encoderData;
+		RangeInfo &info= *static_cast<RangeInfo*>( (*it)->encoderData );
 		if ( info.domainID < 0 )
 			continue;
 		const PoolInfos &poolInfos= levelPoolInfos[level];
 	//	build pool infos for the level (if neccesary), fill info's accelerators
 		if ( poolInfos.empty() )
-			buildPoolInfos4aLevel(level),	assert( !poolInfos.empty() );
+			buildPoolInfos4aLevel(level), assert( !poolInfos.empty() );
 		info.decAccel.pool= &getDomainData
-		( level, pools, poolInfos, info.domainID, info.decAccel.domBlock );
+		( **it, pools, poolInfos, info.domainID, info.decAccel.domBlock );
+	//	adjust domain's block if the range isn't regular
+		if ( !(*it)->isRegular() )
+			adjustDomainForIncompleteRange(powers[level],info.rotation,info.decAccel.domBlock);
 	}
 }

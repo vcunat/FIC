@@ -7,6 +7,7 @@
 
 /** The root module */
 class MRoot: public IRoot {
+	DECLARE_debugModule;
 
  	DECLARE_M_cloning_name_desc( MRoot, "Root"
  	, "Standard root module" );
@@ -32,7 +33,7 @@ class MRoot: public IRoot {
 		type:	Int,
 		data: {	i:{0,100} },
 		label:	"Encoding quality",
-		desc:	"Quality - how big loss will be tolerated by the encoder"
+		desc:	"Quality - how much accurate the mappings have to be"
 	}, {
 		type:	ModuleCombo,
 		data: {	compatIDs: &IQuality2SquareError::getCompMods() },
@@ -51,9 +52,9 @@ class MRoot: public IRoot {
 		1,	//abs(QThread::idealThreadCount()), // the max. number of threads
 		0,	// deafult color transformer
 		0,	// default shape transformer
-		80,	// encoding quality
+		90,	// encoding quality
 		0,	// quality converter
-		12	// max. domain count
+		15	// max. domain count
 	);
 private:
 	/** Indices for settings */

@@ -18,7 +18,7 @@ template<typename T> inline T cube(T i)
 inline int log2ceil(int i) {
 	assert(i>0);
 	--i;
-	int result=0;
+	int result= 0;
 	while (i) {
 		i/= 2;
 		++result;
@@ -46,14 +46,17 @@ template<class T> inline T checkBoundsFunc(T low,T value,T high) {
 	else
 		return low;
 }
-/** \overload */
-inline void checkByte(int &b)
-	{ b= checkBoundsFunc(0,b,255); }
-/*
-inline void checkFloat(float &f) {
-    f=checkBoundsFunc<float>(0,f,1);
-}
-*/
+
+/** Struct for conversion between [0..1] Real and 0..(2^power-1) integer */
+template<int power=8,class R=MTypes::Real> struct Float2int {
+	static R convert(int i)
+		{ return std::ldexp( i+R(0.5), -power ); }	
+		
+	static int convert(R r)
+		{ return (int)trunc(std::ldexp( r, power )); }
+	static int convertCheck(R r)
+		{ return checkBoundsFunc( 0, convert(r), powers[power]-1 ); }
+};
 
 /** Counts the number of '\n' characters in a C-string */
 inline int countEOLs(const char *s) {

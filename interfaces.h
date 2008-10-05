@@ -2,6 +2,7 @@
 #define INTERFACES_HEADER_
 
 namespace MTypes {
+	typedef double Real; ///< The floating-point type in which most computations are made
 	/** Structure representing a rectangle */
 	struct Block {
 		short x0, y0, xend, yend;
@@ -33,8 +34,7 @@ struct IIntCodec;
 
 /** Contains basic types frequently used in modules */
 namespace MTypes {
-	typedef double Real; ///< The floating-point type in which computations are made
-	typedef MatrixSummer<Real,float,short> BlockSummer; ///< Summer instanciation used for pixels
+	typedef MatrixSummer<Real,float,int> BlockSummer; ///< Summer instanciation used for pixels
 	typedef std::vector<float**> MatrixList;
 
 	enum DecodeAct { Clear, Iterate }; ///< Possible decoding actions
@@ -212,7 +212,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 		float **pixels; ///<The matrix of pixels (of the pool)
 		char type ///		The pool-type identifier (like diamond, module-specific)
 		, level; ///<		The count of down-scaling steps (1 for basic domains)
-		float contrFactor; ///< The contractive factor (0,1) - square root of quotient of areas
+		float contrFactor; ///< The contractive factor (0,1) - the quotient of areas
 		BlockSummer summers[2]; ///< Domain summers for quick computations
 
 	public:
@@ -239,7 +239,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	/** List of pools */
 	typedef std::vector<Pool> PoolList;
 
-	/** Initializes the pools for given dimensions */
+	/** Initializes the pools for given dimensions, assumes settings are OK */
 	virtual void initPools(int width,int height) =0;
 	/** Prepares domains in already initialized pools (and fills summers, etc.) */
 	virtual void fillPixelsInPools(const PlaneBlock &ranges) =0;
@@ -260,6 +260,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	virtual void readData(std::istream &file) =0;
 };
 
+/** Square encoder - maintains mappings from square domains to square ranges */
 struct ISquareEncoder: public Interface<ISquareEncoder> {
 	typedef IColorTransformer::Plane Plane;
 	typedef ISquareRanges::RangeNode RangeNode;
@@ -271,23 +272,27 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 	};
 	typedef std::vector< std::vector<LevelPoolInfo> > LevelPoolInfos;
 
-	/** Initializes the module for encoding or decoding */
+	/** Initializes the module for encoding or decoding of a PlaneBlock */
 	virtual void initialize( IRoot::Mode mode, const PlaneBlock &planeBlock ) =0;
-	/** Finds a mapping with the best square error for a range (returns the SE) */
+	/** Finds mapping with the best square error for a range (returns the SE),
+	 *	data neccessary for decoding are stored in RangeNode.encoderData */
 	virtual float findBestSE(const RangeNode &range) =0;
 	/** Finishes encoding - to be ready for saving or decoding (can do some cleanup) */
 	virtual void finishEncoding() =0;
 	/** Performs a decoding action */
 	virtual void decodeAct( DecodeAct action, int count=1 ) =0;
 
-	/** Write/read all settings needed for reconstruction (don't depend on encoded thing) */
+	/** Write all settings needed for reconstruction (don't depend on encoded thing) */
 	virtual void writeSettings(std::ostream &file) =0;
+	/** Read all settings, opposite to #writeSettings */
 	virtual void readSettings(std::istream &file) =0;
 
 	/** Returns the number of phases (progressive encoding), only depends on settings */
 	virtual int phaseCount() const =0;
-	/** Write/read all data needed for reconstruction (do depend...) */
+	/** Write one phase of  data needed for reconstruction (excluding settings) */
 	virtual void writeData(std::ostream &file,int phase) =0;
+	/** Reads one phase of data needed for recostruction,
+	 *	assumes the settings have been read previously via #readSettings */
 	virtual void readData(std::istream &file,int phase) =0;
 };
 
@@ -302,27 +307,38 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 	};
 	typedef std::vector<Prediction> Predictions;
 
-	/** %Interface for object that make predictions for a concrete range block */
+	/** %Interface for objects that predict domains for a concrete range block */
 	class OneRangePred {
 	public:
 		virtual ~OneRangePred() {}
-		/** Makes several predictions at once. */
+		/** Makes several predictions at once, returns \p store reference */
 		virtual Predictions& getChunk(float maxPredictedSE,Predictions &store) =0;
 	};
 
 	/** Holds information neccesary to create a new predictor */
 	struct NewPredictorData {
-		const ISquareRanges::RangeNode *rangeBlock;
-		const float **rangePixels;
-		const ISquareDomains::PoolList *pools;
+		const ISquareRanges::RangeNode *rangeBlock;	///< Pointer to the range block
+		const float **rangePixels;					///< Pointer to range's pixels
+		const ISquareDomains::PoolList *pools;		///< Pointer to the domain pools
 		const ISquareEncoder::LevelPoolInfos::value_type *poolInfos;
+			///< Pointer to LevelPoolInfos for all pools (for this level)
 
-		bool allowRotations;
-		bool quantError, allowInversion, isRegular;
-		float maxLinCoeff2, bigScaleCoeff;
+		bool allowRotations	/// Are rotations allowed?
+		, quantError		///	Should quantization errors be taken into account?
+		, allowInversion	/// Are mappings with negative linear coefficients allowed?
+		, isRegular;		///< Is this range block regular?
+		
+		float maxLinCoeff2	/// The maximum linear coefficient squared (or <0 if none)
+		, bigScaleCoeff;	///< The coefficient of big-scaling penalization
 
-		Real rSum, r2Sum, pixCount
-		, rAvg, rDev2; // quant-rounded values
+		Real rSum	/// The sum of range block's all pixels
+		, r2Sum		/// The sum of squares of range block's pixels
+		, pixCount	///	The number of range block's pixels
+		, rnDev2	/// Precomputed = ( pixCount*r2Sum - sqr(rSum) )
+		, rnDev		/// Precomputed = sqrt( pixCount*r2Sum - sqr(rSum) )
+		, qrAvg		///	The average of range's pixels rounded by the selected quantizer
+		, qrDev		/// The deviance of range's pixels rounded by the selected quantizer
+		, qrDev2; 	///< sqr(qrDev)
 		#ifndef NDEBUG
 		NewPredictorData()
 		: rangeBlock(0), rangePixels(0), pools(0), poolInfos(0) {}
@@ -357,7 +373,7 @@ namespace MTypes {
 		BlockSummer summers[2];	///< normal and squares summers for the pixels
 		ISquareRanges  *ranges;	///< module for range blocks generation
 		ISquareDomains *domains;///< module for domain blocks generation
-		ISquareEncoder *encoder;///< module for encoding (maintaining range-domain mappings)
+		ISquareEncoder *encoder;///< module for encoding (maintaining domain-range mappings)
 
 		/** Simple constructor, just initializes members with parameters and checks for zeroes */
 		PlaneBlock( const Plane &plane, const Block &range
@@ -365,7 +381,7 @@ namespace MTypes {
 			: Plane(plane), Block(range), ranges(ranges_), domains(domains_), encoder(encoder_)
 				{ assert( ranges && domains && encoder ); }
 		/** Just deletes the modules (the destructor is empty,
-		 *	the method has to be called explicitly if needed) */
+		 *	#free has to be called explicitly if needed) */
 		void free() {
 			delete ranges;
 			delete domains;
@@ -374,7 +390,7 @@ namespace MTypes {
 		
 		/** A simple integrity test - needs nonzero modules and pixel-matrix */
 		bool isReady() const
-			{ return ranges && domains && encoder && pixels && moduleQ2SE; }
+			{ return this && ranges && domains && encoder && pixels && moduleQ2SE; }
 		/** Just validates both summers (if needed) */
 		void summers_makeValid() const {
 			for (int i=0; i<2; ++i)

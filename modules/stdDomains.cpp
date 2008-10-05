@@ -5,10 +5,33 @@ enum { MinRangeSize=4, DiamondOverlay=MinRangeSize-1 };
 
 using namespace std;
 
+
+/*
+#include <QImage>
+void debugPool(const ISquareDomains::Pool &pool) {
+	//	create and fill the image
+	QImage image( pool.width, pool.height, QImage::Format_RGB32 );
+
+	for (int y=0; y<pool.height; ++y) {
+		QRgb *line= (QRgb*)image.scanLine(y);
+		for (int x=0; x<pool.width; ++x) {
+			int c= checkBoundsFunc( 0, (int)(pool.pixels[x][y]*256), 255 );
+			line[x]= qRgb(c,c,c);
+		}
+	}
+	
+	image.save("pool.png");
+	
+	return;
+}
+*/
+
+
+
 namespace NOSPACE {
 	/** Pool ordering according to Pool::type (primary key) and Pool::level (secondary) */
 	struct PoolTypeLevelComparator {
-		typedef MStandardDomains::Pool Pool;
+		typedef MStdDomains::Pool Pool;
 		bool operator()(const Pool &a,const Pool &b) {
 			if (a.type!=b.type)
 				return a.type<b.type;
@@ -17,7 +40,7 @@ namespace NOSPACE {
 		}
 	};
 }
-void MStandardDomains::initPools(int width_,int height_) {
+void MStdDomains::initPools(int width_,int height_) {
 	width= width_;
 	height= height_;
 //	checks some things
@@ -27,11 +50,11 @@ void MStandardDomains::initPools(int width_,int height_) {
 		return;
 //	create the first set of domain pools for standard, horizontal and vertical domains
 	if ( settingsInt(DomPortion_Standard) )
-		pools.push_back(Pool( width/2, height/2, DomPortion_Standard, 1, 0.5f ));
+		pools.push_back(Pool( width/2, height/2, DomPortion_Standard, 1, 0.25f ));
 	if ( settingsInt(DomPortion_Horiz) )
-		pools.push_back(Pool( width/2, height, DomPortion_Horiz, 1, M_SQRT1_2 ));
+		pools.push_back(Pool( width/2, height, DomPortion_Horiz, 1, 0.5f ));
 	if ( settingsInt(DomPortion_Vert) )
-		pools.push_back(Pool( width, height/2, DomPortion_Vert, 1, M_SQRT1_2 ));
+		pools.push_back(Pool( width, height/2, DomPortion_Vert, 1, 0.5f ));
 //	create the first set of domain pools for diamond domains
 	if ( settingsInt(DomPortion_Diamond) ) {
 	//	get longer and shorter dimension
@@ -41,7 +64,7 @@ void MStandardDomains::initPools(int width_,int height_) {
 	//	generate the pools
 		while (longer>=MinRangeSize) {
 			int side= min(longer,shorter);
-			pools.push_back(Pool( side, side, DomPortion_Diamond, 1, M_SQRT1_2 ));
+			pools.push_back(Pool( side, side, DomPortion_Diamond, 1, 0.5f ));
 			longer-= side-DiamondOverlay;
 		}
 	}
@@ -53,7 +76,7 @@ void MStandardDomains::initPools(int width_,int height_) {
 		if ( pool.width>=MinRangeSize*2 && pool.height>=MinRangeSize*2 )
 			pools.push_back(
 				Pool( pool.width/2, pool.height/2, pool.type
-				, pool.level+1, ldexp(pool.contrFactor,-1) )
+				, pool.level+1, ldexp(pool.contrFactor,-2) )
 			);
 	}
 //	sort the pools according to their types and levels
@@ -61,7 +84,7 @@ void MStandardDomains::initPools(int width_,int height_) {
 }
 
 namespace NOSPACE {
-	typedef MStandardDomains::PoolList::const_iterator PoolIt;
+	typedef MStdDomains::PoolList::const_iterator PoolIt;
 	static inline bool halfShrinkOK(PoolIt src,PoolIt dest) {
 		return src->level+1 == dest->level
 		&& src->width/2 == dest->width 
@@ -76,7 +99,7 @@ namespace NOSPACE {
 	( const float **src, int srcYadd, float **dest, int width, int height );
 	static void shrinkToDiamond( const float **src, float **dest, int side, int sx0, int sy0 );
 }
-void MStandardDomains::fillPixelsInPools(const PlaneBlock &ranges) {
+void MStdDomains::fillPixelsInPools(const PlaneBlock &ranges) {
 	assert( !pools.empty() ); // assuming initPools has already been called
 //	iterate over pool types
 	PoolList::iterator end= pools.begin();
@@ -215,9 +238,9 @@ namespace NOSPACE {
 		result.push_back(dens);
 		return count;
 	}
-	/** Generates (\a results.push_back) densities for domains on level \a level for
-	 *	all pools of one type. It distributes at most \a maxCount domains among 
-	 *	the pools' scale-levels in one of three ways (\a divType) 
+	/** Generates (\p results.push_back) densities for domains on level \p level for
+	 *	all pools of one type. It distributes at most \p maxCount domains among 
+	 *	the pools' scale-levels in one of three ways (\p divType) 
 	 *	and returns the number of generated domains \relates MStandardDomains */
 	static int divideDomsInType( PoolIt begin, PoolIt end, int maxCount, int level
 	, char divType, vector<short> &results ) {
@@ -246,7 +269,7 @@ namespace NOSPACE {
 		return genCount;
 	}
 }
-vector<short> MStandardDomains::getLevelDensities(int level,int stdDomCountLog2) {
+vector<short> MStdDomains::getLevelDensities(int level,int stdDomCountLog2) {
 	assert(level>=2);
 //	compute the sum of shares, check for no-domain situations
 	int totalShares= settingsInt(DomPortion_Standard) + settingsInt(DomPortion_Horiz)
@@ -278,14 +301,14 @@ vector<short> MStandardDomains::getLevelDensities(int level,int stdDomCountLog2)
 	return result;
 }
 
-void MStandardDomains::writeSettings(ostream &file) {
+void MStdDomains::writeSettings(ostream &file) {
 	assert( this && settings );
 //	all settings are from int:{0..8}
 	for (int i=0; i<settingsLength_; ++i)
 		put<Uchar>( file, settings[i].i );
 }
 
-void MStandardDomains::readSettings(istream &file) {
+void MStdDomains::readSettings(istream &file) {
 	assert( this && settings );
 //	all settings are from int:{0..8}
 	for (int i=0; i<settingsLength_; ++i)
@@ -308,7 +331,7 @@ namespace NOSPACE {
 			float *destColEnd= *dest+height;
 		//	iterate over the destination column and average the source pixels
 			for (; destCol!=destColEnd; ++destCol ) {
-				*destCol= ldexp( *srcCol1 + *(srcCol1+1) + *srcCol2 + *(srcCol2+1), -2 );
+				*destCol= ldexp( ( *srcCol1 + *(srcCol1+1) ) + ( *srcCol2 + *(srcCol2+1) ), -2 );
 				srcCol1+= 2;
 				srcCol2+= 2;
 			}
@@ -347,8 +370,8 @@ namespace NOSPACE {
 			}
 		}
 	}//	shrinkVertically
-	/** Performs 50\% shrink with 45-degree anticlockwise rotation (\a side - the length of
-	 *	the destination square; \a sx0, \a sy0 - the top-left of the enclosing source square)
+	/** Performs 50\% shrink with 45-degree anticlockwise rotation (\p side - the length of
+	 *	the destination square; \p sx0, \p sy0 - the top-left of the enclosing source square)
 	 *	\relates MStandardDomains */
 	void shrinkToDiamond( const float **src, float **dest, int side, int sx0, int sy0 ) {
 	//	the diamond begins on top-middle

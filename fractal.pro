@@ -20,5 +20,5 @@ CONFIG(debug,debug|release) {
 	TARGET = release/$$TARGET
 }
 
-QMAKE_CXXFLAGS_DEBUG *= -ggdb
-QMAKE_CXXFLAGS_RELEASE -= -ggdb
+QMAKE_CXXFLAGS_DEBUG *= -ggdb -pg
+QMAKE_CXXFLAGS_RELEASE *= -ggdb -pg

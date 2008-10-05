@@ -16,19 +16,21 @@ public:
  *	@{ */
 	OneRangePred* newPredictor(const NewPredictorData &data) 
 		{ return new OneRangePredictor( data.poolInfos->back().indexBegin, data.allowRotations ); }
-	void cleanUp() {}; // nothing to clean up
+	void cleanUp() {} // nothing to clean up
 ///	@}
 	
 private:
 	/** Predictor class returned when calling #newPredictor
 	 *	- returns all domains in all rotations in one chunk */
 	class OneRangePredictor: public OneRangePred {
-		int domCount, rotations;
+		int domCount /// the domain count
+		, rotations; ///< the number of rotations used
 		
 	public:
 		OneRangePredictor(int domainCount,bool allowRotations)
 		: domCount(domainCount), rotations( allowRotations ? 8 : 1 ) {}
-	//	OneRangePred interface
+	/**	\name OneRangePred interface
+	 *	@{ */
 		Predictions& getChunk(float /*maxPredictedSE*/,Predictions &store) {
 			store.clear();
 			if (domCount) {
@@ -36,11 +38,13 @@ private:
 				for (int id=0; id<domCount; ++id)
 					for (int r=0; r<rotations; ++r)
 						store.push_back( Prediction(id,r) );
-				domCount=0;
+				domCount= 0;
 			}
 			return store;
 		}
-	};
-};
+	///	@}
+	}; // NoPredictor::OneRangePredictor class
+	
+}; // NoPredictor class
 
 #endif

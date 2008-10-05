@@ -45,7 +45,7 @@ public:
 	PlaneList readData(std::istream &file,const Plane &prototype,int width,int height);
 ///	@}
 private:
-	/** Creates a list of planes according to \a prototype,
+	/** Creates a list of planes according to \p prototype,
 	 *	makes new matrices and adjusts encoding parameters */
 	PlaneList createPlanes(IRoot::Mode mode,const Plane &prototype,int width,int height);
 };
@@ -53,23 +53,24 @@ private:
 
 /** Computes the amount of a color (coefficients as a parameter) in RGB \relates MColorModel */
 inline float getColor( QRgb color, const float *koefs ) {
-    return koefs[3]+std::ldexp
-    ( 0.5+qRed(color)*koefs[0]+qGreen(color)*koefs[1]+qBlue(color)*koefs[2], -8	);
+    return koefs[3] + std::ldexp( Real(0.5) + qRed(color)*Real(koefs[0]) 
+    	+ qGreen(color)*Real(koefs[1]) + qBlue(color)*Real(koefs[2]), -8 );
 }
 /** Converts color from a model (coefficients as a parameter) to RGB \relates MColorModel */
 inline QRgb getColor( const float (*coeffs)[4], const float *planes ) {
-	float rgb[3]={0,0,0};
+	float rgb[3]= {0,0,0};
 	for (int i=0; i<3; ++i) {
-		const float *cLine=coeffs[i];
-		float col=planes[i]+cLine[3];
+		const float *cLine= coeffs[i];
+		float col= planes[i]+cLine[3];
 		for (int c=0; c<3; ++c)
-			rgb[c]+=col*cLine[c];
+			rgb[c]+= col*cLine[c];
 	}
+	typedef Float2int<8,Real> Conv;
 	return qRgb
-	( checkBoundsFunc( 0, (int)std::ldexp(rgb[0],8), 255 )
-	, checkBoundsFunc( 0, (int)std::ldexp(rgb[1],8), 255 )
-	, checkBoundsFunc( 0, (int)std::ldexp(rgb[2],8), 255 )
-	);
+	( Conv::convertCheck(rgb[0]), Conv::convertCheck(rgb[1]), Conv::convertCheck(rgb[2]) );
+}
+inline int getGray(QRgb color) {
+	return Float2int<8,Real>::convert( getColor( color, MColorModel::YCbCrCoeffs[0] ) );
 }
 
 #endif

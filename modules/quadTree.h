@@ -9,6 +9,7 @@ class BitReader;
 
 /** Module dividing range blocks with a quad-tree, can use heuristic dividing */
 class MQuadTree: public ISquareRanges {
+	DECLARE_debugModule;
 
 	DECLARE_M_cloning_name_desc( MQuadTree, "Quad-tree"
 	, "Splits the range blocks according to the <b>quad-tree</b> algorithm" )
@@ -50,10 +51,19 @@ private:
 //	Module's data
 	Node *root;						///< Quad-tree's root node
 	std::vector<RangeNode*> fringe;	///< List of quad-tree's leaves
+#ifndef NDEBUG
+	int badDivides, triedMerges, badTries;
+#endif
+	
 protected:
 //	Construction and destruction
 	/** Only zeroes #root */
-	MQuadTree(): root(0) {}
+	MQuadTree()
+	: root(0)
+	#ifndef NDEBUG
+	, badDivides(0), triedMerges(0), badTries(0)
+	#endif
+		{}
 	/** Only deletes #root */
 	~MQuadTree() { delete root; }
 public:

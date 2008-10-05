@@ -4,17 +4,6 @@
 using namespace std;
 
 ////	Non-member functions
-static inline int getGray(QRgb color) {
-	static const float *coeffs= MColorModel::YCbCrCoeffs[0];
-	int res= int(
-		0.5f +
-		coeffs[0] * qRed(color) +
-		coeffs[1] * qGreen(color) +
-		coeffs[2] * qBlue(color)
-	);
-	checkByte(res);
-	return res;
-}
 static vector<double> getColorPSNR(const QImage &a,const QImage &b) {
 	int width= a.width(), height= a.height();
 	int x, y;
@@ -38,9 +27,15 @@ static vector<double> getColorPSNR(const QImage &a,const QImage &b) {
 	result[3]= sum;
 	double mul= double(width*height) * double(sqr(255));
 	for (vector<double>::iterator it=result.begin(); it!=result.end(); ++it)
-		*it= 10.0*log10( mul / *it );
+		*it= 10.0 * log10(mul / *it);
 	return result;
 }
+static QString getPSNRmessage(const QImage &img1,const QImage &img2) {
+	vector<double> psnr= getColorPSNR(img1,img2);
+	return QObject::tr("gray PSNR: %3 dB\nR,G,B: %4,%5,%6 dB") .arg(psnr[3],0,'f',2)
+		.arg(psnr[0],0,'f',2) .arg(psnr[1],0,'f',2) .arg(psnr[2],0,'f',2);
+}
+
 
 ////	Public members
 ImageViewer::ImageViewer(QApplication &app)
@@ -195,11 +190,13 @@ void ImageViewer::write() {
 	updateActions();
 }
 void ImageViewer::compare() {
+//	let the user choose a file
 	QString fname= QFileDialog::getOpenFileName
 	( this, tr("Compare to image"), QDir::currentPath()
 	, tr("PNG images (*.png)\nJFIF images (*.jpg *.jpeg)\nAll files (*.*)") );
 	if (fname.isEmpty())
 		return;
+//	open the file as an image, check it's got the same dimensions as the diplayed one
 	QImage image(fname);
 	image= image.convertToFormat(QImage::Format_RGB32);
 	if (image.isNull()) {
@@ -212,9 +209,8 @@ void ImageViewer::compare() {
 		( this, tr("Error"), tr("Images don't have the same dimensions.").arg(fname) );
 		return;
 	}
-	vector<double> psnr= getColorPSNR( image, imageLabel->pixmap()->toImage() );
-	QString message= tr("gray PSNR: %3 dB\nR,G,B: %4,%5,%6 dB") .arg(psnr[3],0,'f',2)
-		.arg(psnr[0],0,'f',2) .arg(psnr[1],0,'f',2) .arg(psnr[2],0,'f',2);
+//	compute the PSNRs and display them
+	QString message= getPSNRmessage( image, imageLabel->pixmap()->toImage() );
 	QMessageBox::information( this, tr("Comparison"), message );
 }
 void ImageViewer::settings() {
@@ -240,6 +236,9 @@ namespace NOSPACE {
 	};
 }
 void ImageViewer::encode() {
+//	start measuring the time
+	QTime encTime;
+    encTime.start();
 //	create a new encoding tree
 	IRoot *modules_old= modules_encoding;
 	modules_encoding= clone(modules_settings);
@@ -259,6 +258,17 @@ void ImageViewer::encode() {
 	if ( !encThread.getSuccess() ) 
 	//	the encoding was interrupted - return to the backup
 		swap(modules_encoding,modules_old);
+	else { // encoding successful - iterate the image and display some info
+		QImage beforeImg= modules_encoding->toImage();
+		modules_encoding->decodeAct(MTypes::Clear);
+		modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
+		QImage afterImg= modules_encoding->toImage();
+		changePixmap( QPixmap::fromImage(afterImg) );
+		
+		QString message= tr("Time to encode: %1 seconds\n") .arg(encTime.elapsed()/1000.0f)
+		+ getPSNRmessage(beforeImg,afterImg);
+		QMessageBox::information( this, tr("encoded"), message );
+	}
 //	delete the unneeded modules (either the backup or the unsuccessful)
 	delete modules_old;
 	updateActions();
@@ -284,17 +294,19 @@ void ImageViewer::load() {
 		QMessageBox::information( this, tr("Error"), tr("Cannot load file %1.").arg(fname) );
 		swap(modules_encoding,modules_old);
 	} else 
-		updateActions();
+		clear();
 	
 	delete modules_old;
 }
 void ImageViewer::clear() {
 	modules_encoding->decodeAct(Clear);
 	changePixmap( QPixmap::fromImage(modules_encoding->toImage()) );
+	updateActions();
 }
 void ImageViewer::iterate() {
 	modules_encoding->decodeAct(Iterate);
 	changePixmap( QPixmap::fromImage(modules_encoding->toImage()) );
+	updateActions();
 }
 
 ////	SettingsDialog class
@@ -528,3 +540,27 @@ void Module::settingsType2widget(QWidget *widget,const SettingsTypeItem &typeIte
 
 
 EncodingProgress *EncodingProgress::instance= 0;
+
+
+#ifndef NDEBUG
+void ImageViewer::mousePressEvent(QMouseEvent *event) {
+//	check the event, get the clicking point coordinates relative to the image	
+	if ( !event || !modules_encoding 
+	|| modules_encoding->getMode() == IRoot::Clear)
+		return;
+	const QPoint click= imageLabel->mapFrom( this, event->pos() );
+//	get the image
+	QPixmap pixmap= *imageLabel->pixmap();
+	if ( click.isNull() )
+		return;
+
+	static QWidget *debugWidget= 0;
+	delete debugWidget;
+	debugWidget= modules_encoding->debugModule(pixmap,click);
+	debugWidget->setParent(this);
+	debugWidget->setWindowFlags(Qt::Dialog);
+	debugWidget->show();
+
+	changePixmap(pixmap);
+}
+#endif
