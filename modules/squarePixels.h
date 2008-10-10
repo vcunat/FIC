@@ -74,7 +74,7 @@ protected:
 //	Construction and destruction
 	/** Only deletes #ownedMatrices and frees #jobs */
 	~MSquarePixels() {
-		for_each( ownedMatrices.begin(), ownedMatrices.end(), delMatrix<float> );
+		for_each( ownedMatrices.begin(), ownedMatrices.end(), delMatrix<SReal> );
 		for_each( jobs.begin(), jobs.end(), mem_fun_ref(&Job::free) );
 	}
 public:

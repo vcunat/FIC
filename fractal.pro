@@ -21,4 +21,8 @@ CONFIG(debug,debug|release) {
 }
 
 QMAKE_CXXFLAGS_DEBUG *= -ggdb -pg
-QMAKE_CXXFLAGS_RELEASE *= -ggdb -pg
+
+QMAKE_CXXFLAGS_RELEASE -= -ggdb
+
+#QMAKE_CXXFLAGS_RELEASE *= -ggdb -pg
+#QMAKE_LFLAGS_RELEASE *= -ggdb -pg

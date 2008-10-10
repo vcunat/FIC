@@ -7,17 +7,17 @@ using namespace std;
 
 namespace Quantizer {
 	/** Quantizes f that belongs to 0..possib/2^scale into 0..possib-1 */
-	inline int quantizeByPower(float f,int scale,int possib) {
-		assert( f>=0 && f<=possib/(double)powers[scale] );
+	inline int quantizeByPower(Real f,int scale,int possib) {
+		assert( f>=0 && f<=possib/(Real)powers[scale] );
 		int result= (int)trunc(ldexp(f,scale));
 		assert( result>=0 && result<=possib );
 		return result<possib ? result : --result;
 	}
 	/** Performs the opposite to #quantizeByPower */
-	inline float dequantizeByPower(int i,int scale,int DEBUG_ONLY(possib)) {
+	inline Real dequantizeByPower(int i,int scale,int DEBUG_ONLY(possib)) {
 		assert( i>=0 && i<possib );
-		float result= ldexp(i+0.5f,-scale);
-		assert( result>=0 && result<= possib/(double)powers[scale] );
+		Real result= ldexp(i+Real(0.5),-scale);
+		assert( result>=0 && result<= possib/(Real)powers[scale] );
 		return result;
 	}
 
@@ -31,17 +31,17 @@ namespace Quantizer {
 			scale= possibLog2;
 			possib= powers[possibLog2];
 		}
-		int quant(float avg)
+		int quant(Real avg)
 			{ return quantizeByPower(avg,scale,possib); }
-		float dequant(int i)
+		Real dequant(int i)
 			{ return dequantizeByPower(i,scale,possib); }
-		float qRound(float avg)
+		Real qRound(Real avg)
 			{ return dequant(quant(avg)); }
 	};
 
 	/** (De)Quantizer for range-block deviations */
 	class Deviation {
-		int scale,possib;
+		int scale, possib;
 	public:
 		Deviation(int possibLog2) {
 			assert(possibLog2>0);
@@ -49,11 +49,11 @@ namespace Quantizer {
 			scale= possibLog2+1;
 			possib= powers[possibLog2];
 		}
-		int quant(float dev)
+		int quant(Real dev)
 			{ return quantizeByPower(dev,scale,possib); }
-		float dequant(int i)
+		Real dequant(int i)
 			{ return dequantizeByPower(i,scale,possib); }
-		float qRound(float dev)
+		Real qRound(Real dev)
 			{ return dequant(quant(dev)); }
 	};
 }
@@ -269,7 +269,7 @@ void MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 	
 //	compute the sum of products of pixels
 	Real rdSum= walkOperateCheckRotate
-	( Checked<const float>(stable.rangePixels, *stable.rangeBlock), RDSummer<Real>()
+	( Checked<const SReal>(stable.rangePixels, *stable.rangeBlock), RDSummer<Real>()
 	, bogoCast(pool.pixels), domBlock, prediction.rotation ) .result();
 
 	Real nRDs_RsDs= stable.pixCount*rdSum - stable.rSum*dSum;
@@ -340,7 +340,7 @@ void MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 //	test if the error is the best so far
 	if ( optSE < best.error ) {
 		best.prediction()= prediction;
-		best.error= optSE;//maxSE2Predict=
+		best.error= maxSE2Predict= optSE;
 		best.inverted= nRDs_RsDs<0;
 		
 		#ifndef NDEBUG
@@ -373,7 +373,7 @@ float MStandardEncoder::findBestSE(const RangeNode &range) {
 	info.stable.allowInversion=	settingsInt(AllowedInversion);
 	info.stable.isRegular=		range.isRegular();
 	{
-		float coeff= settingsFloat(MaxLinCoeff);
+		Real coeff= settingsFloat(MaxLinCoeff);
 		info.stable.maxLinCoeff2=	coeff==MaxLinCoeff_none ? -1 : sqr(coeff);
 	}
 	info.stable.bigScaleCoeff=	settingsFloat(BigScaleCoeff);
@@ -689,7 +689,7 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 			for (RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				const RangeInfo &info= *(const RangeInfo*) (*it)->encoderData;
 				if ( info.domainID < 0 ) { // no domain - constant color
-					fillSubMatrix<float>( planeBlock->pixels, **it, info.qrAvg );
+					fillSubMatrix<SReal>( planeBlock->pixels, **it, info.qrAvg );
 					continue;
 				}
 			//	get domain sums and the pixel count
@@ -704,14 +704,14 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 					info.exact.linCoeff;
 				*/
 				if ( !isnormal(linCoeff) || !linCoeff ) {
-					fillSubMatrix<float>( planeBlock->pixels, **it, info.qrAvg );
+					fillSubMatrix<SReal>( planeBlock->pixels, **it, info.qrAvg );
 					continue;
 				}
 				Real constCoeff= info.qrAvg/*info.exact.avg*/ - linCoeff*dSum/pixCount;
 
 				using namespace MatrixWalkers;
 				MulAddCopyChecked<Real> oper( linCoeff, constCoeff, 0, 1 );
-				walkOperateCheckRotate( Checked<float>(planeBlock->pixels, **it), oper
+				walkOperateCheckRotate( Checked<SReal>(planeBlock->pixels, **it), oper
 				, info.decAccel.pool->pixels, info.decAccel.domBlock, info.rotation );
 			}
 		} while (--count);

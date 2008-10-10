@@ -24,7 +24,8 @@ class MSaupePredictor: public IStdEncPredictor {
 private:
 	enum Settings { ChunkSize };
 public:
-	typedef KDTree<float> Tree;
+	typedef float KDReal;
+	typedef KDTree<KDReal> Tree;
 private:
 //	Module's data
 	std::vector<Tree*> levelTrees;
@@ -56,7 +57,7 @@ private:
 
 		std::vector<Tree::PointHeap*> heaps;
 		std::vector<HeapInfo> infoHeap;
-		float *points;
+		KDReal *points;
 		int chunkSize, heapCount;
 		Real errorConvAccel;
 		bool firstChunk;
@@ -68,7 +69,6 @@ private:
 	//	OneRangePred interface
 		Predictions& getChunk(float maxPredictedSE,Predictions &store);
 		~OneRangePredictor() {
-// TODO (admin#1#): uncomment this
 			clearContainer(heaps);
 			delete[] points;
 		}

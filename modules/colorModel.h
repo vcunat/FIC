@@ -33,7 +33,7 @@ protected:
 //	Construction and destruction
 	/* Using auto-generated */
 public:
-	static const float RGBCoeffs[][4]	/** RGB color coefficients */
+	static const SReal RGBCoeffs[][4]	/** RGB color coefficients */
 	, YCbCrCoeffs[][4];					/**< YCbCr color coefficients */
 public:
 /** \name IColorTransformer interface
@@ -52,16 +52,16 @@ private:
 
 
 /** Computes the amount of a color (coefficients as a parameter) in RGB \relates MColorModel */
-inline float getColor( QRgb color, const float *koefs ) {
+inline SReal getColor( QRgb color, const SReal *koefs ) {
     return koefs[3] + std::ldexp( Real(0.5) + qRed(color)*Real(koefs[0]) 
     	+ qGreen(color)*Real(koefs[1]) + qBlue(color)*Real(koefs[2]), -8 );
 }
 /** Converts color from a model (coefficients as a parameter) to RGB \relates MColorModel */
-inline QRgb getColor( const float (*coeffs)[4], const float *planes ) {
-	float rgb[3]= {0,0,0};
+inline QRgb getColor( const SReal (*coeffs)[4], const SReal *planes ) {
+	SReal rgb[3]= {0,0,0};
 	for (int i=0; i<3; ++i) {
-		const float *cLine= coeffs[i];
-		float col= planes[i]+cLine[3];
+		const SReal *cLine= coeffs[i];
+		SReal col= planes[i]+cLine[3];
 		for (int c=0; c<3; ++c)
 			rgb[c]+= col*cLine[c];
 	}

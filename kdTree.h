@@ -62,7 +62,7 @@ namespace FieldMath {
 	template<class T>
 	T moveToBounds_copy(const T *point,const T **bounds,int length,T *result) {
 		return transform4( point, point+length, bounds[0], bounds[1]
-			, result, MoveToBounds<float>() ) .sqrError;
+			, result, MoveToBounds<T>() ) .sqrError;
 	}
 //	namespace NOSPACE {
 //		template<class T> struct Min {
@@ -269,7 +269,7 @@ public:
 		//	create the root heap-node
 			T *data= allocator.makeField(kd.length+1);
 			data[0]= FieldMath::moveToBounds_copy
-			( point, const_cast<const float**>(kd.bounds), kd.length, data+1 );
+			( point, const_cast<const T**>(kd.bounds), kd.length, data+1 );
 		//	push it onto the heap (and reserve more to speed up the first leaf-getting)
 			heap.reserve(kd.depth*2);
 			heap.push_back(HeapNode(1,data));

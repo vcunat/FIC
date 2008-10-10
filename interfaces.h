@@ -3,6 +3,7 @@
 
 namespace MTypes {
 	typedef double Real; ///< The floating-point type in which most computations are made
+	typedef float SReal; ///< The floating-point type for long-term pixel-value storage
 	/** Structure representing a rectangle */
 	struct Block {
 		short x0, y0, xend, yend;
@@ -34,8 +35,8 @@ struct IIntCodec;
 
 /** Contains basic types frequently used in modules */
 namespace MTypes {
-	typedef MatrixSummer<Real,float,int> BlockSummer; ///< Summer instanciation used for pixels
-	typedef std::vector<float**> MatrixList;
+	typedef MatrixSummer<Real,SReal,int> BlockSummer; ///< Summer instanciation used for pixels
+	typedef std::vector<SReal**> MatrixList;
 
 	enum DecodeAct { Clear, Iterate }; ///< Possible decoding actions
 	
@@ -87,13 +88,13 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 
 		static const Plane Empty; ///< an empty instance
 
-		float **pixels	/// a Matrix of pixels with values in [0,1], not owned (shared)
+		SReal **pixels	/// a Matrix of pixels with values in [0,1], not owned (shared)
 		, quality;		///< encoding quality for the plane, in [0,1] (higher is better)
 		int domainCountLog2;	///< 2-logarithm of the maximum domain count
 		ModuleQ2SE *moduleQ2SE;	///< pointer to the module computing maximum SE (not owned)
 		
 		/** A simple constructor, only initializes the values from the parameters */
-		Plane(float **pixels_,float quality_,int domainCountLog2_,ModuleQ2SE *moduleQ2SE_)
+		Plane(SReal **pixels_,float quality_,int domainCountLog2_,ModuleQ2SE *moduleQ2SE_)
 		: pixels(pixels_), quality(quality_), domainCountLog2(domainCountLog2_)
 		, moduleQ2SE(moduleQ2SE_) {}
 	};
@@ -209,7 +210,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	struct Pool {
 		short width	///		The width of the pool
 		, height; ///<		The height of the pool
-		float **pixels; ///<The matrix of pixels (of the pool)
+		SReal **pixels; ///<The matrix of pixels (of the pool)
 		char type ///		The pool-type identifier (like diamond, module-specific)
 		, level; ///<		The count of down-scaling steps (1 for basic domains)
 		float contrFactor; ///< The contractive factor (0,1) - the quotient of areas
@@ -218,7 +219,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	public:
 		/** Constructor allocating a matrix with correct dimensions */
 		Pool(short width_,short height_,char type_,char level_,float cFactor)
-		: width(width_), height(height_), pixels(newMatrix<float>(width_,height_))
+		: width(width_), height(height_), pixels(newMatrix<SReal>(width_,height_))
 		, type(type_), level(level_), contrFactor(cFactor) {}
 		/** Only deletes #pixels matrix */
 		void free()
@@ -318,7 +319,7 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 	/** Holds information neccesary to create a new predictor */
 	struct NewPredictorData {
 		const ISquareRanges::RangeNode *rangeBlock;	///< Pointer to the range block
-		const float **rangePixels;					///< Pointer to range's pixels
+		const SReal **rangePixels;					///< Pointer to range's pixels
 		const ISquareDomains::PoolList *pools;		///< Pointer to the domain pools
 		const ISquareEncoder::LevelPoolInfos::value_type *poolInfos;
 			///< Pointer to LevelPoolInfos for all pools (for this level)
@@ -328,7 +329,7 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 		, allowInversion	/// Are mappings with negative linear coefficients allowed?
 		, isRegular;		///< Is this range block regular?
 		
-		float maxLinCoeff2	/// The maximum linear coefficient squared (or <0 if none)
+		Real maxLinCoeff2	/// The maximum linear coefficient squared (or <0 if none)
 		, bigScaleCoeff;	///< The coefficient of big-scaling penalization
 
 		Real rSum	/// The sum of range block's all pixels

@@ -92,12 +92,12 @@ namespace NOSPACE {
 	}
 //	forwards, implemeted and described at the end of the file
 	static void shrinkToHalf
-	( const float **src, int srcYadd, float **dest, int width, int height );
+	( const SReal **src, int srcYadd, SReal **dest, int width, int height );
 	static void shrinkHorizontally
-	( const float **src, int srcYadd, float **dest, int width, int height );
+	( const SReal **src, int srcYadd, SReal **dest, int width, int height );
 	static void shrinkVertically
-	( const float **src, int srcYadd, float **dest, int width, int height );
-	static void shrinkToDiamond( const float **src, float **dest, int side, int sx0, int sy0 );
+	( const SReal **src, int srcYadd, SReal **dest, int width, int height );
+	static void shrinkToDiamond( const SReal **src, SReal **dest, int side, int sx0, int sy0 );
 }
 void MStdDomains::fillPixelsInPools(const PlaneBlock &ranges) {
 	assert( !pools.empty() ); // assuming initPools has already been called
@@ -116,7 +116,7 @@ void MStdDomains::fillPixelsInPools(const PlaneBlock &ranges) {
 	//	we've got the interval, find out about the type
 		if (type!=DomPortion_Diamond) {
 		//	non-diamond domains all behave similarly
-			void (*shrinkProc)(const float**,int,float**,int,int);
+			void (*shrinkProc)( const SReal**, int, SReal**, int, int );
 			if (type==DomPortion_Standard)
 				shrinkProc= &shrinkToHalf; else
 			if (type==DomPortion_Horiz)
@@ -162,8 +162,7 @@ void MStdDomains::fillPixelsInPools(const PlaneBlock &ranges) {
 				while ( begin->width<2*MinRangeSize || begin->height<2*MinRangeSize )
 					++begin;
 				assert( halfShrinkOK(begin,it) );
-				shrinkToHalf( (const float**)begin->pixels, 0
-				, it->pixels, it->width, it->height );
+				shrinkToHalf( bogoCast(begin->pixels), 0, it->pixels, it->width, it->height );
 			//	move on
 				++it;
 				++begin;
@@ -320,15 +319,15 @@ void MStdDomains::readSettings(istream &file) {
 namespace NOSPACE {
 	/** Performs a simple 50\%^2 image shrink (dimensions belong to the destination)
 	 *	\relates MStandardDomains */
-	void shrinkToHalf( const float **src, int srcYadd, float **dest, int width, int height ) {
+	void shrinkToHalf( const SReal **src, int srcYadd, SReal **dest, int width, int height ) {
 	//	iterate over columns of the destination matrix
-		for (float **destEnd=dest+width; dest!=destEnd; ++dest ) {
+		for (SReal **destEnd=dest+width; dest!=destEnd; ++dest ) {
 		//	get two source columns (and increment the source)
-			const float *srcCol1= (*src++) + srcYadd;
-			const float *srcCol2= (*src++) + srcYadd;
+			const SReal *srcCol1= (*src++) + srcYadd;
+			const SReal *srcCol2= (*src++) + srcYadd;
 		//	get begin and end of the destination column
-			float *destCol= *dest;
-			float *destColEnd= *dest+height;
+			SReal *destCol= *dest;
+			SReal *destColEnd= *dest+height;
 		//	iterate over the destination column and average the source pixels
 			for (; destCol!=destColEnd; ++destCol ) {
 				*destCol= ldexp( ( *srcCol1 + *(srcCol1+1) ) + ( *srcCol2 + *(srcCol2+1) ), -2 );
@@ -339,15 +338,15 @@ namespace NOSPACE {
 	}//	shrinkToHalf
 	/** Performs a simple 50\% image horizontal shrink (dimensions belong to the destination)
 	 *	\relates MStandardDomains */
-	void shrinkHorizontally( const float **src, int srcYadd, float **dest, int width, int height ) {
+	void shrinkHorizontally( const SReal **src, int srcYadd, SReal **dest, int width, int height ) {
 	//	iterate over columns of the destination matrix
-		for (float **destEnd=dest+width; dest!=destEnd; ++dest ) {
+		for (SReal **destEnd=dest+width; dest!=destEnd; ++dest ) {
 		//	get two source columns (and increment the source)
-			const float *srcCol1= (*src++) + srcYadd;
-			const float *srcCol2= (*src++) + srcYadd;
+			const SReal *srcCol1= (*src++) + srcYadd;
+			const SReal *srcCol2= (*src++) + srcYadd;
 		//	get begin and end of the destination column
-			float *destCol= *dest;
-			float *destColEnd= *dest+height;
+			SReal *destCol= *dest;
+			SReal *destColEnd= *dest+height;
 		//	iterate over the destination column and average the source pixels
 			for (; destCol!=destColEnd; ++destCol )
 				*destCol= ldexp( (*srcCol1++)+(*srcCol2++), -1 );
@@ -355,14 +354,14 @@ namespace NOSPACE {
 	}//	shrinkHorizontally
 	/** Performs a simple 50\% image vertical shrink (dimensions belong to the destination)
 	 *	\relates MStandardDomains */
-	void shrinkVertically( const float **src, int srcYadd, float **dest, int width, int height ) {
+	void shrinkVertically( const SReal **src, int srcYadd, SReal **dest, int width, int height ) {
 	//	iterate over columns of the destination matrix
-		for (float **destEnd=dest+width; dest!=destEnd; ++dest ) {
+		for (SReal **destEnd=dest+width; dest!=destEnd; ++dest ) {
 		//	get one source column (and increment the source)
-			const float *srcCol= (*src++) + srcYadd;
+			const SReal *srcCol= (*src++) + srcYadd;
 		//	get begin and end of the destination column
-			float *destCol= *dest;
-			float *destColEnd= *dest+height;
+			SReal *destCol= *dest;
+			SReal *destColEnd= *dest+height;
 		//	iterate over the destination column and average the source pixels
 			for (; destCol!=destColEnd; ++destCol ) {
 				*destCol= ldexp( *srcCol + *(srcCol+1), -1 );
@@ -373,15 +372,15 @@ namespace NOSPACE {
 	/** Performs 50\% shrink with 45-degree anticlockwise rotation (\p side - the length of
 	 *	the destination square; \p sx0, \p sy0 - the top-left of the enclosing source square)
 	 *	\relates MStandardDomains */
-	void shrinkToDiamond( const float **src, float **dest, int side, int sx0, int sy0 ) {
+	void shrinkToDiamond( const SReal **src, SReal **dest, int side, int sx0, int sy0 ) {
 	//	the diamond begins on top-middle
 		sx0+= side-1;
 	//	iterate over the columns of the destination matrix (both source coords. increment)
-		for (float **destEnd=dest+side; dest!=destEnd; ++dest,++sx0,++sy0) {
+		for (SReal **destEnd=dest+side; dest!=destEnd; ++dest,++sx0,++sy0) {
 			int sx= sx0, sy= sy0;
-			float *destCol= *dest;
+			SReal *destCol= *dest;
 		//	in a column, the source-x decreases and source-y grows
-			for (float *destColEnd=destCol+side; destCol!=destColEnd; ++destCol,--sx,++sy)
+			for (SReal *destColEnd=destCol+side; destCol!=destColEnd; ++destCol,--sx,++sy)
 				*destCol=
 					ldexp( src[sx][sy]+src[sx][sy+1]+src[sx+1][sy]+src[sx+1][sy+1], -2 );
 		}

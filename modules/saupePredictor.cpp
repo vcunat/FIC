@@ -3,7 +3,6 @@
 using namespace std;
 
 void MSaupePredictor::cleanUp() {
-// TODO (admin#1#): uncomment this
 	clearContainer(levelTrees);
 	levelTrees.clear();
 }

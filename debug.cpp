@@ -89,7 +89,7 @@ namespace NOSPACE {
 		layout->addWidget(label);
 	}
 	template<class Assigner>
-	QImage imageFromMatrix(const float **matrix,Block block,int rotation,Assigner assigner) {
+	QImage imageFromMatrix(const SReal **matrix,Block block,int rotation,Assigner assigner) {
 		QImage image(block.width(),block.height(),QImage::Format_RGB32);
 				
 		using namespace MatrixWalkers;
@@ -102,7 +102,7 @@ namespace NOSPACE {
 		return image;
 	}
 	struct GrayImageAssigner {
-		void operator()(QRgb &rgb,const float &pixel) {
+		void operator()(QRgb &rgb,const SReal &pixel) {
 			int gray= Float2int<8,Real>::convertCheck(pixel);
 			rgb= qRgb(gray,gray,255);
 		}
@@ -113,7 +113,7 @@ namespace NOSPACE {
 		
 		GrayImageMulAddAssigner(Real toMul,Real toAdd)
 		: mul(toMul), add(toAdd) {}
-		void operator()(QRgb &rgb,const float &pixel) 
+		void operator()(QRgb &rgb,const SReal &pixel) 
 			{ GrayImageAssigner::operator()( rgb, pixel*mul+add ); }
 	};
 }

@@ -364,39 +364,43 @@ namespace MatrixWalkers {
 			default: assert(false); return oper;
 		}
 	}
+	
+	struct OperatorBase {
+		typedef MTypes::SReal SReal;
+		
+		void innerEnd() {}
+	};
 
-
-	template<class Real> struct RDSummer {
-		Real totalSum, lineSum;
+	template<class CReal> struct RDSummer: public OperatorBase {
+		CReal totalSum, lineSum;
 
 		RDSummer()
 		: totalSum(0), lineSum(0) {}
-		void operator()(const float &num1,const float& num2)
-			{ lineSum+= Real(num1) * Real(num2); }
+		void operator()(const SReal &num1,const SReal& num2)
+			{ lineSum+= CReal(num1) * CReal(num2); }
 		void innerEnd()
 			{ totalSum+= lineSum; lineSum= 0; }
-		Real result()
+		CReal result()
 			{ assert(!lineSum); return totalSum; }
 	};
 
-	template<class T> struct AddMulCopy {
+	template<class T> struct AddMulCopy: public OperatorBase {
 		const T toAdd, toMul;
 
 		AddMulCopy(T add,T mul)
 		: toAdd(add), toMul(mul) {}
 
-		void operator()(float &res,float f) const
+		void operator()(SReal &res,SReal f) const
 			{ res= (f+toAdd)*toMul; }
 	};
 
-	template<class T> struct MulAddCopyChecked {
+	template<class T> struct MulAddCopyChecked: public OperatorBase {
 		const T toMul, toAdd, min, max;
 
 		MulAddCopyChecked(T mul,T add,T minVal,T maxVal)
 		: toMul(mul), toAdd(add), min(minVal), max(maxVal) {}
-		void operator()(float &res,float f) const
+		void operator()(SReal &res,SReal f) const
 			{ res= checkBoundsFunc( min, f*toMul+toAdd, max ); }
-		void innerEnd() const {};
 	};
 }
 

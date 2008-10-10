@@ -8,7 +8,7 @@
 class MStandardEncoder: public ISquareEncoder {
 	DECLARE_debugModule;
 public:
-	static const float MaxLinCoeff_none= 0;
+	static const Real MaxLinCoeff_none= 0;
 
 	DECLARE_M_cloning_name_desc( MStandardEncoder, "Standard encoder"
 	, "Classic encoder supporting one-domain to one-range mappings" )
@@ -77,7 +77,7 @@ public:
 		1,		// color value inversion
 		1.0f,	// big-scale penalty coefficient
 		1,		// take quant-errors into account
-		MaxLinCoeff_none, //	the maximum linear coefficient
+		(float)MaxLinCoeff_none, //	the maximum linear coefficient
 		7,		// average possibilities
 		7,		// deviation possibilities
 		0,		// average codec

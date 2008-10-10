@@ -25,12 +25,12 @@ template<> inline Uint16 get(std::istream &is) {
 }
 
 
-inline int float01ToBits(float f,int bitCount) {
+inline int float01ToBits(Real f,int bitCount) {
 	int result= (int)std::ldexp(f,bitCount);
 	return result==powers[bitCount] ? result-1 : result;
 }
-inline float float01FromBits(int bits,int bitCount) {
-	return std::ldexp( float(bits)+float(0.5), -bitCount);
+inline Real float01FromBits(int bits,int bitCount) {
+	return std::ldexp( Real(bits)+Real(0.5), -bitCount);
 }
 
 
