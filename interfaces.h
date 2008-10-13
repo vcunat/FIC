@@ -261,7 +261,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	virtual void readData(std::istream &file) =0;
 };
 
-/** Square encoder - maintains mappings from square domains to square ranges */
+/** Interface for square encoders - maintaining mappings from square domains to square ranges */
 struct ISquareEncoder: public Interface<ISquareEncoder> {
 	typedef IColorTransformer::Plane Plane;
 	typedef ISquareRanges::RangeNode RangeNode;
@@ -297,6 +297,7 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 	virtual void readData(std::istream &file,int phase) =0;
 };
 
+/** Interface for domain-range mapping predictors for MStandardEncoder */
 struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 	/** Contains information about one predicted domain block */
 	struct Prediction {
@@ -306,17 +307,19 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 		int domainID;
 		char rotation; ///<	the rotation of the domain
 	};
+	/** List of predictions (later often reffered to as a chunk) */
 	typedef std::vector<Prediction> Predictions;
 
 	/** %Interface for objects that predict domains for a concrete range block */
 	class OneRangePred {
 	public:
+		/** Virtual destructor needed for safe deletion of derived classes */
 		virtual ~OneRangePred() {}
 		/** Makes several predictions at once, returns \p store reference */
 		virtual Predictions& getChunk(float maxPredictedSE,Predictions &store) =0;
 	};
 
-	/** Holds information neccesary to create a new predictor */
+	/** Holds plenty precomputed information about the range block to be predicted for */
 	struct NewPredictorData {
 		const ISquareRanges::RangeNode *rangeBlock;	///< Pointer to the range block
 		const SReal **rangePixels;					///< Pointer to range's pixels
@@ -344,11 +347,11 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 		NewPredictorData()
 		: rangeBlock(0), rangePixels(0), pools(0), poolInfos(0) {}
 		#endif
-	};
+	}; // NewPredictorData struct
 
 	/** Creates a predictor (passing the ownership) for a range block */
 	virtual OneRangePred* newPredictor(const NewPredictorData &data) =0;
-	/** Releases the resources (called when encoding is complete) */
+	/** Releases common resources (called when encoding is complete) */
 	virtual void cleanUp() =0;
 };
 

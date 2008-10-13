@@ -1,13 +1,7 @@
 #include "saupePredictor.h"
-
 using namespace std;
 
-void MSaupePredictor::cleanUp() {
-	clearContainer(levelTrees);
-	levelTrees.clear();
-}
-MSaupePredictor::OneRangePred* MSaupePredictor::
-newPredictor(const NewPredictorData &data) {
+MSaupePredictor::OneRangePred* MSaupePredictor::newPredictor(const NewPredictorData &data) {
 //	ensure the levelTrees vector is long enough
 	int level= data.rangeBlock->level;
 	if ( level >= (int)levelTrees.size() )
@@ -20,6 +14,11 @@ newPredictor(const NewPredictorData &data) {
 	return new OneRangePredictor(data,settingsInt(ChunkSize),*tree);
 }
 
+void MSaupePredictor::cleanUp() {
+	clearContainer(levelTrees);
+	levelTrees.clear();
+}
+
 MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data) {
 //	compute some accelerators
 	const ISquareEncoder::LevelPoolInfos::value_type &poolInfos= *data.poolInfos;
@@ -28,37 +27,41 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 	int sideLength= powers[level];
 	int pixelCount= powers[2*level];
 //	create space for temporary domain pixels
-	float *domPix= new float[ domainCount * pixelCount ];
+	KDReal *domPix= new KDReal[ domainCount * pixelCount ];
 //	init domain-blocks' from every pool
-	float *domPixNow= domPix;
+	KDReal *domPixNow= domPix;
 	int poolCount= data.pools->size();
 	for (int poolID=0; poolID<poolCount; ++poolID) {
+	//	check we are on the place we want to be; get the current pool, density, etc. 
 		assert( domPixNow-domPix == poolInfos[poolID].indexBegin*pixelCount );
 		const ISquareDomains::Pool &pool= (*data.pools)[poolID];
 		int density= poolInfos[poolID].density;
 		int poolXend= density*getCountForDensity( pool.width, density, sideLength );
 		int poolYend= density*getCountForDensity( pool.height, density, sideLength );
 	//	handle the domain block on [x0,y0] (for each in the pool)
-		for (int y0=0; y0<poolYend; y0+=density)
-			for (int x0=0; x0<poolXend; x0+=density) {
+		for (int x0=0; x0<poolXend; x0+=density)
+			for (int y0=0; y0<poolYend; y0+=density) {
 			//	compute the average and standard deviation (data needed for normalization)
 				Real avg, avg2, countInv= 1/pixelCount;
 				avg= countInv*pool.summers[0].getSum(x0,y0,x0+sideLength,y0+sideLength);
 				avg2= countInv*pool.summers[1].getSum(x0,y0,x0+sideLength,y0+sideLength);
-				MatrixWalkers::AddMulCopy<Real> oper( -avg, 1/sqrt( avg2-sqr(avg) ) );
-			//	copy every column of the domain pixels (and normalize them on the way)
+				Real check= avg2-sqr(avg);
+				Real multiply= check>0 ? 1/sqrt(check) : 1;
+				MatrixWalkers::AddMulCopy<Real> oper( -avg, multiply  );
+			//	copy every column of the domain's pixels (and normalize them on the way)
 				using namespace FieldMath;
 				float *linCol= domPixNow;
 				float *linColEnd= domPixNow+pixelCount;
 				for (int x=x0; linCol!=linColEnd; ++x,linCol+=sideLength)
 					transform2( linCol, linCol+sideLength, pool.pixels[x]+y0, oper );
-			//	move to the next domain's data
+			//	move to the data of the next domain
 				domPixNow= linColEnd;
 			}
 	}
+	assert( domPixNow-domPix == domainCount*pixelCount ); // check we are just at the end
 //	create the tree from obtained data
 	Tree *result= new Tree
-	( domPix, pixelCount, domainCount, &KDCoordChoosers::boundBoxLongest );
+		( domPix, pixelCount, domainCount, &KDCoordChoosers::boundBoxLongest );
 //	clean up temporaries, return the tree
 	delete[] domPix;
 	return result;
@@ -81,31 +84,33 @@ namespace NOSPACE {
 			{ out= -in; }
 	};
 }
-MSaupePredictor::OneRangePredictor::
-OneRangePredictor(const NewPredictorData &data,int chunkSize_,const Tree &tree)
+MSaupePredictor::OneRangePredictor
+::OneRangePredictor( const NewPredictorData &data, int chunkSize_, const Tree &tree )
 : chunkSize(chunkSize_), firstChunk(true) {
+//	we can't handle irregular ranges yet
 	assert(data.isRegular);
 //	compute some accelerators, allocate space for normalized range (+rotations,inversion)
 	int rotationCount= data.allowRotations ? 8 : 1;
 	heapCount= rotationCount * (data.allowInversion ? 2 : 1);
-	points= new float[tree.length*heapCount];
+	points= new KDReal[tree.length*heapCount];
 //	compute normalizing transformation and initialize a normalizator object
-	Real rSum2= sqr(data.rSum);
-	Real multiply= data.pixCount / sqrt(data.r2Sum*data.pixCount-rSum2);
+	Real multiply= data.pixCount / data.rnDev;
 	AddMulCopyTo2nd<Real> oper( -data.rSum/data.pixCount, multiply );
 //	compute SE-normalizing accelerator
-	errorConvAccel= 1/( sqr(data.pixCount) * cube(data.r2Sum-rSum2) );
+	errorConvAccel= 1 / ( sqr(data.pixCount) * cube( data.r2Sum-sqr(data.rSum) ) );
 	{
 		int sideLength= powers[data.rangeBlock->level];
-		float *rotMatrices[rotationCount][sideLength];
+		KDReal* rotMatrices[rotationCount][sideLength]; // a fake array of matrices
 		Block localBlock(0,0,sideLength,sideLength);
 	//	create normalized rotations
 		for (int rot=0; rot<rotationCount; ++rot) {
+		//	fake the matrix for this rotation
 			float *currRangeLin= points+rot*tree.length;
 			float **currRangeMatrix= rotMatrices[rot];
 			initMatrixPointers( sideLength, sideLength, currRangeLin, currRangeMatrix );
+		//	fill it with normalized data
 			using namespace MatrixWalkers;
-			walkOperateCheckRotate( Checked<const float>(data.rangePixels, *data.rangeBlock)
+			walkOperateCheckRotate( Checked<const SReal>(data.rangePixels, *data.rangeBlock)
 			, oper, currRangeMatrix, localBlock, rot );
 		}
 	}
@@ -122,11 +127,13 @@ OneRangePredictor(const NewPredictorData &data,int chunkSize_,const Tree &tree)
 		heaps.push_back(heap);
 		infoHeap.push_back(HeapInfo( i, heap->getTopSE() ));
 	}
+//	build the heap from heap-informations
 	make_heap( infoHeap.begin(), infoHeap.end() );
 }
 
-MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor::
-getChunk(float maxPredictedSE,Predictions &store) {
+MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
+::getChunk(float maxPredictedSE,Predictions &store) {
+	assert( heaps.size()==(size_t)heapCount && infoHeap.size()==(size_t)heapCount );
 	if ( infoHeap.empty() ) {
 		store.clear();
 		return store;
@@ -138,11 +145,11 @@ getChunk(float maxPredictedSE,Predictions &store) {
 		if (heapCount>predCount)
 			predCount= heapCount;
 	}
-//
+//	compute the max. normalized SE to predict
 	float maxNormalizedSE= normalizeSE(maxPredictedSE);
-//	make a local working copy for the result, adjust its size
+//	make a local working copy for the result (the prediction), adjust its size
 	Predictions result;
-	swap(result,store);
+	swap(result,store); // swapping is the quickest way
 	result.resize(predCount);
 //	generate the predictions
 	for (Predictions::iterator it=result.begin(); it!=result.end(); ++it) {
@@ -155,6 +162,7 @@ getChunk(float maxPredictedSE,Predictions &store) {
 			break;
 		}
 	//	fill the prediction and pop the heap
+		assert( 0<=bestInfo.index && bestInfo.index<heapCount );
 		Tree::PointHeap &bestHeap= *heaps[bestInfo.index];
 		it->domainID= bestHeap.popLeaf();
 		it->rotation= bestInfo.index%8; // modulo - for the case of inversion

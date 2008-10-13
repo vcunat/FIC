@@ -86,9 +86,10 @@ const ISquareDomains::Pool& MStandardEncoder::getDomainData
 	int indexInPool= domIndex - it->indexBegin;
 	assert( indexInPool>=0 && indexInPool<(it+1)->indexBegin );
 	int size= powers[rangeBlock.level];
-	int domsInRow= getCountForDensity( pool.width, it->density, size );
-	block.x0= (indexInPool%domsInRow)*it->density;
-	block.y0= (indexInPool/domsInRow)*it->density;
+//	changed: the domains are mapped along columns and not rows
+	int domsInCol= getCountForDensity( pool.height, it->density, size );
+	block.x0= (indexInPool/domsInCol)*it->density;
+	block.y0= (indexInPool%domsInCol)*it->density;
 	block.xend= block.x0+size;
 	block.yend= block.y0+size;
 
@@ -382,6 +383,8 @@ float MStandardEncoder::findBestSE(const RangeNode &range) {
 	info.stable.r2Sum=		planeBlock->getSum(range,BlockSummer::Squares);
 	info.stable.pixCount=	range.size();
 	info.stable.rnDev2=		info.stable.pixCount*info.stable.r2Sum - sqr(info.stable.rSum);
+	if (info.stable.rnDev2<0)
+		info.stable.rnDev2= 0;
 	info.stable.rnDev=		sqrt(info.stable.rnDev2);
 	{
 		Quantizer::Average quantAvg( settingsInt(QuantStepLog_avg) );

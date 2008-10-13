@@ -145,8 +145,8 @@ public:
 	void initialize( IRoot::Mode mode, const PlaneBlock &planeBlock_ );
 	float findBestSE(const RangeNode &range);
 	void finishEncoding() {
-		initRangeInfoAccelerators();
-		modulePredictor()->cleanUp();
+		initRangeInfoAccelerators();	// prepare for saving/decoding
+		modulePredictor()->cleanUp();	// free unneccesary memory of the predictor
 	}
 	void decodeAct( DecodeAct action, int count=1 );
 

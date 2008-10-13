@@ -9,23 +9,23 @@ namespace NOSPACE {
 
 /** Routines for computing with T[length] number fields */
 namespace FieldMath {
-
-	template<class I1,class I2,class T>
-	T transform2( I1 i1, I1 iEnd1, I2 i2, T transformer ) {
+	/** Calls transformer(x,y) for every x from [i1..iEnd1) and corresponding y from [i2..) */
+	template<class I1,class I2,class Transf>
+	Transf transform2( I1 i1, I1 iEnd1, I2 i2, Transf transformer ) {
 		for (; i1!=iEnd1; ++i1,++i2)
 			transformer(*i1,*i2);
 		return transformer;
 	}
-
-	template<class I1,class I2,class I3,class T>
-	T transform3( I1 i1, I1 iEnd1, I2 i2, I3 i3, T transformer ) {
+	/** Analogous to ::transform2 */
+	template<class I1,class I2,class I3,class Transf>
+	Transf transform3( I1 i1, I1 iEnd1, I2 i2, I3 i3, Transf transformer ) {
 		for (; i1!=iEnd1; ++i1,++i2,++i3)
 			transformer(*i1,*i2,*i3);
 		return transformer;
 	}
-
-	template<class I1,class I2,class I3,class I4,class T>
-	T transform4( I1 i1, I1 iEnd1, I2 i2, I3 i3, I4 i4, T transformer ) {
+	/** Analogous to ::transform2 */
+	template<class I1,class I2,class I3,class I4,class Transf>
+	Transf transform4( I1 i1, I1 iEnd1, I2 i2, I3 i3, I4 i4, Transf transformer ) {
 		for (; i1!=iEnd1; ++i1,++i2,++i3,++i4)
 			transformer(*i1,*i2,*i3,*i4);
 		return transformer;
@@ -46,14 +46,14 @@ namespace FieldMath {
 
 			void operator()(const T &point,const T &lower,const T &upper,T &result) {
 				if (point<lower) {
-					sqrError+=sqr(lower-point);
-					result=lower;
+					sqrError+= sqr(lower-point);
+					result= lower;
 				} else
 				if (point>upper) {
-					sqrError+=sqr(point-upper);
-					result=upper;
+					sqrError+= sqr(point-upper);
+					result= upper;
 				} else
-					result=point;
+					result= point;
 			}
 		};
 	}
@@ -119,27 +119,37 @@ namespace NOSPACE {
 	template<class T> struct BoundsExpander {
 		void operator()(const T &data,T &lower,T &upper) const {
 			if (data<lower)
-				lower=data; else
+				lower= data; else
 			if (data>upper)
-				upper=data;
+				upper= data;
 		}
 	};
 }
+/** Computes the bounding box of \p count vectors with length \p length stored in \p data.
+ *	The vectors in \p data are stored linearly, bounds[0] and bounds[1] sould be preallocated */
 template<class T> void getBounds(const T *data,int length,int count,T **bounds) {
 	using namespace FieldMath;
+	assert(length>0);
+//	make the initial bounds only contain the first point
 	assign(data,length,bounds[0]);
 	assign(data,length,bounds[1]);
+//	expand the bounds by every point (except for the first one)
 	while (--count) {
-		data+=length;
+		data+= length;
 		transform3( data, data+length, bounds[0], bounds[1], BoundsExpander<T>() );
 	}
 }
+/** Like ::getBounds, but it only works on vectors with indices from [\p beginIDs..\p endIDs)
+ *	instead of [0..\p count) */
 template<class T>
 void getBounds(const T *data,int length,const int *beginIDs,const int *endIDs,T **bounds) {
 	using namespace FieldMath;
+	assert(endIDs>beginIDs);
+//	make the initial bounds only contain the first point
 	const T *begin= data + *beginIDs*length;
 	assign( begin, length, bounds[0] );
 	assign( begin, length, bounds[1] );
+//	expand the bounds by every point (except for the first one)	
 	while ( ++beginIDs != endIDs ) {
 		begin= data + *beginIDs*length;
 		transform3( begin, begin+length, bounds[0], bounds[1], BoundsExpander<T>() );
@@ -160,24 +170,26 @@ namespace NOSPACE {
 }
 /** A generic KD-tree */
 template < class T, class Chooser
-	= int (*)(int,int,/*const*/T**,const T*,int,const int*,const int*) >
+	= int (*)(int,int,const T**,const T*,int,const int*,const int*) >
 class KDTree {
+	/** Represents one node of the KD-tree */
 	struct Node {
-		int coord;
-		T threshold;
+		int coord;		///< The coordinate along which the tree splits in this node
+		T threshold;	///< The threshold of the split
 	};
 
 public:
-	const int depth
-	, length ///	the length of the vectors
-	, count; ///<	the count of the vectors
-	const Chooser chooser;
+	const int depth	///  The depth of the tree = ::log2ceil(#count)
+	, length		///	 The length of the vectors
+	, count;		///< The count of the vectors
+	const Chooser chooser; ///< The best-to-split-at coordinate chooser
 private:
-	Node *nodes;
-	int *dataIDs;///<	data IDs for children of "leaf" nodes
-	T *bounds[2];
+	Node *nodes;	///< The array of the tree-nodes
+	int *dataIDs;	///< Data IDs for children of "leaf" nodes
+	T *bounds[2];	///< The bounding box for all the data
 
 public:
+//	Builds a new KD-tree from \p count_ vectors of \p length_ elements stored in \data
 	KDTree(const T *data,int length_,int count_,Chooser coordChooser)
 	: depth( log2ceil(count_) ), length(length_), count(count_), chooser(coordChooser)
 	, nodes( new Node[count_] ), dataIDs( new int[count_] ) {
@@ -199,7 +211,7 @@ public:
 		delete[] bounds[1];
 		delete[] dataIDs;
 	}
-	/** Takes an index of "leaf" (nonexistent) node, returns the appropriate data ID */
+	/** Takes an index of "leaf" (nonexistent) node and returns the appropriate data ID */
 	int leafID2dataID(int leafID) const {
 		assert( count<=leafID && leafID<2*count );
 		int index= leafID-powers[depth];
@@ -210,16 +222,16 @@ public:
 	}
 private:
 	void buildNode(const T *data,int nodeIndex,int *beginIDs,int *endIDs,int depthLeft) {
-		assert( endIDs-beginIDs >= 2 );
-	//
 		int count= endIDs-beginIDs;
+	//	check we've got at least one vector and the depth&count are adequate to each other
+		assert( count>=2 && powers[depthLeft-1]<count && count<=powers[depthLeft]);
 		--depthLeft;
 		bool shallowRight= ( powers[depthLeft]+powers[depthLeft-1] > count );
 		int *middle= shallowRight
 			? endIDs-powers[depthLeft-1]
 			: beginIDs+powers[depthLeft];
 	//	find out the dividing coordinate and find the median in this coordinate
-		int coord= chooser(depth,length,bounds,data,nodeIndex,beginIDs,endIDs);
+		int coord= chooser(depth,length,bogoCast(bounds),data,nodeIndex,beginIDs,endIDs);
 		nth_element( beginIDs, middle , endIDs, IndexComparator<T>(data,length,coord) );
 	//	fill the node's data (dividing coordinate and its threshold)
 		nodes[nodeIndex].coord= coord;
@@ -340,7 +352,7 @@ namespace KDCoordChoosers {
 	namespace NOSPACE {
 		template<class T> struct MaxDiffCoord {
 			T maxDiff;
-			int best,next;
+			int best, next;
 
 			MaxDiffCoord(const T &diff0)
 			: maxDiff(diff0), best(0), next(1) {}
@@ -356,7 +368,7 @@ namespace KDCoordChoosers {
 		};
 	}
 	template<class T>
-	int boundBoxLongest( int /*depth*/, int length, T **bounds, const T *data
+	int boundBoxLongest( int /*depth*/, int length, const T **bounds, const T *data
 	, int nodeIndex, const int *beginIDs, const int *endIDs ) {
 		assert( length>0 && bounds && data
 		&& nodeIndex>0 && beginIDs && endIDs && beginIDs<endIDs );
@@ -364,10 +376,8 @@ namespace KDCoordChoosers {
 		T lower[length], upper[length];
 		T* localBounds[2]= {lower,upper};
 	//	if nodeIndex==1, we are in the root -> we can use already computed bounds
-		if ( nodeIndex>1 ) {
+		if ( nodeIndex>1 )
 			getBounds( data, length, beginIDs, endIDs, localBounds );
-			bounds= localBounds;
-		}
 	//	find and return the longest coordinate
 		MaxDiffCoord<T> mdc= FieldMath::transform2( localBounds[0]+1, localBounds[0]+length
 		, localBounds[1]+1, MaxDiffCoord<T>( *localBounds[1] - *localBounds[0] ) );
