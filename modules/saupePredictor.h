@@ -68,9 +68,9 @@ private:
 
 		std::vector<Tree::PointHeap*> heaps; ///< Pointers to the heaps for every rotation and inversion
 		std::vector<HeapInfo> infoHeap; ///< Heap built from #heaps according to their best SEs
-		KDReal *points; ///< Normalized range rotations and inversions used by the heaps
-		int chunkSize	///  The suggested count for predicted ranges returned at once
-		, heapCount;	///< The number of heaps
+		KDReal *points; 	///< Normalized range rotations and inversions used by the heaps
+		int chunkSize		///  The suggested count for predicted ranges returned at once
+		, heapCount;		///< The number of heaps
 		Real errorConvAccel;///< Accelerator for conversion of SEs to the real values
 		bool firstChunk; 	///< True if nothing has been predicted yet, false otherwise
 

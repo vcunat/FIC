@@ -105,8 +105,8 @@ MSaupePredictor::OneRangePredictor
 	//	create normalized rotations
 		for (int rot=0; rot<rotationCount; ++rot) {
 		//	fake the matrix for this rotation
-			float *currRangeLin= points+rot*tree.length;
-			float **currRangeMatrix= rotMatrices[rot];
+			KDReal *currRangeLin= points+rot*tree.length;
+			KDReal **currRangeMatrix= rotMatrices[rot];
 			initMatrixPointers( sideLength, sideLength, currRangeLin, currRangeMatrix );
 		//	fill it with normalized data
 			using namespace MatrixWalkers;
@@ -116,7 +116,7 @@ MSaupePredictor::OneRangePredictor
 	}
 //	create inverse of the rotations if needed
 	if (data.allowInversion) {
-		float *pointsMiddle= points+tree.length*rotationCount;
+		KDReal *pointsMiddle= points+tree.length*rotationCount;
 		FieldMath::transform2( points, pointsMiddle, pointsMiddle, SignChanger<float>() );
 	}
 //	create all the heaps and initialize their infos (and make a heap of the infos)
@@ -167,7 +167,7 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 		it->domainID= bestHeap.popLeaf();
 		it->rotation= bestInfo.index%8; // modulo - for the case of inversion
 	//	check for emptying the heap
-		if ( !bestHeap.empty() ) {
+		if ( !bestHeap.isEmpty() ) {
 		//	rebuild the infoHeap heap
 			bestInfo.bestError= bestHeap.getTopSE();
 			push_heap( infoHeap.begin(), infoHeap.end() );

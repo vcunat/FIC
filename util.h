@@ -127,7 +127,7 @@ template <class T> struct MultiDeleter {
 		} while (false)
 #endif
 
-template <class T,int bulkKb=8>
+template <class T,int bulkKb=64>
 class BulkAllocator {
 	enum { bulkCount=(bulkKb*1024)/sizeof(T) };
 

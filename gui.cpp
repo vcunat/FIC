@@ -390,7 +390,7 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 			assert( myTree->childCount() == 0 );
 			myTree->setData( 0, Qt::UserRole, QVariant::fromValue((void*)this) );
 			if (!settings) {
-				delete myTree;
+				myTree->setFlags(0);
 				return;
 			}
 		//	find child modules and make them create their subtrees
@@ -402,6 +402,7 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 					assert(setItem->m);
 					if ( !setItem->m->settingsLength() )
 						continue;
+
 					QTreeWidgetItem *childTree= new QTreeWidgetItem(myTree);
 					childTree->setText( 0, QObject::tr(setType->label) );
 					setItem->m->adjustSettings( -1, childTree, 0 );
@@ -441,25 +442,17 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 	//	handle module-type settings
 		const SettingsTypeItem *setType= settingsType();
 		if ( setType[which].type == ModuleCombo ) {
-		//	update the child-tree: get the right child-tree
-			int childCount=0;
-			for (int i=0; i<which; ++i) {
-				if ( setType->type == ModuleCombo )
-					++childCount;
-				++setType;
-			}
 			assert(myTree);
-			QTreeWidgetItem *childTree= myTree->child(childCount);
-			assert(childTree);
 		//	get the new module id and check whether it has really changed
 			SettingsItem &setItem= settings[which];
 			int newId= (*setType->data.compatIDs)[setItem.i];
 			if ( newId == setItem.m->moduleId() )
 				return;
 		//	replace the child module
-			clearContainer( childTree->takeChildren() );
+			clearContainer( myTree->takeChildren() );
 			delete setItem.m;
-			(setItem.m= ModuleFactory::newModule(newId)) ->adjustSettings( -1, childTree, 0 );
+			setItem.m= ModuleFactory::newModule(newId);
+			adjustSettings( -1, myTree, 0 );
 		}
 	//	update module defaults
 		ModuleFactory::changeDefaultSettings(*this);

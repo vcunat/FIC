@@ -72,9 +72,9 @@ public:
 	})
 
 	DECLARE_M_settings_default(
-		1,		// predictor - using brute-force predictor as the default one for debugging 
-		1,		// rotations and symmetries
-		1,		// color value inversion
+		0,//1,		// predictor - using brute-force predictor as the default one for debugging 
+		0,//1,		// rotations and symmetries
+		0,//1,		// color value inversion
 		1.0f,	// big-scale penalty coefficient
 		1,		// take quant-errors into account
 		(float)MaxLinCoeff_none, //	the maximum linear coefficient
