@@ -34,7 +34,7 @@ class EncodingProgress;
 /** Represents the main window of the program, providing a GUI */
 class ImageViewer: public QMainWindow { Q_OBJECT
 	static const int AutoIterationCount= 20;
-	
+
 	IRoot *modules_settings	///  Module tree holding current settings
 	, *modules_encoding;	///< Module tree that's currently encoding or the last one
 
@@ -77,7 +77,7 @@ public:
 	ImageViewer(QApplication &app);
 	/** Only releases the modules */
 	virtual ~ImageViewer()
-		{ delete modules_settings; }
+		{ delete modules_settings; delete modules_encoding; }
 private:
 #ifndef NDEBUG
 	void mousePressEvent(QMouseEvent *event);
@@ -88,7 +88,7 @@ inline void aConnect( const QObject *sender, const char *signal, const QObject *
 , const char *slot, Qt::ConnectionType type=Qt::AutoCompatConnection ) {
 	#ifndef NDEBUG
 		bool result=
-	#endif	
+	#endif
 	QObject::connect(sender,signal,receiver,slot,type);
 	assert(result);
 }

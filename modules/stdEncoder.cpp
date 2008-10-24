@@ -78,7 +78,7 @@ MStandardEncoder::PoolInfos::const_iterator MStandardEncoder
 const ISquareDomains::Pool& MStandardEncoder::getDomainData
 ( const RangeNode &rangeBlock, const ISquareDomains::PoolList &pools
 , const PoolInfos &poolInfos, int domIndex, Block &block ) {
-	
+
 //	get the pool
 	PoolInfos::const_iterator it= getPoolFromDomID( domIndex, poolInfos );
 	const Pool &pool= pools[ it - poolInfos.begin() ];
@@ -199,7 +199,7 @@ public:
 		#ifndef NDEBUG
 		ri->exact.avg=	stable.rSum/stable.pixCount;
 		ri->exact.dev2=	stable.r2Sum/stable.pixCount - sqr(ri->exact.avg);
-		ri->exact.linCoeff= ( stable.pixCount*best.rdSum - stable.rSum*bdSum ) 
+		ri->exact.linCoeff= ( stable.pixCount*best.rdSum - stable.rSum*bdSum )
 		/ ( stable.pixCount*bd2Sum - sqr(bdSum) );
 		ri->exact.constCoeff= ri->exact.avg - ri->exact.linCoeff*bdSum/stable.pixCount;
 		#endif
@@ -267,7 +267,7 @@ void MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 	if (test<=0) // skip too flat domains
 		return;
 	Real denom= 1/test;
-	
+
 //	compute the sum of products of pixels
 	Real rdSum= walkOperateCheckRotate
 	( Checked<const SReal>(stable.rangePixels, *stable.rangeBlock), RDSummer<Real>()
@@ -285,33 +285,33 @@ void MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 	if (restrictMaxLinCoeff)
 		if ( linCoeff2 > stable.maxLinCoeff2 )
 			return;
-		
+
 	float optSE DEBUG_ONLY(= numeric_limits<Real>::quiet_NaN() );
-	
+
 	if (quantErrors) {
 		optSE= stable.qrAvg * ( stable.pixCount*stable.qrAvg - ldexp(stable.rSum,1) )
-			+ stable.r2Sum + stable.qrDev 
+			+ stable.r2Sum + stable.qrDev
 				* ( stable.pixCount*stable.qrDev - ldexp( abs(nRDs_RsDs)*sqrt(denom), 1 ) );
-		
+
 		debugStop();
 	} else { // !quantErrors
 	/*
 	//	normal SE computing
 		Real nsxy= stable.pixCount*rdSum;
 	    Real sxsy= dSum*stable.rSum;
-	    optSE= ( rdSum*(ldexp(sxsy,1)-nsxy) - d2Sum*sqr(stable.rSum) ) 
+	    optSE= ( rdSum*(ldexp(sxsy,1)-nsxy) - d2Sum*sqr(stable.rSum) )
 	    	*denom +stable.r2Sum;
 	*/
-		
+
 	//	assuming different linear coeffitient
 		Real inner= stable.rnDev2 - stable.rnDev*abs(nRDs_RsDs)*sqrt(denom);
 		optSE= ldexp( inner, 1 ) / stable.pixCount;
 	}
-	
+
 //	add big-scaling penalty if needed
 	if (bigScalePenalty)
 		optSE+= linCoeff2 * targetSE * sqr(pool.contrFactor) * stable.bigScaleCoeff;
-	
+
 /*
 //	check for too big linear coefficients (if needed)
 	if (restrictMaxLinCoeff)
@@ -335,7 +335,7 @@ void MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 		else
 			optSE= common*denom + stable.r2Sum;
 	}
-	
+
 	*/
 //*/
 //	test if the error is the best so far
@@ -343,7 +343,7 @@ void MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 		best.prediction()= prediction;
 		best.error= maxSE2Predict= optSE;
 		best.inverted= nRDs_RsDs<0;
-		
+
 		#ifndef NDEBUG
 		best.rdSum= rdSum;
 		bdSum= dSum;
@@ -353,7 +353,7 @@ void MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 } // EncodingInfo::exactCompareProc method
 
 
-float MStandardEncoder::findBestSE(const RangeNode &range) {
+float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	assert( planeBlock && !stdRangeSEs.empty() && !range.encoderData );
 
 //	initialize an encoding-info object
@@ -386,13 +386,15 @@ float MStandardEncoder::findBestSE(const RangeNode &range) {
 	if (info.stable.rnDev2<0)
 		info.stable.rnDev2= 0;
 	info.stable.rnDev=		sqrt(info.stable.rnDev2);
+
+	Real variance;
 	{
 		Quantizer::Average quantAvg( settingsInt(QuantStepLog_avg) );
 		Quantizer::Deviation quantDev( settingsInt(QuantStepLog_dev) );
 		Real average= info.stable.rSum / info.stable.pixCount;
 		info.stable.qrAvg= quantAvg.qRound(average);
 
-		Real variance= info.stable.r2Sum/info.stable.pixCount - sqr(average);
+		variance= info.stable.r2Sum/info.stable.pixCount - sqr(average);
 		Real deviance= variance>0 ? sqrt(variance) : 0;
 		int qrDev= quantDev.quant(deviance);
 	//	if we have too little deviance or no domain pool for that big level or no domain in the pool
@@ -413,6 +415,8 @@ float MStandardEncoder::findBestSE(const RangeNode &range) {
 
 	info.targetSE= info.maxSE2Predict= info.stable.isRegular ? stdRangeSEs[range.level]
 		: planeBlock->moduleQ2SE->rangeSE( planeBlock->quality, range.size() );
+	if (allowHigherSE)
+		info.maxSE2Predict= numeric_limits<float>::max();
 	info.selectExactCompareProc();
 
 //	create and initialize a new predictor
@@ -425,6 +429,15 @@ float MStandardEncoder::findBestSE(const RangeNode &range) {
 	while ( !predictor->getChunk(info.maxSE2Predict,predicts).empty() )
 		for (Predictions::iterator it=predicts.begin(); it!=predicts.end(); ++it)
 			info.exactCompare(*it);
+
+//	check the case that the predictor didn't return any domains
+	if ( info.best.error == numeric_limits<float>::max() ) { // a constant block
+		info.stable.qrDev= info.stable.qrDev2= 0;
+		info.best.error= info.stable.quantError
+				? info.stable.r2Sum + info.stable.qrAvg
+				*( info.stable.pixCount*info.stable.qrAvg - ldexp(info.stable.rSum,1) )
+			: variance*info.stable.pixCount;
+	}
 
 //	store the important info and return the error
 	range.encoderData= info.initRangeInfo( rangeInfoAlloc.make() );
@@ -566,7 +579,7 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 				if ( domID >= 0 ) {
 					int bits= domBits[ (*it)->level ];
 					assert( 0<=domID && domID<powers[bits] );
-					if (bits>0) 
+					if (bits>0)
 						stream.putBits( domID, bits );
 				}
 			}
@@ -699,8 +712,8 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 				Real dSum, d2Sum;
 				info.decAccel.pool->getSums( info.decAccel.domBlock, dSum, d2Sum );
 				Real pixCount= (*it)->size();
-				
-				
+
+
 				Real linCoeff=(info.inverted ? -pixCount : pixCount)
 					* sqrt( info.qrDev2 / ( pixCount*d2Sum - sqr(dSum) ) );
 				 /*

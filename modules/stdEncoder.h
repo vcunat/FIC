@@ -3,7 +3,7 @@
 
 #include "../interfaces.h"
 
-/** Standard square encoder - uses affine color transformation 
+/** Standard square encoder - uses affine color transformation
  *	for one-domain to one-range mappings */
 class MStandardEncoder: public ISquareEncoder {
 	DECLARE_debugModule;
@@ -72,9 +72,9 @@ public:
 	})
 
 	DECLARE_M_settings_default(
-		0,//1,		// predictor - using brute-force predictor as the default one for debugging 
-		0,//1,		// rotations and symmetries
-		0,//1,		// color value inversion
+		0,//1,		// predictor - using brute-force predictor as the default one for debugging
+		1,		// rotations and symmetries
+		1,		// color value inversion
 		1.0f,	// big-scale penalty coefficient
 		1,		// take quant-errors into account
 		(float)MaxLinCoeff_none, //	the maximum linear coefficient
@@ -97,7 +97,7 @@ private:
 		return debugCast<IIntCodec*>
 		( settings[ forAverage ? ModuleCodecAvg : ModuleCodecDev ].m );
 	}
-	
+
 	/** Information about just encoded range block */
 	struct EncodingInfo;
 
@@ -106,7 +106,7 @@ public:
 	typedef ISquareRanges	::RangeList		RangeList;
 	typedef ISquareDomains	::Pool			Pool;
 	typedef IStdEncPredictor::Prediction	Prediction;
-	
+
 	/** Stores information about a range's mapping, to be pointed by ISquareRanges::RangeNode.encoderData */
 	struct RangeInfo: public RangeNode::EncoderData, public Prediction {
 		struct {
@@ -143,7 +143,7 @@ public:
 /**	\name ISquareEncoder interface
  *	@{ */
 	void initialize( IRoot::Mode mode, const PlaneBlock &planeBlock_ );
-	float findBestSE(const RangeNode &range);
+	float findBestSE(const RangeNode &range,bool allowHigherSE);
 	void finishEncoding() {
 		initRangeInfoAccelerators();	// prepare for saving/decoding
 		modulePredictor()->cleanUp();	// free unneccesary memory of the predictor
@@ -163,13 +163,13 @@ private:
 	void buildPoolInfos4aLevel(int level);
 	/** Initializes decoding accelerators (in RangeInfo) for all range blocks */
 	void initRangeInfoAccelerators();
-	
+
 	/** Considers a domain on a \p level number \p domIndex (in \p pools and \p poolInfos)
 	 *	and sets \p block to the domain's block and returns a reference to its pool */
 	static const Pool& getDomainData
 	( const RangeNode &rangeBlock, const ISquareDomains::PoolList &pools
 	, const PoolInfos &poolInfos, int domIndex, Block &block );
-	
+
 	/** Return iterator to the pool of domain with index \p domID */
 	static PoolInfos::const_iterator getPoolFromDomID( int domID, const PoolInfos &poolInfos );
 };

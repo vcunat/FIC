@@ -25,7 +25,7 @@ class MSaupePredictor: public IStdEncPredictor {
 private:
 	/** Indices for settings */
 	enum Settings { ChunkSize };
-	
+
 public:
 	typedef float KDReal;		///< The floating point type used in the KD-tree
 	typedef KDTree<KDReal> Tree;///< The version of KDTree in use
@@ -71,17 +71,18 @@ private:
 		KDReal *points; 	///< Normalized range rotations and inversions used by the heaps
 		int chunkSize		///  The suggested count for predicted ranges returned at once
 		, heapCount;		///< The number of heaps
-		Real errorConvAccel;///< Accelerator for conversion of SEs to the real values
+		Real errorConvAccel;///< Accelerator for conversion of SEs to the real values = 1/range.rnDev2
 		bool firstChunk; 	///< True if nothing has been predicted yet, false otherwise
 
 		/** Computes normalized-tree-error from real SE (slow - uses one sqrt) */
 		Real normalizeSE(Real error) const
-			{ return std::ldexp( 1+sqrt(1-error*errorConvAccel), 1 ); }
-			
+			//{ return std::ldexp( sqrt(error*errorConvAccel)-1, 1 ); }
+			{ return error*errorConvAccel; }
+
 	public:
 		/** Creates a new predictor for a range block (prepares tree-heaps, etc.) */
 		OneRangePredictor(const NewPredictorData &data,int chunkSize_,const Tree &tree);
-		
+
 	/**	\name OneRangePred interface
 	 *	@{ */
 		Predictions& getChunk(float maxPredictedSE,Predictions &store);

@@ -390,7 +390,7 @@ namespace MatrixWalkers {
 		AddMulCopy(T add,T mul)
 		: toAdd(add), toMul(mul) {}
 
-		void operator()(SReal &res,SReal f) const
+		template<class R1,class R2> void operator()(R1 &res,R2 f) const
 			{ res= (f+toAdd)*toMul; }
 	};
 
@@ -399,7 +399,7 @@ namespace MatrixWalkers {
 
 		MulAddCopyChecked(T mul,T add,T minVal,T maxVal)
 		: toMul(mul), toAdd(add), min(minVal), max(maxVal) {}
-		void operator()(SReal &res,SReal f) const
+		template<class R1,class R2> void operator()(R1 &res,R2 f) const
 			{ res= checkBoundsFunc( min, f*toMul+toAdd, max ); }
 	};
 }

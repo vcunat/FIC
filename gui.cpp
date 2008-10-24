@@ -182,7 +182,7 @@ void ImageViewer::write() {
 	QString fname= QFileDialog::getSaveFileName( this, tr("Write image file")
 	, QDir::currentPath(), tr("PNG images (*.png)\nAll files (*.*)") );
 	if (fname.isEmpty())
-		return; 
+		return;
 	if ( !imageLabel->pixmap()->save(fname) ) {
 		QMessageBox::information( this, tr("Error"), tr("Cannot write file %1.").arg(fname) );
 		return;
@@ -243,31 +243,35 @@ void ImageViewer::encode() {
 	IRoot *modules_old= modules_encoding;
 	modules_encoding= clone(modules_settings);
 //	create the dialog and the encoding thread
-	EncodingProgress encDialog(this);
 	EncThread encThread( modules_encoding, imageLabel->pixmap()->toImage() );
-//	ensure the dialog is closed when the encoding finishes
-	aConnect( &encThread, SIGNAL(finished()), &encDialog, SLOT(accept()) );
-//	start the thread and execute the dialog
-	#ifdef NDEBUG
-		encThread.start(QThread::LowPriority);
-		encDialog.exec();
-		//0=0; // waiting for the thread, etc.
-	#else
-		encThread.run(); // no threading in debug mode
-	#endif
-	if ( !encThread.getSuccess() ) 
+	{
+		EncodingProgress encDialog(this);
+	//	ensure the dialog is closed when the encoding finishes
+		aConnect( &encThread, SIGNAL(finished()), &encDialog, SLOT(accept()) );
+	//	start the thread and execute the dialog
+		#ifdef NDEBUG
+			encThread.start(QThread::LowPriority);
+			encDialog.exec();
+			encThread.wait();
+			//0=0; // waiting for the thread, etc.
+		#else
+			encThread.run(); // no threading in debug mode
+		#endif
+	}
+	if ( !encThread.getSuccess() )
 	//	the encoding was interrupted - return to the backup
 		swap(modules_encoding,modules_old);
 	else { // encoding successful - iterate the image and display some info
-		QImage beforeImg= modules_encoding->toImage();
-		modules_encoding->decodeAct(MTypes::Clear);
-		modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
-		QImage afterImg= modules_encoding->toImage();
-		changePixmap( QPixmap::fromImage(afterImg) );
-		
-		QString message= tr("Time to encode: %1 seconds\n") .arg(encTime.elapsed()/1000.0f)
-		+ getPSNRmessage(beforeImg,afterImg);
-		QMessageBox::information( this, tr("encoded"), message );
+		//#ifdef NDEBUG
+			QImage beforeImg= modules_encoding->toImage();
+			modules_encoding->decodeAct(MTypes::Clear);
+			modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
+			QImage afterImg= modules_encoding->toImage();
+			changePixmap( QPixmap::fromImage(afterImg) );
+			QString message= tr("Time to encode: %1 seconds\n") .arg(encTime.elapsed()/1000.0f)
+			+ getPSNRmessage(beforeImg,afterImg);
+			QMessageBox::information( this, tr("encoded"), message );
+		//#endif
 	}
 //	delete the unneeded modules (either the backup or the unsuccessful)
 	delete modules_old;
@@ -278,7 +282,7 @@ void ImageViewer::save() {
 	( this, tr("Save encoded image"), QDir::currentPath(), tr("FIC images (*.fic)") );
 	if (fname.isEmpty())
 		return;
-	if ( !modules_encoding->toFile( fname.toStdString().c_str() ) ) 
+	if ( !modules_encoding->toFile( fname.toStdString().c_str() ) )
 		QMessageBox::information( this, tr("Error"), tr("Cannot write file %1.").arg(fname) );
 }
 void ImageViewer::load() {
@@ -289,13 +293,17 @@ void ImageViewer::load() {
 //	IRoot needs to be loaded from cleared state
 	IRoot *modules_old= modules_encoding;
 	modules_encoding= clone(modules_settings,Module::ShallowCopy);
-	
+
 	if ( !modules_encoding->fromFile( fname.toStdString().c_str() ) ) {
 		QMessageBox::information( this, tr("Error"), tr("Cannot load file %1.").arg(fname) );
 		swap(modules_encoding,modules_old);
-	} else 
-		clear();
-	
+	} else { // loading was successful
+		modules_encoding->decodeAct(Clear);
+		modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
+		changePixmap( QPixmap::fromImage(modules_encoding->toImage()) );
+		updateActions();
+	}
+
 	delete modules_old;
 }
 void ImageViewer::clear() {
@@ -419,15 +427,15 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 				QString desc(typeItem->desc);
 				QLabel *label= new QLabel( typeItem->label, setBox );
 				label->setToolTip(desc);
-				
-				QWidget *widget= newSettingsWidget( typeItem->type, setBox );		
+
+				QWidget *widget= newSettingsWidget( typeItem->type, setBox );
 				settingsType2widget( widget, *typeItem );
 				settings2widget( widget, i );
 				widget->setToolTip(desc);
 				label->setBuddy(widget);
 				layout->addWidget( label, i, 0 );
 				layout->addWidget( widget, i, 1 );
-				
+
 				SignalChanger *changer= new SignalChanger(i,widget,typeItem->type);
 				aConnect( changer, SIGNAL(notify(int))			// assuming the setBox's
 				, setBox->parent(), SLOT(settingChanges(int)) ); // parent is SettingsDialog
@@ -522,7 +530,7 @@ void Module::settingsType2widget(QWidget *widget,const SettingsTypeItem &typeIte
 		const vector<int> &modules= *typeItem.data.compatIDs;
 		for_each( modules.begin(), modules.end(), ItemAdder(widget) );
 		break;
-		} 
+		}
 	case Combo:
 		debugCast<QComboBox*>(widget)->addItems( QString(typeItem.data.text).split('\n') );
 		break;
@@ -537,8 +545,8 @@ EncodingProgress *EncodingProgress::instance= 0;
 
 #ifndef NDEBUG
 void ImageViewer::mousePressEvent(QMouseEvent *event) {
-//	check the event, get the clicking point coordinates relative to the image	
-	if ( !event || !modules_encoding 
+//	check the event, get the clicking point coordinates relative to the image
+	if ( !event || !modules_encoding
 	|| modules_encoding->getMode() == IRoot::Clear)
 		return;
 	const QPoint click= imageLabel->mapFrom( this, event->pos() );

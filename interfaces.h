@@ -7,7 +7,7 @@ namespace MTypes {
 	/** Structure representing a rectangle */
 	struct Block {
 		short x0, y0, xend, yend;
-		
+
 		int width()	 const	{ return xend-x0; }
 		int height() const	{ return yend-y0; }
 		int size()	 const	{ return width()*height(); }
@@ -39,7 +39,7 @@ namespace MTypes {
 	typedef std::vector<SReal**> MatrixList;
 
 	enum DecodeAct { Clear, Iterate }; ///< Possible decoding actions
-	
+
 	struct PlaneBlock;
 }
 namespace NOSPACE {
@@ -54,7 +54,7 @@ namespace NOSPACE {
  *	all modules are always owned (either directly or indirectly) by one of this type */
 struct IRoot: public Interface<IRoot> {
 	/** The root can be in any of these modes */
-	enum Mode { 
+	enum Mode {
 		Clear,	///< no action has been done
 		Encode,	///< contains an encoded image
 		Decode	///< contains an image decoded from a file
@@ -92,7 +92,7 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 		, quality;		///< encoding quality for the plane, in [0,1] (higher is better)
 		int domainCountLog2;	///< 2-logarithm of the maximum domain count
 		ModuleQ2SE *moduleQ2SE;	///< pointer to the module computing maximum SE (not owned)
-		
+
 		/** A simple constructor, only initializes the values from the parameters */
 		Plane(SReal **pixels_,float quality_,int domainCountLog2_,ModuleQ2SE *moduleQ2SE_)
 		: pixels(pixels_), quality(quality_), domainCountLog2(domainCountLog2_)
@@ -224,7 +224,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 		/** Only deletes #pixels matrix */
 		void free()
 			{ delMatrix(pixels); }
-			
+
 		/** Makes both summers ready for work */
 		void summers_makeValid() {
 			for (int i=0; i<2; ++i)
@@ -277,7 +277,7 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 	virtual void initialize( IRoot::Mode mode, const PlaneBlock &planeBlock ) =0;
 	/** Finds mapping with the best square error for a range (returns the SE),
 	 *	data neccessary for decoding are stored in RangeNode.encoderData */
-	virtual float findBestSE(const RangeNode &range) =0;
+	virtual float findBestSE(const RangeNode &range,bool allowHigherSE=false) =0;
 	/** Finishes encoding - to be ready for saving or decoding (can do some cleanup) */
 	virtual void finishEncoding() =0;
 	/** Performs a decoding action */
@@ -331,18 +331,18 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 		, quantError		///	Should quantization errors be taken into account?
 		, allowInversion	/// Are mappings with negative linear coefficients allowed?
 		, isRegular;		///< Is this range block regular?
-		
+
 		Real maxLinCoeff2	/// The maximum linear coefficient squared (or <0 if none)
 		, bigScaleCoeff;	///< The coefficient of big-scaling penalization
 
 		Real rSum	/// The sum of range block's all pixels
 		, r2Sum		/// The sum of squares of range block's pixels
 		, pixCount	///	The number of range block's pixels
-		, rnDev2	/// Precomputed = ( pixCount*r2Sum - sqr(rSum) )
-		, rnDev		/// Precomputed = sqrt( pixCount*r2Sum - sqr(rSum) )
+		, rnDev2	/// Precomputed = ( #pixCount*#r2Sum - sqr(#rSum) )
+		, rnDev		/// Precomputed = sqrt(#rnDev2)
 		, qrAvg		///	The average of range's pixels rounded by the selected quantizer
-		, qrDev		/// The deviance of range's pixels rounded by the selected quantizer
-		, qrDev2; 	///< sqr(qrDev)
+		, qrDev		/// #rnDev rounded by the selected quantizer
+		, qrDev2; 	///< sqr(#qrDev)
 		#ifndef NDEBUG
 		NewPredictorData()
 		: rangeBlock(0), rangePixels(0), pools(0), poolInfos(0) {}
@@ -391,7 +391,7 @@ namespace MTypes {
 			delete domains;
 			delete encoder;
 		}
-		
+
 		/** A simple integrity test - needs nonzero modules and pixel-matrix */
 		bool isReady() const
 			{ return this && ranges && domains && encoder && pixels && moduleQ2SE; }

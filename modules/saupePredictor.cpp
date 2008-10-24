@@ -26,32 +26,38 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 	int level= data.rangeBlock->level;
 	int sideLength= powers[level];
 	int pixelCount= powers[2*level];
+	Real countInv= 1/(Real)pixelCount;
 //	create space for temporary domain pixels
 	KDReal *domPix= new KDReal[ domainCount * pixelCount ];
 //	init domain-blocks' from every pool
 	KDReal *domPixNow= domPix;
 	int poolCount= data.pools->size();
 	for (int poolID=0; poolID<poolCount; ++poolID) {
-	//	check we are on the place we want to be; get the current pool, density, etc. 
+	//	check we are on the place we want to be; get the current pool, density, etc.
 		assert( domPixNow-domPix == poolInfos[poolID].indexBegin*pixelCount );
 		const ISquareDomains::Pool &pool= (*data.pools)[poolID];
 		int density= poolInfos[poolID].density;
+		if (!density) // no domains in this pool for this level
+			continue;
 		int poolXend= density*getCountForDensity( pool.width, density, sideLength );
 		int poolYend= density*getCountForDensity( pool.height, density, sideLength );
 	//	handle the domain block on [x0,y0] (for each in the pool)
 		for (int x0=0; x0<poolXend; x0+=density)
 			for (int y0=0; y0<poolYend; y0+=density) {
 			//	compute the average and standard deviation (data needed for normalization)
-				Real avg, avg2, countInv= 1/pixelCount;
+				Real avg, avg2;
 				avg= countInv*pool.summers[0].getSum(x0,y0,x0+sideLength,y0+sideLength);
 				avg2= countInv*pool.summers[1].getSum(x0,y0,x0+sideLength,y0+sideLength);
 				Real check= avg2-sqr(avg);
 				Real multiply= check>0 ? 1/sqrt(check) : 1;
+			//	if inversion is allowed and the first pixel is below zero then invert the block
+				//if ( data.allowInversion && *domPixNow < 0 )
+				//	multiply= -multiply;
 				MatrixWalkers::AddMulCopy<Real> oper( -avg, multiply  );
 			//	copy every column of the domain's pixels (and normalize them on the way)
 				using namespace FieldMath;
-				float *linCol= domPixNow;
-				float *linColEnd= domPixNow+pixelCount;
+				KDReal *linCol= domPixNow;
+				KDReal *linColEnd= domPixNow+pixelCount;
 				for (int x=x0; linCol!=linColEnd; ++x,linCol+=sideLength)
 					transform2( linCol, linCol+sideLength, pool.pixels[x]+y0, oper );
 			//	move to the data of the next domain
@@ -74,13 +80,13 @@ namespace NOSPACE {
 		AddMulCopyTo2nd(T add,T mul)
 		: toAdd(add), toMul(mul) {}
 
-		void operator()(float f,float &res) const
+		template<class R1,class R2> void operator()(R1 f,R2 &res) const
 			{ res= (f+toAdd)*toMul; }
 		void innerEnd() const {}
 	};
 
-	template<class T> struct SignChanger {
-		void operator()(const T &in,T &out) const
+	struct SignChanger {
+		template<class R1,class R2> void operator()(R1 in,R2 &out) const
 			{ out= -in; }
 	};
 }
@@ -97,7 +103,7 @@ MSaupePredictor::OneRangePredictor
 	Real multiply= data.pixCount / data.rnDev;
 	AddMulCopyTo2nd<Real> oper( -data.rSum/data.pixCount, multiply );
 //	compute SE-normalizing accelerator
-	errorConvAccel= 1 / ( sqr(data.pixCount) * cube( data.r2Sum-sqr(data.rSum) ) );
+	errorConvAccel= 1 / data.rnDev2;
 	{
 		int sideLength= powers[data.rangeBlock->level];
 		KDReal* rotMatrices[rotationCount][sideLength]; // a fake array of matrices
@@ -117,7 +123,7 @@ MSaupePredictor::OneRangePredictor
 //	create inverse of the rotations if needed
 	if (data.allowInversion) {
 		KDReal *pointsMiddle= points+tree.length*rotationCount;
-		FieldMath::transform2( points, pointsMiddle, pointsMiddle, SignChanger<float>() );
+		FieldMath::transform2( points, pointsMiddle, pointsMiddle, SignChanger() );
 	}
 //	create all the heaps and initialize their infos (and make a heap of the infos)
 	heaps.reserve(heapCount);
@@ -133,7 +139,7 @@ MSaupePredictor::OneRangePredictor
 
 MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 ::getChunk(float maxPredictedSE,Predictions &store) {
-	assert( heaps.size()==(size_t)heapCount && infoHeap.size()==(size_t)heapCount );
+	assert( heaps.size()==(size_t)heapCount && infoHeap.size()<=(size_t)heapCount );
 	if ( infoHeap.empty() ) {
 		store.clear();
 		return store;

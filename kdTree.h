@@ -57,7 +57,7 @@ namespace FieldMath {
 			}
 		};
 	}
-	/** Copy_moves a vector (\p point) to the nearest point (\p result) 
+	/** Copy_moves a vector (\p point) to the nearest point (\p result)
 	 *	within bounds (\p bounds) and returns SE (distance^2) */
 	template<class T>
 	T moveToBounds_copy(const T *point,const T **bounds,int length,T *result) {
@@ -149,7 +149,7 @@ void getBounds(const T *data,int length,const int *beginIDs,const int *endIDs,T 
 	const T *begin= data + *beginIDs*length;
 	assign( begin, length, bounds[0] );
 	assign( begin, length, bounds[1] );
-//	expand the bounds by every point (except for the first one)	
+//	expand the bounds by every point (except for the first one)
 	while ( ++beginIDs != endIDs ) {
 		begin= data + *beginIDs*length;
 		transform3( begin, begin+length, bounds[0], bounds[1], BoundsExpander<T>() );
@@ -220,7 +220,7 @@ private:
 		bool operator()(int a,int b)
 			{ return data[a*length] < data[b*length]; }
 	};
-	/** Recursively builds node \p nodeIndex and its subtree of depth \p depthLeft 
+	/** Recursively builds node \p nodeIndex and its subtree of depth \p depthLeft
 	 *	(including leaves), operates on data \p data in the range [\p beginIDs,\p endIDs) */
 	void buildNode(const T *data,int nodeIndex,int *beginIDs,int *endIDs,int depthLeft) {
 		int count= endIDs-beginIDs;
@@ -266,7 +266,8 @@ public:
 			/** Initializes the members from the parameters */
 			HeapNode(int nodeIndex_,T *data_)
 			: nodeIndex(nodeIndex_), data(data_) {}
-			
+
+			/** Returns reference to the SE of the nearest point to this node's bounding box */
 			/** Returns reference to the SE of the nearest point to this node's bounding box */
 			T& getSE()
 				{ return *data; }
@@ -287,7 +288,7 @@ public:
 		vector<HeapNode> heap;		///< The current heap of the tree nodes
 		BulkAllocator<T> allocator;	///< The allocator for HeapNode::data
 	public:
-		/** Build the heap from the KDTree \p tree and vector \p point_ 
+		/** Build the heap from the KDTree \p tree and vector \p point_
 		 *	(they've got to remain valid until destruction) */
 		PointHeap(const KDTree &tree,const T *point_)
 		: kd(tree), point(point_) {
@@ -301,7 +302,7 @@ public:
 			heap.reserve(kd.depth*2);
 			heap.push_back(rootNode);
 		}
-		
+
 		/** Returns whether the heap is empty ( !isEmpty() is needed for all other methods) */
 		bool isEmpty()
 			{ return heap.empty(); }
@@ -322,7 +323,8 @@ public:
 			heap.pop_back();
 			return result;
 		}
-		
+
+	private:
 	private:
 		/** Divides the top nodes until there's a leaf on the top */
 		void makeTopLeaf() {
@@ -332,30 +334,30 @@ public:
 				return;
 			size_t oldHeapSize= heap.size();
 			HeapNode heapRoot= heap[0]; // making a local working copy of the top of the heap
-			
+
 			do { // while ( heapRoot.nodeIndex<kd.count ) ... while heapRoot isn't leaf
 				const Node &node= kd.nodes[heapRoot.nodeIndex];
 			//	now replace the node with its two children:
 			//		one of them will have the same SE (replaces its parent on the top),
 			//		the other one can have higher SE (push_back-ed on the heap)
-				
+
 			//	create a new heap-node and allocate it's data
 				HeapNode newHNode;
 				newHNode.data= allocator.makeField(kd.length+1);
 			//	the nearest point of the new heap-node only differs in one coordinate
 				FieldMath::assign( heapRoot.getNearest(), kd.length, newHNode.getNearest() );
 				newHNode.getNearest()[node.coord]= node.threshold;
-				
+
 			//	the SE of the child heap-nodes can be computed from the parent heap-node
 				Real oldDistance= Real(point[node.coord]) - heapRoot.getNearest()[node.coord];
 				Real newDistance= Real(point[node.coord]) - node.threshold;
 				newHNode.getSE()= heapRoot.getSE() - sqr(oldDistance) + sqr(newDistance);
 			/*	another way to do this, according to: A^2-B^2 = (A-B)*(A+B)
 				Real nearestInCoord= heapRoot.getNearest()[node.coord];
-				newHNode.getSE()= heapRoot.getSE() + (nearestInCoord-node.threshold) 
+				newHNode.getSE()= heapRoot.getSE() + (nearestInCoord-node.threshold)
 					* ( ldexp((Real)point[node.coord],1) - nearestInCoord - node.threshold );
 			*/
-			
+
 			//	correctly assign the nodeIndex of the new children
 				newHNode.nodeIndex= (heapRoot.nodeIndex*= 2);
 				if ( newDistance <= 0 )
@@ -366,15 +368,15 @@ public:
 					++heapRoot.nodeIndex;
 				heap.push_back(newHNode);
 			} while ( heapRoot.nodeIndex<kd.count );
-			
+
 			heap[0]= heapRoot; // restoring the working copy of the heap's top node
 		//	restore the heap-property on the added nodes
 			typename vector<HeapNode>::iterator it= heap.begin()+oldHeapSize;
 			do
 				push_heap( heap.begin(), it, HeapOrder() );
-			while ( it++ != heap.end() );	
+			while ( it++ != heap.end() );
 		} // makeTopLeaf() method
-		
+
 	}; // PointHeap class
 }; // KDTree class
 
@@ -407,7 +409,7 @@ namespace KDCoordChoosers {
 	//	temporary storage for computed bounding box
 		T lowerBounds[length], upperBounds[length];
 		const T *lowerB= lowerBounds, *upperB= upperBounds;
-		
+
 		if ( nodeIndex>1 ) { // compute the bounding box
 			T* localBounds[2]= {lowerBounds,upperBounds};
 			getBounds( data, length, beginIDs, endIDs, localBounds );

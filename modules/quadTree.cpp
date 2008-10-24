@@ -3,7 +3,7 @@
 
 using namespace std;
 
-/** Struct for computing (acts as a functor) and storing max.\ and min.\ 
+/** Struct for computing (acts as a functor) and storing max.\ and min.\
  *	levels of leaf range blocks */
 struct MQuadTree::NodeExtremes {
 	int min, max;
@@ -151,7 +151,8 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 	assert( mod && level>=mod->minLevel() );
 //	check for minimal level -> cannot be divided, find the best domain
 	if ( level == mod->minLevel() ) {
-		toEncode.encoder->findBestSE(*this);
+	//	try to find the best mapping, not restricting the max.\ SE and exit
+		toEncode.encoder->findBestSE(*this,true);
 		return false;
 	}
 
