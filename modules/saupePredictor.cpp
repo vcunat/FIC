@@ -10,8 +10,20 @@ MSaupePredictor::OneRangePred* MSaupePredictor::newPredictor(const NewPredictorD
 	Tree *tree= levelTrees[level];
 	if ( !tree )
 		tree= levelTrees[level]= createTree(data);
+	
+	int maxChunks= (int)ceil(maxChunkCoeff()*tree->count);
+	if (maxChunks<=0)
+		maxChunks= 1;
+	
+	OneRangePredictor *result= 
+		new OneRangePredictor(data,settingsInt(ChunkSize),*tree,maxChunks);
+	
+	#ifndef NDEBUG
+	maxpred+= tree->count*(data.allowRotations?8:1)*(data.allowInversion?2:1);
+	result->predicted= &predicted;
+	#endif
 
-	return new OneRangePredictor(data,settingsInt(ChunkSize),*tree);
+	return result;
 }
 
 void MSaupePredictor::cleanUp() {
@@ -26,7 +38,6 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 	int level= data.rangeBlock->level;
 	int sideLength= powers[level];
 	int pixelCount= powers[2*level];
-	Real countInv= 1/(Real)pixelCount;
 //	create space for temporary domain pixels
 	KDReal *domPix= new KDReal[ domainCount * pixelCount ];
 //	init domain-blocks' from every pool
@@ -45,14 +56,17 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 		for (int x0=0; x0<poolXend; x0+=density)
 			for (int y0=0; y0<poolYend; y0+=density) {
 			//	compute the average and standard deviation (data needed for normalization)
-				Real avg, avg2;
-				avg= countInv*pool.summers[0].getSum(x0,y0,x0+sideLength,y0+sideLength);
-				avg2= countInv*pool.summers[1].getSum(x0,y0,x0+sideLength,y0+sideLength);
-				Real check= avg2-sqr(avg);
-				Real multiply= check>0 ? 1/sqrt(check) : 1;
+				Real sum, sum2;
+				sum= pool.summers[0].getSum(x0,y0,x0+sideLength,y0+sideLength);
+				sum2= pool.summers[1].getSum(x0,y0,x0+sideLength,y0+sideLength);
+			//	the same as  = 1 / sqrt( sum2 - sqr(sum)/pixelCount    ) );
+				Real multiply= 1 / sqrt( sum2 - ldexp(sqr(sum),-2*level) );
+				if ( isnan(multiply) )
+					multiply= 1;
 			//	if inversion is allowed and the first pixel is below zero then invert the block
 				//if ( data.allowInversion && *domPixNow < 0 )
 				//	multiply= -multiply;
+				Real avg= ldexp(sum,-2*level);
 				MatrixWalkers::AddMulCopy<Real> oper( -avg, multiply  );
 			//	copy every column of the domain's pixels (and normalize them on the way)
 				using namespace FieldMath;
@@ -90,9 +104,9 @@ namespace NOSPACE {
 			{ out= -in; }
 	};
 }
-MSaupePredictor::OneRangePredictor
-::OneRangePredictor( const NewPredictorData &data, int chunkSize_, const Tree &tree )
-: chunkSize(chunkSize_), firstChunk(true) {
+MSaupePredictor::OneRangePredictor::OneRangePredictor
+( const NewPredictorData &data, int chunkSize_, const Tree &tree, int maxChunks )
+: chunkSize(chunkSize_), chunksRemain(maxChunks), firstChunk(true) {
 //	we can't handle irregular ranges yet
 	assert(data.isRegular);
 //	compute some accelerators, allocate space for normalized range (+rotations,inversion)
@@ -100,10 +114,10 @@ MSaupePredictor::OneRangePredictor
 	heapCount= rotationCount * (data.allowInversion ? 2 : 1);
 	points= new KDReal[tree.length*heapCount];
 //	compute normalizing transformation and initialize a normalizator object
-	Real multiply= data.pixCount / data.rnDev;
+	Real multiply= sqrt(data.pixCount) / data.rnDev;
 	AddMulCopyTo2nd<Real> oper( -data.rSum/data.pixCount, multiply );
 //	compute SE-normalizing accelerator
-	errorConvAccel= 1 / data.rnDev2;
+	normalizator.initialize(data);
 	{
 		int sideLength= powers[data.rangeBlock->level];
 		KDReal* rotMatrices[rotationCount][sideLength]; // a fake array of matrices
@@ -116,7 +130,7 @@ MSaupePredictor::OneRangePredictor
 			initMatrixPointers( sideLength, sideLength, currRangeLin, currRangeMatrix );
 		//	fill it with normalized data
 			using namespace MatrixWalkers;
-			walkOperateCheckRotate( Checked<const SReal>(data.rangePixels, *data.rangeBlock)
+			walkOperateCheckRotate( Checked<const SReal>(data.rangePixels,*data.rangeBlock)
 			, oper, currRangeMatrix, localBlock, rot );
 		}
 	}
@@ -140,7 +154,7 @@ MSaupePredictor::OneRangePredictor
 MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 ::getChunk(float maxPredictedSE,Predictions &store) {
 	assert( heaps.size()==(size_t)heapCount && infoHeap.size()<=(size_t)heapCount );
-	if ( infoHeap.empty() ) {
+	if ( infoHeap.empty() || chunksRemain<=0 ) {
 		store.clear();
 		return store;
 	}
@@ -152,7 +166,7 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 			predCount= heapCount;
 	}
 //	compute the max. normalized SE to predict
-	float maxNormalizedSE= normalizeSE(maxPredictedSE);
+	float maxNormalizedSE= normalizator.normSE(maxPredictedSE);
 //	make a local working copy for the result (the prediction), adjust its size
 	Predictions result;
 	swap(result,store); // swapping is the quickest way
@@ -186,5 +200,11 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 	}
 //	return the result
 	swap(result,store);
+	--chunksRemain;
+	
+	#ifndef NDEBUG
+	*predicted+= store.size();
+	#endif
+
 	return store;
 }

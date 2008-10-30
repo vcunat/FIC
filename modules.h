@@ -96,7 +96,7 @@ public:
 		{ delete[] settings; }
 		
 	#ifndef NDEBUG
-		DECLARE_debugModule { assert(false); return 0; }
+		DECLARE_debugModule { return 0; }
 	#endif	
 ///	@}
 

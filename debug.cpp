@@ -6,6 +6,7 @@
 #include "modules/stdEncoder.h"
 #include "modules/quadTree.h"
 #include "modules/stdDomains.h"
+#include "modules/saupePredictor.h"
 
 #include <QBoxLayout>
 #include <QDialog>
@@ -213,6 +214,8 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 		table->resizeColumnsToContents();
 		table->resizeRowsToContents();
 		layout->addWidget(table);
+		
+		layout->addWidget( modulePredictor()->debugModule(pixmap,click) );
 	} // if-then-else
 	
 	return widget;
@@ -257,6 +260,13 @@ QWidget* MStdDomains::debugModule(QPixmap &pixmap,const QPoint &click) {
 		
 	} // if-then-else
 	return 0;
+}
+
+QWidget* MSaupePredictor::debugModule(QPixmap &pixmap,const QPoint &click) {
+	if ( pixmap.rect().contains(click) )
+		return 0;
+	return new QLabel( QString("Predicted %1/%2 (%3%)") 
+		.arg(predicted) .arg(maxpred) .arg(double(100)*predicted/(double)maxpred) );
 }
 
 #endif

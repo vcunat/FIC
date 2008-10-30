@@ -8,6 +8,7 @@ namespace NOSPACE {
 
 /** Predictor for MStandardEncoder based on a theorem proven in Saupe's work */
 class MSaupePredictor: public IStdEncPredictor {
+	DECLARE_debugModule;
 
 	DECLARE_M_cloning_name_desc( MSaupePredictor, "Saupe predictor"
 	, "Predictor for standard encoder using multi-dimensional nearest neighbour search" )
@@ -17,14 +18,24 @@ class MSaupePredictor: public IStdEncPredictor {
 		data: {	i:{1,32} },
 		label:	"Prediction chunk size",
 		desc:	"The number of predicted domains in a chunk"
+	}, {
+		type:	Float,
+		data: {	f:{0,100} },
+		label:	"Max. predictions (%)",
+		desc:	"The maximal percentage of domains predicted for a range block"
 	})
 
 	DECLARE_M_settings_default(
-		8 //	chunk size
+		8,		// chunk size
+		5.0f	// max. predictions (%)
 	)
 private:
 	/** Indices for settings */
-	enum Settings { ChunkSize };
+	enum Settings { ChunkSize, MaxPredPercent };
+	
+	/** maxChunkCoeff() * <the number of domains> == <max. number of chunks> */
+	Real maxChunkCoeff() 
+		{ return settings[MaxPredPercent].f / Real( 100*settingsInt(ChunkSize) ); }
 
 public:
 	typedef float KDReal;		///< The floating point type used in the KD-tree
@@ -32,9 +43,15 @@ public:
 private:
 //	Module's data
 	std::vector<Tree*> levelTrees; ///< The predicting Tree for every level (can be missing)
+	#ifndef NDEBUG
+	long predicted, maxpred;
+	#endif
 
 protected:
 //	Construction and destruction
+	#ifndef NDEBUG
+	MSaupePredictor(): predicted(0), maxpred(0) {}
+	#endif
 	~MSaupePredictor()
 		{ cleanUp(); }
 
@@ -65,23 +82,38 @@ private:
 			bool operator<(const HeapInfo &other) const
 				{ return bestError>other.bestError; }
 		};
+		
+		class SEnormalizator {
+			Real errorAccel; /// Accelerator for conversion of SEs to the real values
+		public:
+			/** Initializes the normalizator for a range block, needed to call #normSE */
+			void initialize(const NewPredictorData &data) {
+				errorAccel= data.pixCount / data.rnDev2;
+			}
+			/** Computes normalized-tree-error from real SE (#initialize has been called) */
+			Real normSE(Real error) const {
+				Real result= std::ldexp( 1-sqrt(1-error*errorAccel), 1 );
+				if ( isnan(result) )
+					result= numeric_limits<Real>::max();
+				return result;
+			}
+		} normalizator;
 
 		std::vector<Tree::PointHeap*> heaps; ///< Pointers to the heaps for every rotation and inversion
 		std::vector<HeapInfo> infoHeap; ///< Heap built from #heaps according to their best SEs
 		KDReal *points; 	///< Normalized range rotations and inversions used by the heaps
 		int chunkSize		///  The suggested count for predicted ranges returned at once
+		, chunksRemain		///  Max. remaining count of chunks to be returned
 		, heapCount;		///< The number of heaps
-		Real errorConvAccel;///< Accelerator for conversion of SEs to the real values = 1/range.rnDev2
 		bool firstChunk; 	///< True if nothing has been predicted yet, false otherwise
-
-		/** Computes normalized-tree-error from real SE (slow - uses one sqrt) */
-		Real normalizeSE(Real error) const
-			//{ return std::ldexp( sqrt(error*errorConvAccel)-1, 1 ); }
-			{ return error*errorConvAccel; }
+	#ifndef NDEBUG
+	public: long *predicted;
+	#endif
 
 	public:
 		/** Creates a new predictor for a range block (prepares tree-heaps, etc.) */
-		OneRangePredictor(const NewPredictorData &data,int chunkSize_,const Tree &tree);
+		OneRangePredictor( const NewPredictorData &data, int chunkSize_
+		, const Tree &tree, int maxChunks );
 
 	/**	\name OneRangePred interface
 	 *	@{ */

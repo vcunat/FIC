@@ -46,6 +46,12 @@ public:
 		label:	"Maximum linear coefficient",
 		desc:	"The maximum absolute value of linear coefficients"
 	}, {
+		type:	Float,
+		data: {	f:{0,1} },
+		label:	"Sufficient quotient of SE",
+		desc:	"After reaching this quotient of square error,\n"
+				"no other domain blocks will be tried"	
+	}, {
 		type:	IntLog2,
 		data: {	i:{2,10} },
 		label:	"Quantization steps for average",
@@ -78,6 +84,7 @@ public:
 		1.0f,	// big-scale penalty coefficient
 		1,		// take quant-errors into account
 		(float)MaxLinCoeff_none, //	the maximum linear coefficient
+		0.25f,	// sufficient SE quotient
 		7,		// average possibilities
 		7,		// deviation possibilities
 		0,		// average codec
@@ -86,7 +93,7 @@ public:
 private:
 	/** Indices for settings */
 	enum Settings { ModulePredictor, AllowedRotations, AllowedInversion, BigScaleCoeff
-	, AllowedQuantError, MaxLinCoeff, QuantStepLog_avg, QuantStepLog_dev
+	, AllowedQuantError, MaxLinCoeff, SufficientSEq, QuantStepLog_avg, QuantStepLog_dev
 	, ModuleCodecAvg, ModuleCodecDev };
 //	Settings-retieval methods
 	float settingsFloat(Settings index)

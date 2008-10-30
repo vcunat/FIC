@@ -169,7 +169,7 @@ class KDTree {
 public:
 	const int depth			///  The depth of the tree = ::log2ceil(#count)
 	, length				///	 The length of the vectors
-	, count;				///< The count of the vectors
+	, count;				///< The number of the vectors
 	const Chooser chooser;	///< The best-to-split-at coordinate chooser
 private:
 	Node *nodes;	///< The array of the tree-nodes

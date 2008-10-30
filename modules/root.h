@@ -54,7 +54,7 @@ class MRoot: public IRoot {
 		0,	// default shape transformer
 		90,	// encoding quality
 		0,	// quality converter
-		12//15	// max. domain count
+		15	// max. domain count
 	);
 private:
 	/** Indices for settings */
