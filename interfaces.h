@@ -21,7 +21,6 @@ namespace MTypes {
 #include "modules.h"
 #include "matrixUtil.h"
 
-
 /** Forwards for interfaces */
 struct IRoot;
 struct IColorTransformer;

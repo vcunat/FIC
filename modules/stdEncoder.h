@@ -10,86 +10,61 @@ class MStandardEncoder: public ISquareEncoder {
 public:
 	static const Real MaxLinCoeff_none= 0;
 
-	DECLARE_M_cloning_name_desc( MStandardEncoder, "Standard encoder"
-	, "Classic encoder supporting one-domain to one-range mappings" )
-
-	DECLARE_M_settings_type({
-		type:	ModuleCombo,
-		data: {	compatIDs: &IStdEncPredictor::getCompMods() },
+	DECLARE_TypeInfo( MStandardEncoder, "Standard encoder"
+	, "Classic encoder supporting one-domain to one-range mappings"
+	, {
 		label:	"Best-match predictor",
 		desc:	"Module that chooses which domain blocks\n"
-				"should be tried for a range block"
+				"should be tried for a range block",
+		type:	settingModule<IStdEncPredictor>()
 	}, {
-		type:	Combo,
-		data: {	text:"identity only\nclassic 8" },
 		label:	"Rotations and symmetries",
-		desc:	"Can the projections include rotations and symmetries?"
+		desc:	"Can the projections include rotations and symmetries?",
+		type:	settingCombo("identity only\nclassic 8",1)
 	}, {
-		type:	Combo,
-		data: {	text:"not allowed\nallowed" },
 		label:	"Color value inversion",
-		desc:	"Can the projections have negative linear coefficients?"
+		desc:	"Can the projections have negative linear coefficients?",
+		type:	settingCombo("not allowed\nallowed",1)
 	}, {
-		type:	Float,
-		data: {	f:{0,4} },
 		label:	"Coefficient of big-scale penalization",
 		desc:	"How much will big linear coefficients in color-value\n"
-				"projections be penalized? (select zero to disable it)"
+				"projections be penalized? (select zero to disable it)",
+		type:	settingFloat(0,1,4)
 	}, {
-		type:	Combo,
-		data: {	text:"no\nyes" },
 		label:	"Take quantization errors into account",
-		desc:	"Selecting yes will result in slower but more precise encoding?"
+		desc:	"Selecting yes will result in slower but more precise encoding?",
+		type:	settingCombo("no\nyes",1)
 	}, {
-		type:	Float,
-		data: {	f:{MaxLinCoeff_none,1.2} },
 		label:	"Maximum linear coefficient",
-		desc:	"The maximum absolute value of linear coefficients"
+		desc:	"The maximum absolute value of linear coefficients",
+		type:	settingFloat(MaxLinCoeff_none,MaxLinCoeff_none,1.2)
 	}, {
-		type:	Float,
-		data: {	f:{0,1} },
 		label:	"Sufficient quotient of SE",
 		desc:	"After reaching this quotient of square error,\n"
-				"no other domain blocks will be tried"	
+				"no other domain blocks will be tried",
+		type:	settingFloat( 0, 0.25, 1 )
 	}, {
-		type:	IntLog2,
-		data: {	i:{2,10} },
 		label:	"Quantization steps for average",
 		desc:	"The number (a power of two) of possible range block\n"
-				"average color values (real average will be rounded)"
+				"average color values (real average will be rounded)",
+		type:	settingInt(2,7,10,IntLog2)
 	}, {
-		type:	IntLog2,
-		data: {	i:{2,10} },
 		label:	"Quantization steps for deviation",
 		desc:	"The number (a power of two) of possible range block\n"
-				"standard color value deviations"
+				"standard color value deviations",
+		type:	settingInt(2,7,10,IntLog2)
 	}, {
-		type:	ModuleCombo,
-		data: {	compatIDs: &IIntCodec::getCompMods() },
 		label:	"The codec for averages",
 		desc:	"The module that will code and decode\n"
-				"average color values of range blocks"
+				"average color values of range blocks",
+		type:	settingModule<IIntCodec>()
 	}, {
-		type:	ModuleCombo,
-		data: {	compatIDs: &IIntCodec::getCompMods() },
 		label:	"The codec for deviations",
 		desc:	"The module that will code and decode standard\n"
-				"deviations of color values of range blocks"
-	})
+				"deviations of color values of range blocks",
+		type:	settingModule<IIntCodec>()
+	} )
 
-	DECLARE_M_settings_default(
-		0,//1,		// predictor - using brute-force predictor as the default one for debugging
-		1,		// rotations and symmetries
-		1,		// color value inversion
-		1.0f,	// big-scale penalty coefficient
-		1,		// take quant-errors into account
-		(float)MaxLinCoeff_none, //	the maximum linear coefficient
-		0.25f,	// sufficient SE quotient
-		7,		// average possibilities
-		7,		// deviation possibilities
-		0,		// average codec
-		0,		// deviation codec
-	)
 private:
 	/** Indices for settings */
 	enum Settings { ModulePredictor, AllowedRotations, AllowedInversion, BigScaleCoeff
@@ -97,7 +72,7 @@ private:
 	, ModuleCodecAvg, ModuleCodecDev };
 //	Settings-retieval methods
 	float settingsFloat(Settings index)
-		{ return settings[index].f; }
+		{ return settings[index].val.f; }
 	IStdEncPredictor* modulePredictor()
 		{ return debugCast<IStdEncPredictor*>(settings[ModulePredictor].m); }
 	IIntCodec* moduleCodec(bool forAverage) {

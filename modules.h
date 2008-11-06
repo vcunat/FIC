@@ -26,11 +26,16 @@ public:
 		ModuleCombo,///< a connection to another module (shown as a combo-box)
 		Combo		///  choice from a list of strings
 	};
-	/** Represents the type of one setting - including label, description, etc.\ */
-	struct SettingsTypeItem {
-		static const SettingsTypeItem stopper; ///< Predefined list terminator
+	/** Represents one setting - one number, real or integer */
+	union SettingValue {
+		int i;		///< Setting value for integer/module types (see Module::ChoiceType)
+		float f;	///< Setting value for real-number type (see Module::ChoiceType)
+	};
+	/** Represent the type of one module's setting - without label and description */
+	struct SettingsType {
+		ChoiceType type;		///< The type of the item
+		SettingValue defaults;	///< The default setting
 
-		ChoiceType type; ///< The type of the item
 		union {
 			int i[2];			///< Lower and upper bound (type==Int)
 			float f[2];			///< Lower and upper bound (type==Float)
@@ -39,21 +44,34 @@ public:
 			 *	meant to be one of Interface::getCompMods() */
 			const std::vector<int> *compatIDs;
 		} data;				///< Additional data, differs for different #type
+	};
+
+	/** Represents the type of one setting - including label, description, etc.\ */
+	struct SettingsTypeItem {
+		static const SettingsTypeItem stopper; ///< Predefined list terminator
+
 		const char *label	///  The text label of the setting
 		, *desc;			///< Description text
+		SettingsType type;	///< The type of this setting
 	};
-	/** Represents one setting value */
+
+	/** Represents one setting value in a module */
 	struct SettingsItem {
 		Module *m;	///< Pointer to the connected module (if type is Module::ModuleCombo)
-		union {
-			int i;	///< Setting value for integer types (see Module::ChoiceType)
-			float f;///< Setting value for real-number type (see Module::ChoiceType)
-		};			///< The setting value
+		SettingValue val;	///< The setting value
 
-		SettingsItem()			: m(0) 	{}			///< Just nulls the module pointer
-		SettingsItem(int i_)	: m(0), i(i_) {} 	///< Auto-init for integer settings
-		SettingsItem(float f_)	: m(0), f(f_) {}	///< Auto-init for real settings
-		~SettingsItem() 		{ delete m; }		///< Deletes the module pointer
+		SettingsItem(): m(0) {}			///< Just nulls the module pointer
+		SettingsItem(const SettingsTypeItem &typeItem);
+		~SettingsItem() { delete m; }	///< Deletes the module pointer
+	};
+
+	/** Information about one module-type */
+	struct TypeInfo {
+		int id;								///< The module-type's ID
+		const char *name					///  The module-type's name
+		, *desc;							///< The module-type's description
+		int setLength;						///< The number of setting items
+		const SettingsTypeItem *setType;	///< The types of module's settings
 	};
 
 //	Data definitions
@@ -63,15 +81,14 @@ protected:
 /** \name Construction, destruction and related methods
  *	@{	- all private, only to be used by ModuleFactory */
 private:
-	/**	Creates a deep copy of module's settings (includes the whole module subtree) */
+	/**	Creates a copy of module's settings (includes the whole module subtree) */
 	SettingsItem* copySettings(CloneMethod method) const;
 	/** Called for prototypes to initialize the default links to other modules */
 	void initDefaultModuleLinks();
 	/** Called for prototypes to null links to other modules */
 	void nullModuleLinks();
 	/** Called for prototypes to create the settings and inicialize them with defaults */
-	void createDefaultSettings()
-		{ assert(!settings), settings= newDefaultSettings(); }
+	void createDefaultSettings();
 
 	/** Denial of assigment */
 	Module& operator=(const Module&);
@@ -94,28 +111,14 @@ public:
 	/** Deletes the settings, destroying child modules as well */
 	virtual ~Module()
 		{ delete[] settings; }
-		
+
+	virtual const TypeInfo& info() const =0;
+
 	#ifndef NDEBUG
 		DECLARE_debugModule { return 0; }
-	#endif	
+	#endif
 ///	@}
 
-/** \name Virtual "static" const methods
- *	@{	- only depend on the type of the module, all implemented inline by macros */
-public:
-	/** Returns module's name */
-	virtual const char* moduleName() const =0;
-	/** Returns module's description */
-	virtual const char* moduleDescription() const =0;
-	/** Returns module's ID */
-	virtual int moduleId() const =0;
-	/** Returns the type of module's settings */
-	virtual const SettingsTypeItem* settingsType() const =0;
-	/** Creates and array filled with the compile-time default settings of the module */
-	virtual SettingsItem* newDefaultSettings() const =0;
-	/** Returns the number of setting items */
-	virtual int settingsLength() const =0;
-///	@}
 
 /**	\name Settings visualization and related methods
  *	@{	- all implemented in gui.cpp */
@@ -141,57 +144,74 @@ protected:
 	void file_loadModuleType( std::istream &is, int which );
 	/** A shortcut method for working with integer settings */
 	int& settingsInt(int index)
-		{ return settings[index].i; }
+		{ return settings[index].val.i; }
+	int settingsInt(int index) const
+		{ return settings[index].val.i; }
+
+
+	static SettingsType settingInt(int min,int defaults,int max,ChoiceType type=Int) {
+		assert( type==Int || type==IntLog2 );
+		SettingsType result;
+		result.type= type;
+		result.defaults.i= defaults;
+		result.data.i[0]= min;
+		result.data.i[1]= max;
+		return result;
+	}
+	static SettingsType settingFloat(float min,float defaults,float max) {
+		SettingsType result;
+		result.type= Float;
+		result.defaults.f= defaults;
+		result.data.f[0]= min;
+		result.data.f[1]= max;
+		return result;
+	}
+	static SettingsType settingCombo(const char *text,int defaults) {
+		assert( defaults>=0 && defaults<1+countEOLs(text) );
+		SettingsType result;
+		result.type= Combo;
+		result.defaults.i= defaults;
+		result.data.text= text;
+		return result;
+	}
+	template<class Iface> static SettingsType settingModule(int index=0) {
+		const std::vector<int> &compMods= Iface::getCompMods();
+		assert( index < (int)compMods.size() );
+		SettingsType result;
+		result.type= ModuleCombo;
+		result.defaults.i= index;
+		result.data.compatIDs= &compMods;
+		return result;
+	}
 };	//	Module class
 
 
-/** Macros for easier Module-writing */
-#define DECLARE_M_cloning_name_desc(Cname,name,desc) \
-protected: \
-/**	\name Macro-generated
-	@{ - an enum, two friends and trivial implementations of virtual "static" methods */ \
-	friend class Module; /**< Friend needed for template cloning */ \
+#define DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_...) \
+	friend class Module;  \
 	friend class ModuleFactory; \
-	friend struct ModuleFactory::Creator<Cname>; /**< Needed for GCC-3 */ \
-public: /* redefining virtual functions */ \
-	Cname* abstractClone(CloneMethod method=DeepCopy) const \
-											{ return concreteClone<Cname>(method); } \
-	const char* moduleName() const			{ return name; } \
-	const char* moduleDescription() const	{ return desc; } \
-	int settingsLength() const				{ return settingsLength_; } \
-	int moduleId() const					{ return ModuleFactory::getModuleID<Cname>(); } \
-
-#define DECLARE_M_settings_none() \
-private: \
-	enum { settingsLength_=0 /**< the number of settings */ }; \
+	friend struct ModuleFactory::Creator<CNAME_>; /* Needed for GCC-3 */ \
 public: \
-	virtual const SettingsTypeItem* settingsType() const \
-		{ return &SettingsTypeItem::stopper; } \
-	virtual SettingsItem* newDefaultSettings() const { return 0; } \
-/**	@} */
-
-#define DECLARE_M_settings_type(setType...) \
-private: \
-	enum { settingsLength_= /**< the number of settings \hideinitializer */ \
-		sizeof((SettingsTypeItem[]){setType}) / sizeof(SettingsTypeItem) \
-	}; \
-public: \
-	virtual const SettingsTypeItem* settingsType() const { \
-		static SettingsTypeItem settingsType_[]= {setType,SettingsTypeItem::stopper}; \
-		return settingsType_; \
+	CNAME_* abstractClone(CloneMethod method=DeepCopy) const \
+		{ return concreteClone<CNAME_>(method); } \
+ \
+	const TypeInfo& info() const { \
+		static SettingsTypeItem setType_[]= {SETTYPE_}; \
+		static TypeInfo info_= { \
+			id: ModuleFactory::getModuleID<CNAME_>(), \
+			name: NAME_, \
+			desc: DESC_, \
+			setLength: sizeof(setType_)/sizeof(*setType_)-1, \
+			setType: setType_ \
+		}; \
+		return info_; \
 	} \
 
-#define DECLARE_M_settings_default(setDefault...) \
-public: \
-	virtual SettingsItem* newDefaultSettings() const { \
-		static const SettingsItem defaults[]= {setDefault}; \
-		LOKI_STATIC_CHECK( sizeof(defaults)/sizeof(SettingsItem) == settingsLength_ \
-		, Wrong_number_of_default_settings_specified ); \
-		SettingsItem *result= new SettingsItem[settingsLength_]; \
-		std::copy( defaults, defaults+settingsLength_, result ); \
-		return result; \
-	} \
-/**	@} */
+/** Macros for easier Module-writing */
+#define DECLARE_TypeInfo(CNAME_,NAME_,DESC_,SETTYPE_...) \
+	DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_,SettingsTypeItem::stopper)
+
+#define DECLARE_TypeInfo_noSettings(CNAME_,NAME_,DESC_) \
+	DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SettingsTypeItem::stopper)
 
 
 /** A singleton factory class for creating modules */
@@ -230,21 +250,24 @@ public:
 	}
 	/** Returns the name of the module-type with given id */
 	static const char* moduleName(int id)
-		{ return prototype(id).moduleName(); }
+		{ return prototype(id).info().name; }
 	/** Returns the description of the module-type with given id */
 	static const char* moduleDescription(int id)
-		{ return prototype(id).moduleDescription(); }
+		{ return prototype(id).info().desc; }
 	/** Returns a new instance of the module-type with given id */
 	static Module* newModule( int id, Module::CloneMethod method=Module::DeepCopy )
 		{ return prototype(id).abstractClone(method); }
 
-	/** Sets the defaults to given module's settings */
+	/** Sets appropriate prototype settings according to given module's settings */
 	static void changeDefaultSettings(const Module &module);
 
 private:
 //	some helper stuff
 	template<class T> struct Creator {
-		T* operator()() const { return new T; }
+		T* operator()() const { 
+			T *result= new T;
+			return result; 
+		}
 	};
 	template<class T> struct Instantiator {
 		int operator()() const;

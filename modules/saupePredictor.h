@@ -10,32 +10,25 @@ namespace NOSPACE {
 class MSaupePredictor: public IStdEncPredictor {
 	DECLARE_debugModule;
 
-	DECLARE_M_cloning_name_desc( MSaupePredictor, "Saupe predictor"
-	, "Predictor for standard encoder using multi-dimensional nearest neighbour search" )
-
-	DECLARE_M_settings_type({
-		type:	Int,
-		data: {	i:{1,32} },
+	DECLARE_TypeInfo( MSaupePredictor, "Saupe predictor"
+	, "Predictor for standard encoder using multi-dimensional nearest neighbour search"
+	, {
 		label:	"Prediction chunk size",
-		desc:	"The number of predicted domains in a chunk"
+		desc:	"The number of predicted domains in a chunk",
+		type:	settingInt(1,8,32)
 	}, {
-		type:	Float,
-		data: {	f:{0,100} },
 		label:	"Max. predictions (%)",
-		desc:	"The maximal percentage of domains predicted for a range block"
-	})
+		desc:	"The maximal percentage of domains predicted for a range block",
+		type:	settingFloat(0,5,100)
+	} )
 
-	DECLARE_M_settings_default(
-		8,		// chunk size
-		5.0f	// max. predictions (%)
-	)
 private:
 	/** Indices for settings */
 	enum Settings { ChunkSize, MaxPredPercent };
-	
+
 	/** maxChunkCoeff() * <the number of domains> == <max. number of chunks> */
-	Real maxChunkCoeff() 
-		{ return settings[MaxPredPercent].f / Real( 100*settingsInt(ChunkSize) ); }
+	Real maxChunkCoeff()
+		{ return settings[MaxPredPercent].val.f / Real( 100*settingsInt(ChunkSize) ); }
 
 public:
 	typedef float KDReal;		///< The floating point type used in the KD-tree
@@ -82,7 +75,7 @@ private:
 			bool operator<(const HeapInfo &other) const
 				{ return bestError>other.bestError; }
 		};
-		
+
 		class SEnormalizator {
 			Real errorAccel; /// Accelerator for conversion of SEs to the real values
 		public:

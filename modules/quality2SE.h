@@ -6,10 +6,9 @@
 /** Standard quality-to-SE module - uses fixed SE for all block sizes */
 class MQuality2SE_std: public IQuality2SquareError {
 
-	DECLARE_M_cloning_name_desc( MQuality2SE_std, "Constant square error"
+	DECLARE_TypeInfo_noSettings( MQuality2SE_std, "Constant square error"
 	, "Holds the same <b>square error</b> (SE) for all block sizes" )
 
-	DECLARE_M_settings_none()
 public:
 /**	\name IQuality2SquareError interface
  *	@{ */

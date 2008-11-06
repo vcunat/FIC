@@ -8,45 +8,34 @@
 class MSquarePixels: public IShapeTransformer {
 	DECLARE_debugModule;
 
-	DECLARE_M_cloning_name_desc( MSquarePixels, "Square-pixel"
-	, "Continues to work with square-shaped pixels, can divide the image" );
-
-	DECLARE_M_settings_type({
-		type:	IntLog2,
-		data: {	i:{12,24} },
+	DECLARE_TypeInfo( MSquarePixels, "Square-pixel"
+	, "Continues to work with square-shaped pixels, can divide the image"
+	, {
 		label:	"Max. part size",
 		desc:	"The maximum number of pixels that can be in one part\n"
-				"(parts are encoded separately, possibly in different threads)"
+				"(parts are encoded separately, possibly in different threads)",
+		type:	settingInt(12,20,24,IntLog2)
 	}, {
-		type:	ModuleCombo,
-		data: {	compatIDs: &ISquareRanges::getCompMods() },
 		label:	"Range divider",
 		desc:	"The module that decides the way a single color-plane part"
-				" is split into into Range blocks"
+				" is split into into Range blocks",
+		type:	settingModule<ISquareRanges>()
 	}, {
-		type:	ModuleCombo,
-		data: {	compatIDs: &ISquareDomains::getCompMods() },
 		label:	"Domain pool creator",
-		desc:	"The module that decides which block will be used for Domains"
+		desc:	"The module that decides which block will be used for Domains",
+		type:	settingModule<ISquareDomains>()
 	}, {
-		type:	ModuleCombo,
-		data: {	compatIDs: &ISquareEncoder::getCompMods() },
 		label:	"Encoder",
-		desc:	"The module that will find the best Domain-Range mappings"
-	});
+		desc:	"The module that will find the best Domain-Range mappings",
+		type:	settingModule<ISquareEncoder>()
+	} )
 
-	DECLARE_M_settings_default(
-		20,	// Max. part size
-		0,	// Range divider
-		0,	// Domain pool creator
-		0	// Encoder
-	);
 private:
 	/** Indices for settings */
 	enum Settings { MaxPartSize, ModuleRanges, ModuleDomains, ModuleEncoder };
 //	Settings-retrieval methods
 	int& maxPartSize()
-		{ return settings[MaxPartSize].i; }
+		{ return settingsInt(MaxPartSize); }
 	ISquareRanges* moduleRanges()
 		{ return debugCast<ISquareRanges*>(settings[ModuleRanges].m); }
 	ISquareDomains* moduleDomains()

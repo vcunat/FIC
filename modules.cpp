@@ -52,8 +52,7 @@ namespace NOSPACE {
 			{ return Loki::TL::IndexOf<Modules,T>::value; }
 	};
 }
-template<class Iface> const vector<int>&
-Interface<Iface>::getCompMods() {
+template<class Iface> const vector<int>& Interface<Iface>::getCompMods() {
 	using namespace Loki::TL;
 	typedef typename Compatible<Modules,Iface>::Result CompList;
 	if ( compMods_.empty() && Length<CompList>::value ) {
@@ -67,11 +66,12 @@ template <class Iface> std::vector<int> Interface<Iface>::compMods_;
 
 
 ////	Module class members
-const Module::SettingsTypeItem Module::SettingsTypeItem:: stopper= { Stop, {}, 0, 0 };
+const Module::SettingsTypeItem Module::SettingsTypeItem
+::stopper= { 0, 0, {Stop,{i:-1},{text:0}} };
 
 Module::SettingsItem* Module::copySettings(CloneMethod method) const {
 //	copy the settings array
-	int length= settingsLength();
+	int length= info().setLength;
 	if (!length)
 		return 0;
 	SettingsItem *result= new SettingsItem[length];
@@ -96,47 +96,59 @@ Module::SettingsItem* Module::copySettings(CloneMethod method) const {
 }
 void Module::initDefaultModuleLinks() {
 //	iterate over all settings
-	const SettingsTypeItem *setType= settingsType();
-	for (int i=0; setType[i].type!=Stop; ++i )
-		if (setType[i].type==ModuleCombo) {
+	const SettingsTypeItem *setType= info().setType;
+	for (int i=0; setType[i].type.type!=Stop; ++i )
+		if (setType[i].type.type==ModuleCombo) {
 		//	it is a module link -> initialize it with the right prototype
 			assert(!settings[i].m);
-			settings[i].m=constCast
-			(&ModuleFactory::prototype( (*setType[i].data.compatIDs)[settings[i].i] ));
+			settings[i].m= constCast(&ModuleFactory::prototype(
+				(*setType[i].type.data.compatIDs)[settings[i].val.i]
+			));
 		}
 }
 void Module::nullModuleLinks() {
 //	iterate over all settings
-	SettingsItem *itEnd= settings+settingsLength();
+	SettingsItem *itEnd= settings+info().setLength;
 	for (SettingsItem *it=settings; it!=itEnd; ++it)
 		it->m= 0;
 }
 template<class M> M* Module::concreteClone(CloneMethod method) const {
-	assert( this && moduleId() == ModuleFactory::getModuleID<M>() );
+	assert( this && info().id == ModuleFactory::getModuleID<M>() );
 	M *result= new M;
 	result->settings= copySettings(method);
 	return result;
 }
 
+Module::SettingsItem::SettingsItem(const SettingsTypeItem &typeItem)
+: m(0), val(typeItem.type.defaults) {
+}
+	
+void Module::createDefaultSettings() {
+	assert(!settings);
+	const TypeInfo &inf= info();
+	settings= new SettingsItem[inf.setLength];
+	copy( inf.setType, inf.setType+inf.setLength, settings );
+}
+
 void Module::file_saveModuleType( ostream &os, int which ) {
 //	do some assertions - we expect to have the child module, etc.
-	assert( which>=0 && which<settingsLength() );
+	assert( which>=0 && which<info().setLength );
 	SettingsItem &setItem= settings[which];
-	assert( settingsType()[which].type==ModuleCombo && setItem.m );
+	assert( info().setType[which].type.type==ModuleCombo && setItem.m );
 //	put the module's identifier
-	put<Uchar>( os, setItem.m->moduleId() );
+	put<Uchar>( os, setItem.m->info().id );
 }
 void Module::file_loadModuleType( istream &is, int which ) {
 //	do some assertions - we expect not to have the child module, etc.
-	assert( which>=0 && which<settingsLength() );
-	const SettingsTypeItem &setType= settingsType()[which];
+	assert( which>=0 && which<info().setLength );
+	const SettingsTypeItem &setType= info().setType[which];
 	SettingsItem &setItem= settings[which];
-	assert( setType.type==ModuleCombo && !setItem.m );
+	assert( setType.type.type==ModuleCombo && !setItem.m );
 //	get module identifier and check its existence
 	int newId= get<Uchar>(is);
 	checkThrow( 0<=newId && newId<Loki::TL::Length<Modules>::value );
 //	check module compatibility
-	const vector<int> &v= *setType.data.compatIDs;
+	const vector<int> &v= *setType.type.data.compatIDs;
 	checkThrow( find(v.begin(),v.end(),newId) != v.end() );
 //	create a new correct empty module
 	setItem.m= ModuleFactory::newModule(newId,ShallowCopy);
@@ -151,6 +163,7 @@ template<class M> int ModuleFactory::getModuleID()
 
 void ModuleFactory::initialize() {
 //	create one instance of each module-type
+	assert( prototypes.empty() );
 	prototypes.reserve( Loki::TL::Length<Modules>::value );
 	Loki::TL::IterateTypes<Modules,Creator> gendata;
 	gendata( back_inserter(prototypes) );
@@ -162,16 +175,17 @@ void ModuleFactory::initialize() {
 }
 void ModuleFactory::changeDefaultSettings(const Module &module) {
 //	get the right prototype
-	Module::SettingsItem *protSet= prototype(module.moduleId()).settings;
+	const Module::TypeInfo &mi= module.info();
+	Module::SettingsItem *protSet= prototype(mi.id).settings;
 //	replace prototype's settings
 	assert( protSet && module.settings );
-	copy( module.settings, module.settings+module.settingsLength(), protSet );
+	copy( module.settings, module.settings+mi.setLength, protSet );
 //	convert module-links to links to the correct prototypes
-	for (const Module::SettingsTypeItem *setType=module.settingsType()
-	; setType->type!=Module::Stop; ++setType,++protSet)
-		if ( setType->type==Module::ModuleCombo ) {
+	for (const Module::SettingsTypeItem *setType= mi.setType
+	; setType->type.type!=Module::Stop; ++setType,++protSet)
+		if ( setType->type.type==Module::ModuleCombo ) {
 			assert(protSet->m);
-			protSet->m= constCast(&prototype( protSet->m->moduleId() ));
+			protSet->m= constCast(&prototype( protSet->m->info().id ));
 		}
 }
 

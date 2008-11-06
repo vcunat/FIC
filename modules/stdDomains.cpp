@@ -19,9 +19,9 @@ void debugPool(const ISquareDomains::Pool &pool) {
 			line[x]= qRgb(c,c,c);
 		}
 	}
-	
+
 	image.save("pool.png");
-	
+
 	return;
 }
 */
@@ -35,7 +35,7 @@ namespace NOSPACE {
 		bool operator()(const Pool &a,const Pool &b) {
 			if (a.type!=b.type)
 				return a.type<b.type;
-			else 
+			else
 				return assert(a.level!=b.level), a.level<b.level;
 		}
 	};
@@ -87,7 +87,7 @@ namespace NOSPACE {
 	typedef MStdDomains::PoolList::const_iterator PoolIt;
 	static inline bool halfShrinkOK(PoolIt src,PoolIt dest) {
 		return src->level+1 == dest->level
-		&& src->width/2 == dest->width 
+		&& src->width/2 == dest->width
 		&& src->height/2 == dest->height;
 	}
 //	forwards, implemeted and described at the end of the file
@@ -208,14 +208,14 @@ namespace NOSPACE {
 		int xLowCount= (int)floor( sqrt(maxCount*wms/(double)hms) -1 );
 		int yLowCount= (int)floor( sqrt(maxCount*hms/(double)wms) -1 );
 		int dens= (int)ceil(max( wms/(double)xLowCount, hms/(double)yLowCount ));
-		
+
 		if (count<=maxCount) {
 			dens= (short)floor(min( wms/xHighCount, hms/yHighCount ));
 			assert( wms/dens==xHighCount && hms/dens==yHighCount );
 		} else {
 			dens= (short)floor(max( wms/xHighCount, hms/yHighCount ));
 			count= (wms/dens+1)*(hms/dens+1);
-			
+
 			if (count>maxCount) {
 				dens= (short)floor(min( wms/xLowCount, hms/yLowCount ));
 				count= (xLowCount+1)*(yLowCount+1);
@@ -233,13 +233,13 @@ namespace NOSPACE {
 		assert(dens>0);
 		int count= (wms/dens+1)*(hms/dens+1);
 		assert(count<=maxCount);
-		
+
 		result.push_back(dens);
 		return count;
 	}
 	/** Generates (\p results.push_back) densities for domains on level \p level for
-	 *	all pools of one type. It distributes at most \p maxCount domains among 
-	 *	the pools' scale-levels in one of three ways (\p divType) 
+	 *	all pools of one type. It distributes at most \p maxCount domains among
+	 *	the pools' scale-levels in one of three ways (\p divType)
 	 *	and returns the number of generated domains \relates MStandardDomains */
 	static int divideDomsInType( PoolIt begin, PoolIt end, int maxCount, int level
 	, char divType, vector<short> &results ) {
@@ -257,7 +257,7 @@ namespace NOSPACE {
 				? (maxCount-genCount)/2
 			//	uniform dividing or no multiscaling (then scaleLevels==1)
 				: (maxCount-genCount)/scaleLevels ;
-		//	distribute it uniformly among the interval 
+		//	distribute it uniformly among the interval
 		//	(there are more than one for diamond-type only)
 			genCount+= toGenerate;	// genCount: "assume" we generate exactly toGenerate
 			for (; begin!=it; ++begin)
@@ -302,16 +302,18 @@ vector<short> MStdDomains::getLevelDensities(int level,int stdDomCountLog2) {
 
 void MStdDomains::writeSettings(ostream &file) {
 	assert( this && settings );
-//	all settings are from int:{0..8}
-	for (int i=0; i<settingsLength_; ++i)
-		put<Uchar>( file, settings[i].i );
+//	all settings are small integers a need to be preserved
+	int setLength= info().setLength;
+	for (int i=0; i<setLength; ++i)
+		put<Uchar>( file, settingsInt(i) );
 }
 
 void MStdDomains::readSettings(istream &file) {
 	assert( this && settings );
-//	all settings are from int:{0..8}
-	for (int i=0; i<settingsLength_; ++i)
-		settings[i].i= get<Uchar>(file);
+//	all settings are small integers a need to be preserved
+	int setLength= info().setLength;
+	for (int i=0; i<setLength; ++i)
+		settingsInt(i)= get<Uchar>(file);
 }
 
 

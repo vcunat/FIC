@@ -11,39 +11,30 @@ class BitReader;
 class MQuadTree: public ISquareRanges {
 	DECLARE_debugModule;
 
-	DECLARE_M_cloning_name_desc( MQuadTree, "Quad-tree"
-	, "Splits the range blocks according to the <b>quad-tree</b> algorithm" )
-
-	DECLARE_M_settings_type({
-		type:	IntLog2,
-		data: {	i: {2,8} },
+	DECLARE_TypeInfo( MQuadTree, "Quad-tree"
+	, "Splits the range blocks according to the <b>quad-tree</b> algorithm"
+	, {
 		label:	"Min. range-block size",
-		desc:	"Blocks with this size won't be divided"
+		desc:	"Blocks with this size won't be divided",
+		type:	settingInt(2,2,8,IntLog2)
 	}, {
-		type:	IntLog2,
-		data: {	i: {2,12} },
 		label:	"Max. range-block size",
-		desc:	"Blocks with bigger size will be always divided"
+		desc:	"Blocks with bigger size will be always divided",
+		type:	settingInt(2,12,12,IntLog2)
 	}, {
-		type:	Combo,
-		data: {	text: "no\nyes" },
 		label:	"Heuristic dividing",
 		desc:	"Pre-divide the ranges heuristically and later divide ranges\n"
-				"with bad quality and try to merge ranges with good quality"
-	})
+				"with bad quality and try to merge ranges with good quality",
+		type:	settingCombo("no\nyes",1)
+	} )
 
-	DECLARE_M_settings_default(
-		2,	// min. block-size
-		12,	// max. block-size
-		1	// heuristic dividing
-	)
 private:
 	/** Indices for settings */
 	enum Settings { MinLevel, MaxLevel, HeuristicAllowed };
 //	Settings-retrieval methods
-	int minLevel()			{ return settings[MinLevel].i; }
-	int maxLevel()			{ return settings[MaxLevel].i; }
-	bool heuristicAllowed()	{ return settings[HeuristicAllowed].i; }
+	int minLevel()			{ return settingsInt(MinLevel); }
+	int maxLevel()			{ return settingsInt(MaxLevel); }
+	bool heuristicAllowed()	{ return settingsInt(HeuristicAllowed); }
 protected:
 	class Node;	// forward declaration, derived from RangeNode
 	friend class Node;
@@ -54,7 +45,7 @@ private:
 #ifndef NDEBUG
 	int badDivides, triedMerges, badTries;
 #endif
-	
+
 protected:
 //	Construction and destruction
 	/** Only zeroes #root */

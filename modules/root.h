@@ -9,66 +9,51 @@
 class MRoot: public IRoot {
 	DECLARE_debugModule;
 
- 	DECLARE_M_cloning_name_desc( MRoot, "Root"
- 	, "Standard root module" );
-
-	DECLARE_M_settings_type({
-		type:	Int,
-		data: {	i:{1,1} },
+ 	DECLARE_TypeInfo( MRoot, "Root"
+ 	, "Standard root module"
+	, {
 		label:	"Maximal number of threads",
 		desc:	"Note: the actual number of threads is bound by\n"
-				"(the number of parts)*(the number of color planes)"
+				"(the number of parts)*(the number of color planes)",
+		type:	settingInt(1,1,1) // abs(QThread::idealThreadCount())
 	}, {
-		type:	ModuleCombo,
-		data: {	compatIDs: &IColorTransformer::getCompMods() },
 		label:	"Color transformer",
-		desc:	"The module that will be used to transform colors"
+		desc:	"The module that will be used to transform colors",
+		type:	settingModule<IColorTransformer>()
 	}, {
-		type:	ModuleCombo,
-		data: {	compatIDs: &IShapeTransformer::getCompMods() },
 		label:	"Pixel-shape transformer",
 		desc:	"The module that is responsible for shape-transformation\n"
-				"of the pixels and for further (de)compression"
+				"of the pixels and for further (de)compression",
+		type:	settingModule<IShapeTransformer>()
 	}, {
-		type:	Int,
-		data: {	i:{0,100} },
 		label:	"Encoding quality",
-		desc:	"Quality - how much accurate the mappings have to be"
+		desc:	"Quality - how much accurate the mappings have to be",
+		type:	settingInt(0,90,100)
 	}, {
-		type:	ModuleCombo,
-		data: {	compatIDs: &IQuality2SquareError::getCompMods() },
 		label:	"Quality converter",
-		desc:	"For given quality and size computes maximum square error allowed"
+		desc:	"For given quality and size computes maximum square error allowed",
+		type:	settingModule<IQuality2SquareError>()
 	}, {
-		type:	IntLog2,
-		data: {	i: {0,18} },
 		label:	"Maximum domain count",
 		desc:	"Maximum domain count for level 2 range blocks\n"
-				"(for this purpose are different rotations "
-				"of one domain counted as different domains)"
-	});
+				"(for this purpose are different rotations\n"
+				"of one domain counted as different domains)",
+		type:	settingInt(0,15,18,IntLog2)
+	} )
 
-	DECLARE_M_settings_default(
-		1,	//abs(QThread::idealThreadCount()), // the max. number of threads
-		0,	// deafult color transformer
-		0,	// default shape transformer
-		90,	// encoding quality
-		0,	// quality converter
-		15	// max. domain count
-	);
 private:
 	/** Indices for settings */
 	enum Settings { MaxThreads, ModuleColor, ModuleShape, Quality, ModuleQuality
 	, DomainCountLog2 };
 //	Settings-retrieval methods
 	int maxThreads() const
-		{ return settings[MaxThreads].i; }
+		{ return settingsInt(MaxThreads); }
 	IColorTransformer* moduleColor() const
 		{ return debugCast<IColorTransformer*>(settings[ModuleColor].m); }
 	IShapeTransformer* moduleShape() const
 		{ return debugCast<IShapeTransformer*>(settings[ModuleShape].m); }
 	float quality()
-		{ return settings[Quality].i/100.0; }
+		{ return settingsInt(Quality)/100.0; }
 	IQuality2SquareError* moduleQuality() const
 		{ return debugCast<IQuality2SquareError*>(settings[ModuleQuality].m); }
 

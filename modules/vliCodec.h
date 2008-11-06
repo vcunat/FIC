@@ -9,23 +9,19 @@ class VLI;
 /** Variable-length-integer codec optimized for encoding little-changing sequences */
 class MDifferentialVLICodec: public IIntCodec {
 
-	DECLARE_M_cloning_name_desc( MDifferentialVLICodec, "Differential VLI"
-	, "Variable-length-integer differential encoder with adjustable distribution" )
-
-	DECLARE_M_settings_type({
-		type:	IntLog2,
-		data: {	i:{0,8} },
+	DECLARE_TypeInfo( MDifferentialVLICodec, "Differential VLI"
+	, "Variable-length-integer differential encoder with adjustable distribution"
+	, {
 		label:	"First level symbols",
 		desc:	"The number of possibilities\n"
-				"that will occupy least space"
-	})
+				"that will occupy least space",
+		type:	settingInt(0,1,8,IntLog2)
+	} )
 
-	DECLARE_M_settings_default(
-		1 //	first level symbols
-	)
-
+private:
 	/** Indices for settings */
 	enum Settings { VLIExponent };
+
 private:
 	int possib		/// the number of possibilities set by #setPossibilities
 	, lastSymbol;	///< the last encoded symbol (#possib/2 at the beginning)

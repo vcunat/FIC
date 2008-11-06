@@ -10,14 +10,14 @@ MSaupePredictor::OneRangePred* MSaupePredictor::newPredictor(const NewPredictorD
 	Tree *tree= levelTrees[level];
 	if ( !tree )
 		tree= levelTrees[level]= createTree(data);
-	
+
 	int maxChunks= (int)ceil(maxChunkCoeff()*tree->count);
 	if (maxChunks<=0)
 		maxChunks= 1;
-	
-	OneRangePredictor *result= 
+
+	OneRangePredictor *result=
 		new OneRangePredictor(data,settingsInt(ChunkSize),*tree,maxChunks);
-	
+
 	#ifndef NDEBUG
 	maxpred+= tree->count*(data.allowRotations?8:1)*(data.allowInversion?2:1);
 	result->predicted= &predicted;
@@ -201,7 +201,7 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 //	return the result
 	swap(result,store);
 	--chunksRemain;
-	
+
 	#ifndef NDEBUG
 	*predicted+= store.size();
 	#endif

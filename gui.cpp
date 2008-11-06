@@ -357,7 +357,7 @@ void SettingsDialog::currentItemChanged(QTreeWidgetItem *curItem,QTreeWidgetItem
 	assert(curMod);
 //	clear the settings box and make the module fill it
 	clearContainer( setBox->children() );
-	setBox->setTitle( tr("%1 module settings") .arg(curMod->moduleName()) );
+	setBox->setTitle( tr("%1 module settings") .arg(curMod->info().name) );
 	curMod->adjustSettings(-1,0,setBox);
 }
 void SettingsDialog::settingChanges(int which) {
@@ -402,33 +402,32 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 				return;
 			}
 		//	find child modules and make them create their subtrees
-			const SettingsTypeItem *setType= settingsType();
+			const SettingsTypeItem *setType= info().setType;
 			const SettingsItem *setItem= settings;
-			for (; setType->type!=Stop; ++setItem,++setType)
-				if ( setType->type == ModuleCombo ) {
+			for (; setType->type.type!=Stop; ++setItem,++setType)
+				if ( setType->type.type == ModuleCombo ) {
 				//	it is a module -> label its subtree-root and recurse (polymorphically)
 					assert(setItem->m);
-					if ( !setItem->m->settingsLength() )
-						continue;
-
+					if ( !setItem->m->info().setLength )
+						continue; // skipping modules with no settings
 					QTreeWidgetItem *childTree= new QTreeWidgetItem(myTree);
 					childTree->setText( 0, QObject::tr(setType->label) );
 					setItem->m->adjustSettings( -1, childTree, 0 );
 				}
 		}
-		int setLength= settingsLength();
+		int setLength= info().setLength;
 		if ( setBox && setLength ) {
 		//	fill the group-box
 			QGridLayout *layout= new QGridLayout(setBox);
 			setBox->setLayout(layout);
-			const SettingsTypeItem *typeItem= settingsType();
+			const SettingsTypeItem *typeItem= info().setType;
 			for (int i=0; i<setLength; ++i,++typeItem) {
 			//	add a line - one option
 				QString desc(typeItem->desc);
 				QLabel *label= new QLabel( typeItem->label, setBox );
 				label->setToolTip(desc);
 
-				QWidget *widget= newSettingsWidget( typeItem->type, setBox );
+				QWidget *widget= newSettingsWidget( typeItem->type.type, setBox );
 				settingsType2widget( widget, *typeItem );
 				settings2widget( widget, i );
 				widget->setToolTip(desc);
@@ -436,25 +435,25 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 				layout->addWidget( label, i, 0 );
 				layout->addWidget( widget, i, 1 );
 
-				SignalChanger *changer= new SignalChanger(i,widget,typeItem->type);
+				SignalChanger *changer= new SignalChanger(i,widget,typeItem->type.type);
 				aConnect( changer, SIGNAL(notify(int))			// assuming the setBox's
 				, setBox->parent(), SLOT(settingChanges(int)) ); // parent is SettingsDialog
 			}//	for loop
 		}//	filling the box
 	} else {
 	//	which>=0... a setting has changed -> get the change from the widget
-		assert( which<settingsLength() );
+		assert( which < info().setLength );
 		QLayoutItem *item= setBox->layout()->itemAt(2*which+1);
 		assert(item);
 		widget2settings( item->widget() , which );
 	//	handle module-type settings
-		const SettingsTypeItem *setType= settingsType();
-		if ( setType[which].type == ModuleCombo ) {
+		const SettingsTypeItem *setType= info().setType;
+		if ( setType[which].type.type == ModuleCombo ) {
 			assert(myTree);
 		//	get the new module id and check whether it has really changed
 			SettingsItem &setItem= settings[which];
-			int newId= (*setType->data.compatIDs)[setItem.i];
-			if ( newId == setItem.m->moduleId() )
+			int newId= (*setType->type.data.compatIDs)[setItem.val.i];
+			if ( newId == setItem.m->info().id )
 				return;
 		//	replace the child module
 			clearContainer( myTree->takeChildren() );
@@ -467,36 +466,36 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 	}
 }
 void Module::widget2settings(const QWidget *widget,int which) {
-	assert( 0<=which && which<settingsLength() );
-	switch( settingsType()[which].type ) {
+	assert( 0<=which && which<info().setLength );
+	switch( info().setType[which].type.type ) {
 	case Int:
 	case IntLog2:
-		settings[which].i= debugCast<const QSpinBox*>(widget)->value();
+		settings[which].val.i= debugCast<const QSpinBox*>(widget)->value();
 		break;
 	case Float:
-		settings[which].f= debugCast<const QDoubleSpinBox*>(widget)->value();
+		settings[which].val.f= debugCast<const QDoubleSpinBox*>(widget)->value();
 		break;
 	case ModuleCombo:
 	case Combo:
-		settings[which].i= debugCast<const QComboBox*>(widget)->currentIndex();
+		settings[which].val.i= debugCast<const QComboBox*>(widget)->currentIndex();
 		break;
 	default:
 		assert(false);
 	}//	switch
 }
 void Module::settings2widget(QWidget *widget,int which) {
-	assert( 0<=which && which<settingsLength() );
-	switch( settingsType()[which].type ) {
+	assert( 0<=which && which<info().setLength );
+	switch( info().setType[which].type.type ) {
 	case Int:
 	case IntLog2:
-		debugCast<QSpinBox*>(widget)->setValue( settings[which].i );
+		debugCast<QSpinBox*>(widget)->setValue( settings[which].val.i );
 		break;
 	case Float:
-		debugCast<QDoubleSpinBox*>(widget)->setValue( settings[which].f );
+		debugCast<QDoubleSpinBox*>(widget)->setValue( settings[which].val.f );
 		break;
 	case ModuleCombo:
 	case Combo:
-		debugCast<QComboBox*>(widget)->setCurrentIndex( settings[which].i );
+		debugCast<QComboBox*>(widget)->setCurrentIndex( settings[which].val.i );
 		break;
 	default:
 		assert(false);
@@ -516,23 +515,26 @@ namespace NOSPACE {
 }
 void Module::settingsType2widget(QWidget *widget,const SettingsTypeItem &typeItem) {
 	assert( widget );
-	switch( typeItem.type ) {
+	switch( typeItem.type.type ) {
 	case IntLog2:
 		debugCast<QSpinBox*>(widget)->setPrefix(QObject::tr("2^"));
 	//	fall through
 	case Int:
-		debugCast<QSpinBox*>(widget)->setRange( typeItem.data.i[0], typeItem.data.i[1] );
+		debugCast<QSpinBox*>(widget)->
+			setRange( typeItem.type.data.i[0], typeItem.type.data.i[1] );
 		break;
 	case Float:
-		debugCast<QDoubleSpinBox*>(widget)->setRange( typeItem.data.f[0], typeItem.data.f[1] );
+		debugCast<QDoubleSpinBox*>(widget)->
+			setRange( typeItem.type.data.f[0], typeItem.type.data.f[1] );
 		break;
 	case ModuleCombo: {
-		const vector<int> &modules= *typeItem.data.compatIDs;
+		const vector<int> &modules= *typeItem.type.data.compatIDs;
 		for_each( modules.begin(), modules.end(), ItemAdder(widget) );
 		break;
 		}
 	case Combo:
-		debugCast<QComboBox*>(widget)->addItems( QString(typeItem.data.text).split('\n') );
+		debugCast<QComboBox*>(widget)->
+			addItems( QString(typeItem.type.data.text).split('\n') );
 		break;
 	default:
 		assert(false);

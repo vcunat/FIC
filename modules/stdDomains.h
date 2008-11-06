@@ -7,57 +7,42 @@
 class MStdDomains: public ISquareDomains {
 	DECLARE_debugModule;
 
-	DECLARE_M_cloning_name_desc( MStdDomains, "Standard generator"
+	DECLARE_TypeInfo( MStdDomains, "Standard generator"
 	, "Creates domains of many types (standard, horizontal, vertical, diamond),\n"
-		"offers many adjustment possibilities" )
-
-	DECLARE_M_settings_type({
-		type:	IntLog2,
-		data: {	i: {0,4} },
+		"offers many adjustment possibilities"
+	, {
 		label:	"Per-level max-domain-count divisor",
 		desc:	"How many times will the maximum domain count\n"
 				"decrease with every level\n"
-				"(dimensions are equal to 2^level)"
+				"(dimensions are equal to 2^level)",
+		type:	settingInt(0,0,4,IntLog2)
 	}, {
-		type:	Combo,
-		data: {	text:"none\nno decrease\nhalf per scale" },
 		label:	"More-downscaled domain count",
 		desc:	"The development of count of domains\n"
-				"made from more downscaled images"
+				"made from more downscaled images",
+		type:	settingCombo("none\nno decrease\nhalf per scale",0)
 	}, {
-		type:	Int,
-		data: {	i: {0,8} },
 		label:	"Standard domains portion",
 		desc:	"How big portion from all domains\n"
-				"will be of standard type"
+				"will be of standard type",
+		type:	settingInt(0,1,8)
 	}, {
-		type:	Int,
-		data: {	i: {0,8} },
 		label:	"Diamond domains portion",
 		desc:	"How big portion from all domains\n"
-				"will be of diamond type"
+				"will be of diamond type",
+		type:	settingInt(0,0,8)
 	}, {
-		type:	Int,
-		data: {	i: {0,8} },
 		label:	"Horizontal domains portion",
 		desc:	"How big portion from all domains\n"
-				"will be of horizontal type"
+				"will be of horizontal type",
+		type:	settingInt(0,0,8)
 	}, {
-		type:	Int,
-		data: {	i: {0,8} },
 		label:	"Vertical domains portion",
 		desc:	"How big portion from all domains\n"
-				"will be of vertical type"
-	});
+				"will be of vertical type",
+		type:	settingInt(0,0,8)
+	} )
 
-	DECLARE_M_settings_default(
-		0,	// per-level divisor
-		0,	// more-downscaled-domain count decrease
-		1,	// standard domains portion
-		0,	// diamond domains portion
-		0,	// horizontal domains portion
-		0	// vertical domains portion
-	);
 private:
 	/** Indices for settings */
 	enum Settings { MaxDomCountLevelDivisor, MultiDownScaling

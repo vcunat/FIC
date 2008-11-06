@@ -8,27 +8,22 @@
 /** Simple color transformer, can use several color models linear to the basic RGB */
 class MColorModel: public IColorTransformer {
 
-	DECLARE_M_cloning_name_desc( MColorModel, "Color models"
-	, "Splits image into color planes using some <b>color model</b> (RGB or YCbCr)" );
-
-	DECLARE_M_settings_type({
-		type:	Combo,
-		data: {	text: "RGB\nYCbCr" },
+	DECLARE_TypeInfo( MColorModel, "Color models"
+	, "Splits image into color planes using some <b>color model</b> (RGB or YCbCr)"
+	, {
 		label:	"Color model",
-		desc:	"The color model that will be used to encode the images"
-	});
+		desc:	"The color model that will be used to encode the images",
+		type:	settingCombo("RGB\nYCbCr",1)
+	} );
 
-	DECLARE_M_settings_default(
-		1	// the color-model index
-	);
 private:
 	/** Indices for settings */
-	enum Settings { ColorModel }; 
+	enum Settings { ColorModel };
 //	Settings-retrieval methods
-	int& colorModel()
-		{ return settings[ColorModel].i; }
+	int &colorModel()
+		{ return settingsInt(ColorModel); }
 	int numOfModels()
-		{ return 1+countEOLs( settingsType()[ColorModel].data.text ); }
+		{ return 1+countEOLs( info().setType[ColorModel].type.data.text ); }
 protected:
 //	Construction and destruction
 	/* Using auto-generated */
@@ -53,7 +48,7 @@ private:
 
 /** Computes the amount of a color (coefficients as a parameter) in RGB \relates MColorModel */
 inline SReal getColor( QRgb color, const SReal *koefs ) {
-    return koefs[3] + std::ldexp( Real(0.5) + qRed(color)*Real(koefs[0]) 
+    return koefs[3] + std::ldexp( Real(0.5) + qRed(color)*Real(koefs[0])
     	+ qGreen(color)*Real(koefs[1]) + qBlue(color)*Real(koefs[2]), -8 );
 }
 /** Converts color from a model (coefficients as a parameter) to RGB \relates MColorModel */

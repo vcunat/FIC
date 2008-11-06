@@ -77,9 +77,9 @@ MColorModel::PlaneList MColorModel::readData
 
 MColorModel::PlaneList MColorModel::createPlanes
 ( IRoot::Mode mode, const Plane &prototype, int width, int height ) {
-	assert( 0<=colorModel() && colorModel()<numOfModels() 
+	assert( 0<=colorModel() && colorModel()<numOfModels()
 	&& width>0 && height>0 && mode!=IRoot::Clear );
-//	create the plane list	
+//	create the plane list
 	int planeCount= 3;
 	PlaneList result( planeCount, prototype );
 	for (int i=0; i<planeCount; ++i)

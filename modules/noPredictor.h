@@ -5,27 +5,25 @@
 
 /** Predictor that doesn't predict, just tries all the domains */
 class NoPredictor: public IStdEncPredictor {
-	
-	DECLARE_M_cloning_name_desc( NoPredictor, "brute force"
+
+	DECLARE_TypeInfo_noSettings( NoPredictor, "brute force"
 	, "Doesn't predict, tries all possibilities." )
-	
-	DECLARE_M_settings_none()
-	
+
 public:
 /**	\name IStdEncPredictor interface
  *	@{ */
-	OneRangePred* newPredictor(const NewPredictorData &data) 
+	OneRangePred* newPredictor(const NewPredictorData &data)
 		{ return new OneRangePredictor( data.poolInfos->back().indexBegin, data.allowRotations ); }
 	void cleanUp() {} // nothing to clean up
 ///	@}
-	
+
 private:
 	/** Predictor class returned when calling #newPredictor
 	 *	- returns all domains in all rotations in one chunk */
 	class OneRangePredictor: public OneRangePred {
 		int domCount /// the domain count
 		, rotations; ///< the number of rotations used
-		
+
 	public:
 		OneRangePredictor(int domainCount,bool allowRotations)
 		: domCount(domainCount), rotations( allowRotations ? 8 : 1 ) {}
@@ -44,7 +42,7 @@ private:
 		}
 	///	@}
 	}; // NoPredictor::OneRangePredictor class
-	
+
 }; // NoPredictor class
 
 #endif
