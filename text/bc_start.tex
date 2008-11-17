@@ -1,0 +1,118 @@
+\frenchspacing
+
+%\newindex{default}{idx}{ind}{Rejstřík} % zavádí rejstřík v případě použití balíku index
+
+\def\bcTitle{Moderní metody fraktální komprese obrazu}  
+\def\bcTitleEn{Contemporary Methods in Fractal Image Compression}
+\def\bcAuthor{Vladimír Čunát} 
+\def\bcAuthorEn{Vladimir Cunat} 
+\def\bcTeacher{RNDr. Tomáš Dvořák, CSc.}
+\def\bcTeacherMail{Tomas.Dvorak@mff.cuni.cz}
+\def\bcKSVI{Kabinet software a výuky informatiky}
+
+\title{\bcTitle}
+\author{\bcAuthor}
+\date{\today}
+
+
+
+
+%\csprimeson % zapne jednoduché psaní českých uvozovek pomocí klasických znaků, ale potom pozor 
+             % na originální apostrofy, které budou chybně interpretovány!!!
+
+%%% Následuje první, úvodní, strana bakalářské práce. Jednotlivé položky nahraďte dle vlastních
+%%% údajů. Změnit podle konkrétní délky jednotlivých položek můžete i zalomení řádků.
+\begin{titlepage}
+\begin{center}
+\ \\
+
+\vspace{15mm}
+
+\large
+Univerzita Karlova v Praze\\
+Matematicko-fyzikální fakulta\\
+
+\vspace{5mm}
+
+{\Large\bf BAKALÁŘSKÁ PRÁCE}
+
+\vspace{10mm}
+
+%%% Aby vložení loga správně fungovalo, je třeba mít soubor logo.eps nahraný v pracovním adresáři,
+%%% tj. v adresáři, kde se nachází překládaný zdrojový soubor. Soubor logo.eps je možné získat např.
+%%% na adrese: http://www.mff.cuni.cz/fakulta/symboly/logo.eps
+\includegraphics[scale=0.3]{logo} 
+
+\vspace{15mm}
+
+%\normalsize
+{\Large \bcAuthor}\\ % doplňte vaše jméno
+\vspace{5mm}
+{\Large\bf \bcTitle}\\ % doplňte název práce
+\vspace{5mm}
+\bcKSVI\\ % doplňte název katedry či ústavu
+\end{center}
+\vspace{15mm}
+
+\large
+\noindent Vedoucí bakalářské práce: \bcTeacher % doplňte odpovídající údaje
+%%% další řádek můžete ve většině případů (tj. pokud údaje uvedené výše nejsou příliš dlouhé) zrušit
+%\hskip20mm   je-li odlišné od uvedeného názvu katedry či ústavu 
+\vspace{1mm} 
+
+\noindent Studijní program: informatika % doplňte odpovídající údaje
+%%% další řádek můžete ve většině případů (tj. pokud údaje uvedené výše nejsou příliš dlouhé) zrušit
+%\hskip20mm oboru (směru),  příp. název studijního plánu
+
+\vspace{20mm}
+
+\begin{center}
+2008 % doplňte rok vzniku vaší bakalářské práce
+\end{center}
+
+\end{titlepage} % zde končí úvodní strana
+
+\normalsize % nastavení normální velikosti fontu
+\setcounter{page}{2} % nastavení číslování stránek
+\ \vspace{10mm} 
+
+\noindent Na tomto místě mohou být napsána případná poděkování (vedoucímu práce, konzultantovi, tomu, kdo půjčil software, literaturu, poskytl data apod.). % doplňte vlastní text
+
+\vspace{\fill} % nastavuje dynamické umístění následujícího textu do spodní části stránky
+\noindent Prohlašuji, že jsem svou bakalářskou práci napsal samostatně a výhradně s použitím citovaných pramenů. Souhlasím se zapůjčováním práce a jejím zveřejňováním.
+
+\bigskip
+\noindent V Praze dne \today\hspace{\fill}\bcAuthor\\ % doplňte patřičné datum, jméno a příjmení
+
+%%%   Výtisk pak na tomto míste nezapomeňte PODEPSAT!
+%%%                                         *********
+\newpage
+\tableofcontents % vkládá automaticky generovaný obsah dokumentu
+
+\newpage % přechod na novou stránku
+
+%%% Následuje strana s abstrakty. Doplňte vlastní údaje.
+\noindent
+Název práce: \bcTitle\\
+Autor: \bcAuthor\\
+Katedra (ústav): \bcKSVI\\
+Vedoucí bakalářské práce: \bcTeacher\\
+e-mail vedoucího: \bcTeacherMail\\
+
+\noindent Abstrakt:  V předložené práci studujeme ... Uvede se abstrakt v rozsahu 80 až 200 slov. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut sit amet sem. Mauris nec turpis ac sem mollis pretium. Suspendisse neque massa, suscipit id, dictum in, porta at, quam. Nunc suscipit, pede vel elementum pretium, nisl urna sodales velit, sit amet auctor elit quam id tellus. Nullam sollicitudin. Donec hendrerit. Aliquam ac nibh. Vivamus mi. Sed felis. Proin pretium elit in neque. Pellentesque at turpis. Maecenas convallis. Vestibulum id lectus. Fusce dictum augue ut nibh. Etiam non urna nec mi mattis volutpat. Curabitur in tortor at magna nonummy gravida.\\
+
+\noindent Klíčová slova: klíčová slova (3 až 5)
+
+\vspace{10mm}
+
+\noindent
+Title: Název bakalářské práce v angličtině\\
+Author: \bcAuthor\\
+Department: Název katedry či ústavu v angličtině\\
+Supervisor: \bcTeacher\\
+Supervisor's e-mail address: \bcTeacherMail\\
+
+\noindent Abstract: In the present work we study ... Uvede se anglický abstrakt v rozsahu 80 až 200 slov. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut sit amet sem. Mauris nec turpis ac sem mollis pretium. Suspendisse neque massa, suscipit id, dictum in, porta at, quam. Nunc suscipit, pede vel elementum pretium, nisl urna sodales velit, sit amet auctor elit quam id tellus. Nullam sollicitudin. Donec hendrerit. Aliquam ac nibh. Vivamus mi. Sed felis. Proin pretium elit in neque. Pellentesque at turpis. Maecenas convallis. Vestibulum id lectus. Fusce dictum augue ut nibh. Etiam non urna nec mi mattis volutpat. Curabitur in tortor at magna nonummy gravida.\\
+
+\noindent Keywords: klíčová slova (3 až 5) v angličtině
+
