@@ -33,7 +33,7 @@ class EncodingProgress;
 
 /** Represents the main window of the program, providing a GUI */
 class ImageViewer: public QMainWindow { Q_OBJECT
-	static const int AutoIterationCount= 20;
+	static const int AutoIterationCount= 10;
 
 	IRoot *modules_settings	///  Module tree holding current settings
 	, *modules_encoding;	///< Module tree that's currently encoding or the last one

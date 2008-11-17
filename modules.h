@@ -264,10 +264,8 @@ public:
 private:
 //	some helper stuff
 	template<class T> struct Creator {
-		T* operator()() const { 
-			T *result= new T;
-			return result; 
-		}
+		T* operator()() const 
+			{ return new T; }
 	};
 	template<class T> struct Instantiator {
 		int operator()() const;

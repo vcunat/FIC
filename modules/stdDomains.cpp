@@ -36,7 +36,7 @@ namespace NOSPACE {
 			if (a.type!=b.type)
 				return a.type<b.type;
 			else
-				return assert(a.level!=b.level), a.level<b.level;
+				return a.level<b.level;
 		}
 	};
 }
@@ -79,8 +79,8 @@ void MStdDomains::initPools(int width_,int height_) {
 				, pool.level+1, ldexp(pool.contrFactor,-2) )
 			);
 	}
-//	sort the pools according to their types and levels
-	sort( pools.begin(), pools.end(), PoolTypeLevelComparator() );
+//	sort the pools according to their types and levels (stable so the diamonds can't be swapped)
+	stable_sort( pools.begin(), pools.end(), PoolTypeLevelComparator() );
 }
 
 namespace NOSPACE {
