@@ -60,9 +60,14 @@ public:
 		Module *m;	///< Pointer to the connected module (if type is Module::ModuleCombo)
 		SettingValue val;	///< The setting value
 
-		SettingsItem(): m(0) {}			///< Just nulls the module pointer
-		SettingsItem(const SettingsTypeItem &typeItem);
-		~SettingsItem() { delete m; }	///< Deletes the module pointer
+		/** Just nulls the module pointer */
+		SettingsItem(): m(0) { DEBUG_ONLY( val.f= std::numeric_limits<float>::quiet_NaN(); ) }
+			
+		/** Creates a default settings-item for a settings-item-type */
+		SettingsItem(const SettingsTypeItem &typeItem): m(0), val(typeItem.type.defaults) {}
+		
+		/** Just deletes the module pointer */
+		~SettingsItem() { delete m; }
 	};
 
 	/** Information about one module-type */

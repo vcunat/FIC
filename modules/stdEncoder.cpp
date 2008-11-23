@@ -77,7 +77,7 @@ MStandardEncoder::PoolInfos::const_iterator MStandardEncoder
 
 const ISquareDomains::Pool& MStandardEncoder::getDomainData
 ( const RangeNode &rangeBlock, const ISquareDomains::PoolList &pools
-, const PoolInfos &poolInfos, int domIndex, Block &block ) {
+, const PoolInfos &poolInfos, int domIndex, int zoom, Block &block ) {
 
 //	get the pool
 	PoolInfos::const_iterator it= getPoolFromDomID( domIndex, poolInfos );
@@ -85,13 +85,14 @@ const ISquareDomains::Pool& MStandardEncoder::getDomainData
 //	get the coordinates
 	int indexInPool= domIndex - it->indexBegin;
 	assert( indexInPool>=0 && indexInPool<(it+1)->indexBegin );
-	int size= powers[rangeBlock.level];
+	int sizeNZ= powers[rangeBlock.level-zoom];
+	int zoomFactor= powers[zoom];
 //	changed: the domains are mapped along columns and not rows
-	int domsInCol= getCountForDensity( pool.height, it->density, size );
-	block.x0= (indexInPool/domsInCol)*it->density;
-	block.y0= (indexInPool%domsInCol)*it->density;
-	block.xend= block.x0+size;
-	block.yend= block.y0+size;
+	int domsInCol= getCountForDensity( pool.height/zoomFactor, it->density, sizeNZ );
+	block.x0= (indexInPool/domsInCol)*it->density*zoomFactor;
+	block.y0= (indexInPool%domsInCol)*it->density*zoomFactor;
+	block.xend= block.x0+powers[rangeBlock.level];
+	block.yend= block.y0+powers[rangeBlock.level];
 
 	return pool;
 }
@@ -131,7 +132,7 @@ inline static Block adjustDomainForIncompleteRange( Block range, int rotation, B
 void MStandardEncoder::initialize( IRoot::Mode mode, const PlaneBlock &planeBlock_ ) {
 	planeBlock= &planeBlock_;
 //	prepare the domains-module
-	planeBlock->domains->initPools( planeBlock->width(), planeBlock->height() );
+	planeBlock->domains->initPools(*planeBlock);
 
 	int maxLevel= 1 +log2ceil(max( planeBlock->width(), planeBlock->height() ));
 //	prepare levelPoolInfos
@@ -251,8 +252,8 @@ bool MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 	using namespace MatrixWalkers;
 //	find out which domain was predicted (pixel matrix and position within it)
 	Block domBlock;
-	const Pool &pool= getDomainData( *stable.rangeBlock
-	, *stable.pools, *stable.poolInfos, prediction.domainID, domBlock );
+	const Pool &pool= getDomainData( *stable.rangeBlock, *stable.pools, *stable.poolInfos
+	, prediction.domainID, 0/*zoom*/, domBlock );
 //	compute domain sums
 	if (!isRegular)
 		domBlock= adjustDomainForIncompleteRange
@@ -330,8 +331,10 @@ float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	assert( range.level < (int)levelPoolInfos.size() );
 	info.stable.poolInfos=		&levelPoolInfos[range.level];
 //	check the level has been initialized
-	if ( info.stable.poolInfos->empty() )
-		buildPoolInfos4aLevel(range.level), assert( !info.stable.poolInfos->empty() );
+	if ( info.stable.poolInfos->empty() ) {
+		buildPoolInfos4aLevel(range.level,planeBlock->zoom);
+		assert( !info.stable.poolInfos->empty() );
+	}
 
 	info.stable.allowRotations=	settingsInt(AllowedRotations);
 	info.stable.quantError=		settingsInt(AllowedQuantError);
@@ -409,19 +412,19 @@ float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	return info.best.error;
 }
 
-void MStandardEncoder::buildPoolInfos4aLevel(int level) {
+void MStandardEncoder::buildPoolInfos4aLevel(int level,int zoom) {
 //	get the real maximum domain count (divide by the number of rotations)
 	int domainCountLog2= planeBlock->domainCountLog2;
 	if ( settingsInt(AllowedRotations) )
 		domainCountLog2-= 3;
 //	get the per-domain-pool densities
-	vector<short> densities= planeBlock->domains->getLevelDensities( level, domainCountLog2 );
+	vector<short> densities= planeBlock->domains->getLevelDensities(level,domainCountLog2);
 //	store it in the this-level infos with beginIndex values for all pools
 	vector<LevelPoolInfo> &poolInfos= levelPoolInfos[level];
 	assert( poolInfos.empty() );
 	const ISquareDomains::PoolList &pools= planeBlock->domains->getPools();
 
-	int domainSize= powers[level];
+	int domainSizeNZ= powers[level-zoom];
 	int poolCount= pools.size();
 	poolInfos.resize(poolCount+1);
 
@@ -430,14 +433,15 @@ void MStandardEncoder::buildPoolInfos4aLevel(int level) {
 		int dens= poolInfos[i].density= densities[i];
 		assert(dens>=0);
 		if (dens) // if dens==0, there are no domains -> no increase
-			domCount+= getCountForDensity2D( pools[i].width, pools[i].height, dens, domainSize );
+			domCount+= getCountForDensity2D( pools[i].width/powers[zoom]
+				, pools[i].height/powers[zoom], dens, domainSizeNZ );
 		poolInfos[i+1].indexBegin= domCount;
 	}
 	poolInfos[poolCount].density= -1;
 }
 
 void MStandardEncoder::writeSettings(ostream &file) {
-	assert( modulePredictor() && moduleCodec(true) && moduleCodec(false) );
+	assert( /*modulePredictor() &&*/ moduleCodec(true) && moduleCodec(false) );
 //	put settings needed for decoding
 	put<Uchar>( file, settingsInt(AllowedRotations) );
 	put<Uchar>( file, settingsInt(AllowedInversion) );
@@ -567,14 +571,16 @@ void MStandardEncoder::readData(istream &file,int phase) {
 			vector<int> averages;
 			moduleCodec(true)->setPossibilities( powers[settingsInt(QuantStepLog_avg)] );
 			moduleCodec(true)->decode( file, ranges.size(), averages );
-		//	iterate the list, create infos and fill the with dequantized averages
+		//	iterate the list, create infos and fill them with dequantized averages
 			Quantizer::Average quant( settingsInt(QuantStepLog_avg) );
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				assert( *it && !(*it)->encoderData );
 				RangeInfo *info= rangeInfoAlloc.make();
 				(*it)->encoderData= info;
 				info->qrAvg= quant.dequant(averages[it-ranges.begin()]);
-				info->bestSE= -1;
+				DEBUG_ONLY( info->bestSE= -1; ) // SE not needed for decoding,saving,...
+				if ( !settingsInt(AllowedInversion) )
+					info->inverted= false;
 			}
 			break;
 		}
@@ -592,9 +598,11 @@ void MStandardEncoder::readData(istream &file,int phase) {
 				int quantDev= devs[it-ranges.begin()];
 				if (quantDev)
 					info->qrDev2= sqr(quant.dequant(quantDev));
-				else {
+				else { // it's a flat block
 					info->qrDev2= 0;
-					//info->rotation= info->domainID= -1;  no need, they already equal -1
+					
+					DEBUG_ONLY( info->inverted= false; )
+					assert( info->rotation==-1 && info->domainID==-1 );
 				}
 			}
 			break;
@@ -629,7 +637,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 				int bits= domBits[level];
 				if (bits<0) {
 				//	yet unused level -> initialize it and get the right bits
-					buildPoolInfos4aLevel(level);
+					buildPoolInfos4aLevel(level,planeBlock->zoom);
 					bits= domBits[level]
 					= log2ceil( levelPoolInfos[level].back().indexBegin );
 					assert( bits>0 );
@@ -678,8 +686,7 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 				info.decAccel.pool->getSums( info.decAccel.domBlock, dSum, d2Sum );
 				Real pixCount= (*it)->size();
 
-
-				Real linCoeff=(info.inverted ? -pixCount : pixCount)
+				Real linCoeff= (info.inverted ? -pixCount : pixCount)
 					* sqrt( info.qrDev2 / ( pixCount*d2Sum - sqr(dSum) ) );
 
 				if ( !isnormal(linCoeff) || !linCoeff ) {
@@ -712,9 +719,9 @@ void MStandardEncoder::initRangeInfoAccelerators() {
 		const PoolInfos &poolInfos= levelPoolInfos[level];
 	//	build pool infos for the level (if neccesary), fill info's accelerators
 		if ( poolInfos.empty() )
-			buildPoolInfos4aLevel(level), assert( !poolInfos.empty() );
+			buildPoolInfos4aLevel(level,planeBlock->zoom), assert( !poolInfos.empty() );
 		info.decAccel.pool= &getDomainData
-		( **it, pools, poolInfos, info.domainID, info.decAccel.domBlock );
+		( **it, pools, poolInfos, info.domainID, planeBlock->zoom, info.decAccel.domBlock );
 	//	adjust domain's block if the range isn't regular
 		if ( !(*it)->isRegular() )
 			info.decAccel.domBlock= adjustDomainForIncompleteRange

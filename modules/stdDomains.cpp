@@ -40,32 +40,39 @@ namespace NOSPACE {
 		}
 	};
 }
-void MStdDomains::initPools(int width_,int height_) {
-	width= width_;
-	height= height_;
+void MStdDomains::initPools(const PlaneBlock &planeBlock) {
+	width=	planeBlock.width();
+	height=	planeBlock.height();
+	zoom=	planeBlock.zoom;
+	int zoomFactor= powers[zoom]
+	, halfMask= ~(zoomFactor-1)
+	, halfWidth= (width/2)&halfMask
+	, halfHeight= (height/2)&halfMask;
 //	checks some things
 	assert( width>0 && height>0 && this && settings && pools.empty() );
-	if ( width<MinRangeSize*2 || height<MinRangeSize*2 )
+	if ( min(width,height) < MinRangeSize*2*zoomFactor )
 	//	no domains possible
 		return;
 //	create the first set of domain pools for standard, horizontal and vertical domains
 	if ( settingsInt(DomPortion_Standard) )
-		pools.push_back(Pool( width/2, height/2, DomPortion_Standard, 1, 0.25f ));
+		pools.push_back(Pool( halfWidth, halfHeight, DomPortion_Standard, 1, 0.25f ));
 	if ( settingsInt(DomPortion_Horiz) )
-		pools.push_back(Pool( width/2, height, DomPortion_Horiz, 1, 0.5f ));
+		pools.push_back(Pool( halfWidth, height, DomPortion_Horiz, 1, 0.5f ));
 	if ( settingsInt(DomPortion_Vert) )
-		pools.push_back(Pool( width, height/2, DomPortion_Vert, 1, 0.5f ));
+		pools.push_back(Pool( width, halfHeight, DomPortion_Vert, 1, 0.5f ));
 //	create the first set of domain pools for diamond domains
 	if ( settingsInt(DomPortion_Diamond) ) {
 	//	get longer and shorter dimension
-		int longer= width/2, shorter= height/2;
+		int longer, shorter;
 		if (width<height)
-			swap(longer,shorter);
+			longer= height, shorter= width;
+		else
+			longer= width, shorter= height;
 	//	generate the pools
-		while (longer>=MinRangeSize) {
-			int side= min(longer,shorter);
+		while ( longer >= MinRangeSize*zoomFactor ) {
+			int side= (min(longer,shorter)/2)&halfMask;
 			pools.push_back(Pool( side, side, DomPortion_Diamond, 1, 0.5f ));
-			longer-= side-DiamondOverlay;
+			longer-= 2*(side-1) - DiamondOverlay*zoomFactor;
 		}
 	}
 //	if allowed, create more downscaled domains (at most 256 pools)
@@ -73,9 +80,9 @@ void MStdDomains::initPools(int width_,int height_) {
 		return;
 	for (size_t i=0; i<pools.size() && i<256; ++i) {
 		const Pool &pool=pools[i];
-		if ( pool.width>=MinRangeSize*2 && pool.height>=MinRangeSize*2 )
+		if ( pool.width>=MinRangeSize*2*zoomFactor && pool.height>=MinRangeSize*2*zoomFactor )
 			pools.push_back(
-				Pool( pool.width/2, pool.height/2, pool.type
+				Pool( (pool.width/2)&halfMask, (pool.height/2)&halfMask, pool.type
 				, pool.level+1, ldexp(pool.contrFactor,-2) )
 			);
 	}
@@ -99,8 +106,9 @@ namespace NOSPACE {
 	( const SReal **src, int srcYadd, SReal **dest, int width, int height );
 	static void shrinkToDiamond( const SReal **src, SReal **dest, int side, int sx0, int sy0 );
 }
-void MStdDomains::fillPixelsInPools(const PlaneBlock &ranges) {
+void MStdDomains::fillPixelsInPools(const PlaneBlock &planeBlock) {
 	assert( !pools.empty() ); // assuming initPools has already been called
+	int zoomFactor= powers[planeBlock.zoom];
 //	iterate over pool types
 	PoolList::iterator end= pools.begin();
 	while ( end != pools.end() ) {
@@ -127,7 +135,7 @@ void MStdDomains::fillPixelsInPools(const PlaneBlock &ranges) {
 				assert(false),shrinkProc=0;
 		//	we have the right procedure -> fill the first pool
 			assert( begin->level == 1 );
-			shrinkProc( bogoCast(ranges.pixels+ranges.x0), ranges.y0
+			shrinkProc( bogoCast(planeBlock.pixels+planeBlock.x0), planeBlock.y0
 			, begin->pixels, begin->width, begin->height );
 		//	fill the rest (in the same-type interval)
 			while (++begin != end) {
@@ -140,26 +148,27 @@ void MStdDomains::fillPixelsInPools(const PlaneBlock &ranges) {
 		//	fill the first set of diamond-type domain pools
 			PoolList::iterator it= begin;
 			if (width>=height) {
-				int xEnd= width -2*MinRangeSize;
-				int xStep= height -2*DiamondOverlay;
+				int xEnd= width -2*MinRangeSize*zoomFactor;
+				int xStep= height -2*DiamondOverlay*zoomFactor;
 				for (int x=0; x<=xEnd; ++it,x+=xStep) {
 					assert( it!=end && it->level==1 );
-					shrinkToDiamond( bogoCast(ranges.pixels), it->pixels, it->width
-					, x+ranges.x0, 0+ranges.y0 );
+					shrinkToDiamond( bogoCast(planeBlock.pixels), it->pixels, it->width
+					, x+planeBlock.x0, 0+planeBlock.y0 );
 				}
 			} else {
-				int yEnd= height -2*MinRangeSize;
-				int yStep= width -2*DiamondOverlay;
+				int yEnd= height -2*MinRangeSize*zoomFactor;
+				int yStep= width -2*DiamondOverlay*zoomFactor;
 				for (int y=0; y<=yEnd; ++it,y+=yStep) {
 					assert( it!=end && it->level==1 );
-					shrinkToDiamond( bogoCast(ranges.pixels), it->pixels, it->width
-					, 0+ranges.x0, y+ranges.y0 );
+					shrinkToDiamond( bogoCast(planeBlock.pixels), it->pixels, it->width
+					, 0+planeBlock.x0, y+planeBlock.y0 );
 				}
 			}
 		//	now fill the multiscaled diamond pools
 			while (it!=end) {
 			//	too small pools are skipped
-				while ( begin->width<2*MinRangeSize || begin->height<2*MinRangeSize )
+				while ( begin->width<2*MinRangeSize*zoomFactor 
+				|| begin->height<2*MinRangeSize*zoomFactor )
 					++begin;
 				assert( halfShrinkOK(begin,it) );
 				shrinkToHalf( bogoCast(begin->pixels), 0, it->pixels, it->width, it->height );
@@ -182,10 +191,10 @@ namespace NOSPACE {
 	 *	the density is push_back-ed, returns the generated domain count (used once)
 	 *	\relates MStandardDomains */
 	inline static int bestDomainDensity( PoolIt pool, int level, int maxCount
-	, vector<short> &result ) {
+	, int zoomFactor , vector<short> &result) {
 		assert(maxCount>0 && level>0);
-		int wms= pool->width -powers[level];
-		int hms= pool->height -powers[level];
+		int wms= pool->width/zoomFactor -powers[level];
+		int hms= pool->height/zoomFactor -powers[level];
 	//	check whether any domain can fit
 		if ( wms<0 || hms<0 ) {
 			result.push_back(0);
@@ -234,7 +243,7 @@ namespace NOSPACE {
 		int count= (wms/dens+1)*(hms/dens+1);
 		assert(count<=maxCount);
 
-		result.push_back(dens);
+		result.push_back( dens/* *zoomFactor */ );
 		return count;
 	}
 	/** Generates (\p results.push_back) densities for domains on level \p level for
@@ -242,7 +251,7 @@ namespace NOSPACE {
 	 *	the pools' scale-levels in one of three ways (\p divType)
 	 *	and returns the number of generated domains \relates MStandardDomains */
 	static int divideDomsInType( PoolIt begin, PoolIt end, int maxCount, int level
-	, char divType, vector<short> &results ) {
+	, char divType, int zoomFactor, vector<short> &results ) {
 		assert( begin!=end && divType>=0 && divType<=2 );
 		int scaleLevels= (end-1)->level - begin->level + 1;
 		int genCount= 0;
@@ -262,7 +271,7 @@ namespace NOSPACE {
 			genCount+= toGenerate;	// genCount: "assume" we generate exactly toGenerate
 			for (; begin!=it; ++begin)
 				toGenerate-=
-					bestDomainDensity( begin, level, toGenerate/(it-begin), results );
+					bestDomainDensity( begin, level, toGenerate/(it-begin), zoomFactor, results );
 			genCount-= toGenerate;	// genCount: correct the count
 		}
 		return genCount;
@@ -292,11 +301,11 @@ vector<short> MStdDomains::getLevelDensities(int level,int stdDomCountLog2) {
 	//	we've got a single-type interval
 		int share= settingsInt( (Settings)begin->type );
 		domCountLeft-= divideDomsInType( begin, end, domCountLeft*share/totalShares
-			, level, settingsInt(MultiDownScaling), result );
+			, level-zoom, settingsInt(MultiDownScaling), powers[zoom], result );
 		totalShares-= share;
 	}
 //	check we created the correct number of densities
-	assert( result.size()==pools.size() );
+	assert( result.size() == pools.size() );
 	return result;
 }
 

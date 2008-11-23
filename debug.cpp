@@ -16,6 +16,8 @@
 
 using namespace std;
 
+int pos;
+
 QWidget* MRoot::debugModule(QPixmap &pixmap,const QPoint &click) {
 //	create a new modeless dialog window	
 	QDialog *dlg= new QDialog;
@@ -153,7 +155,7 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 				, 0, GrayImageAssigner() )
 			);
 			
-			layout->addWidget( new QLabel("Domain block, transformed:") );
+			layout->addWidget( new QLabel("Domain block, transformed (encode-mode-only):") );
 			addFramedImage( layout
 			, imageFromMatrix( bogoCast(info.decAccel.pool->pixels), info.decAccel.domBlock
 				, info.rotation, GrayImageMulAddAssigner(info.exact.linCoeff,info.exact.constCoeff) )
@@ -215,7 +217,8 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 		table->resizeRowsToContents();
 		layout->addWidget(table);
 		
-		layout->addWidget( modulePredictor()->debugModule(pixmap,click) );
+		if ( modulePredictor() )
+			layout->addWidget( modulePredictor()->debugModule(pixmap,click) );
 	} // if-then-else
 	
 	return widget;

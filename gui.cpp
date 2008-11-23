@@ -39,10 +39,10 @@ static QString getPSNRmessage(const QImage &img1,const QImage &img2) {
 
 ////	Public members
 ImageViewer::ImageViewer(QApplication &app)
-: modules_settings( IRoot::newCompatibleModule() ), modules_encoding(0)
+: modules_settings( IRoot::newCompatibleModule() ), modules_encoding(0), zoom(0)
 , readAct(this), writeAct(this), compareAct(this), exitAct(this)
 , settingsAct(this), encodeAct(this), saveAct(this)
-, loadAct(this), clearAct(this), iterateAct(this) {
+, loadAct(this), clearAct(this), iterateAct(this), zoomIncAct(this), zoomDecAct(this) {
 //	try to load guessed language translation
 	if ( translator.load( "lang-"+QLocale::system().name(), app.applicationDirPath() ) )
 		app.installTranslator(&translator);
@@ -85,6 +85,8 @@ void ImageViewer::createActions() {
 	A(load)
 	A(clear)
 	A(iterate)
+	A(zoomInc)
+	A(zoomDec)
 
 	#undef A
 	#undef AS
@@ -104,6 +106,9 @@ void ImageViewer::createMenus() {
 	decompMenu.addAction(&loadAct);
 	decompMenu.addAction(&clearAct);
 	decompMenu.addAction(&iterateAct);
+	decompMenu.addSeparator();
+	decompMenu.addAction(&zoomIncAct);
+	decompMenu.addAction(&zoomDecAct);
 
 	menuBar()->addMenu(&imageMenu);
 	menuBar()->addMenu(&compMenu);
@@ -129,6 +134,8 @@ void ImageViewer::translateUi() {
 	A(load,		"Ctrl+L", 	"Load FIC...")
 	A(clear,	"Ctrl+C", 	"Clear image")
 	A(iterate,	"Ctrl+I",	"Iterate image")
+	A(zoomInc,	"Ctrl++",	"Increase zoom")
+	A(zoomDec,	"Ctrl+-",	"Decrease zoom")
 	#undef A
 
 //	set the tiles of menu items
@@ -153,8 +160,10 @@ void ImageViewer::updateActions() {
 	saveAct.setEnabled( mode != IRoot::Clear );
 
 	//loadAct.setEnabled(true);
-	clearAct.setEnabled( mode != IRoot::Clear );
+	clearAct.setEnabled  ( mode != IRoot::Clear );
 	iterateAct.setEnabled( mode != IRoot::Clear );
+	zoomIncAct.setEnabled( mode != IRoot::Clear && zoom<3 );
+	zoomDecAct.setEnabled( mode != IRoot::Clear && zoom>0 );
 }
 
 ////	Private slots
@@ -271,6 +280,7 @@ void ImageViewer::encode() {
 			QString message= tr("Time to encode: %1 seconds\n") .arg(encTime.elapsed()/1000.0f)
 			+ getPSNRmessage(beforeImg,afterImg);
 			QMessageBox::information( this, tr("encoded"), message );
+			encData.clear();
 		//#endif
 	}
 //	delete the unneeded modules (either the backup or the unsuccessful)
@@ -293,11 +303,20 @@ void ImageViewer::load() {
 //	IRoot needs to be loaded from cleared state
 	IRoot *modules_old= modules_encoding;
 	modules_encoding= clone(modules_settings,Module::ShallowCopy);
+	
+	string decData;
+	bool error= !file2string( fname.toStdString().c_str(), decData );
+	if (!error) {
+		stringstream stream(decData);
+		
+		error= !modules_encoding->fromStream( stream, zoom );
+	}
 
-	if ( !modules_encoding->fromFile( fname.toStdString().c_str() ) ) {
+	if (error) {
 		QMessageBox::information( this, tr("Error"), tr("Cannot load file %1.").arg(fname) );
 		swap(modules_encoding,modules_old);
 	} else { // loading was successful
+		swap(encData,decData);
 		modules_encoding->decodeAct(Clear);
 		modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
 		changePixmap( QPixmap::fromImage(modules_encoding->toImage()) );
@@ -316,6 +335,43 @@ void ImageViewer::iterate() {
 	changePixmap( QPixmap::fromImage(modules_encoding->toImage()) );
 	updateActions();
 }
+void ImageViewer::zoomInc() {
+	++zoom;
+	if (!rezoom()) 
+		--zoom, QMessageBox::information( this, tr("Error"), tr("Zooming failed.") );
+}
+void ImageViewer::zoomDec() {
+	--zoom;
+	assert(zoom>=0);
+	if (!rezoom()) 
+		++zoom, QMessageBox::information( this, tr("Error"), tr("Zooming failed.") );
+}
+
+bool ImageViewer::rezoom() {
+	stringstream stream;
+	if ( encData.empty() ) {
+		if ( !modules_encoding->toStream(stream) )
+			return false;
+		encData= stream.str();
+	} else
+		stream.str(encData);
+	
+	IRoot *newRoot= clone(modules_settings,Module::ShallowCopy);
+	if ( newRoot->fromStream(stream,zoom) ) {
+		delete modules_encoding;
+		modules_encoding= newRoot;
+	} else {
+		delete newRoot;
+		return false;
+	}
+	
+	modules_encoding->decodeAct(MTypes::Clear);
+	modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
+	changePixmap( QPixmap::fromImage(modules_encoding->toImage()) );
+	updateActions();
+	return true;
+}
+
 
 ////	SettingsDialog class
 

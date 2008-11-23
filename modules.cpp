@@ -70,6 +70,7 @@ const Module::SettingsTypeItem Module::SettingsTypeItem
 ::stopper= { 0, 0, {Stop,{i:-1},{text:0}} };
 
 Module::SettingsItem* Module::copySettings(CloneMethod method) const {
+	assert( method==DeepCopy || method==ShallowCopy );
 //	copy the settings array
 	int length= info().setLength;
 	if (!length)
@@ -114,13 +115,10 @@ void Module::nullModuleLinks() {
 }
 template<class M> M* Module::concreteClone(CloneMethod method) const {
 	assert( this && info().id == ModuleFactory::getModuleID<M>() );
+//	create a new instance of the same type and fill its settings with a copy of mine
 	M *result= new M;
 	result->settings= copySettings(method);
 	return result;
-}
-
-Module::SettingsItem::SettingsItem(const SettingsTypeItem &typeItem)
-: m(0), val(typeItem.type.defaults) {
 }
 	
 void Module::createDefaultSettings() {

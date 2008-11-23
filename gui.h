@@ -27,6 +27,8 @@
 #include <QTranslator>
 #include <QTreeWidgetItem>
 
+#include <sstream>
+
 class ImageViewer;
 class SettingsDialog;
 class EncodingProgress;
@@ -35,8 +37,10 @@ class EncodingProgress;
 class ImageViewer: public QMainWindow { Q_OBJECT
 	static const int AutoIterationCount= 10;
 
-	IRoot *modules_settings	///  Module tree holding current settings
-	, *modules_encoding;	///< Module tree that's currently encoding or the last one
+	IRoot *modules_settings		///  Module tree holding current settings
+	, *modules_encoding;		///< Module tree that's currently encoding or the last one
+	int zoom;					///< The current zoom, see IRoot::fromStream
+	std::string encData;		///< String containing (if nonempty) the last encoded/decoded data
 
 	QTranslator translator;	///< The application's only translator
 	QLabel *imageLabel; 	///< A pointer to the label showing images
@@ -45,7 +49,7 @@ class ImageViewer: public QMainWindow { Q_OBJECT
 	QAction
         readAct, writeAct, compareAct, exitAct,
         settingsAct, encodeAct, saveAct,
-        loadAct, clearAct, iterateAct;
+        loadAct, clearAct, iterateAct, zoomIncAct, zoomDecAct;
 ///	@}
 /**	\name Menus
  *	@{ */
@@ -71,6 +75,8 @@ private slots:
 	void load();
 	void clear();
 	void iterate();
+	void zoomInc();
+	void zoomDec();
 ///	@}
 public:
 	/** Initializes the object to default settings */
@@ -79,6 +85,8 @@ public:
 	virtual ~ImageViewer()
 		{ delete modules_settings; delete modules_encoding; }
 private:
+	/** Reloads the image, iterates and shows it (returns true on success) */
+	bool rezoom();
 #ifndef NDEBUG
 	void mousePressEvent(QMouseEvent *event);
 #endif

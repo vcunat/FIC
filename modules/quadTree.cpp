@@ -22,6 +22,7 @@ struct MQuadTree::NodeExtremes {
 
 void MQuadTree::encode(const PlaneBlock &toEncode) {
 	assert( !root && fringe.empty() && toEncode.ranges==this && toEncode.isReady() );
+	zoom= 0;
 //	if allowed, prepare accelerators for heuristic dividing
 	if ( heuristicAllowed() )
 		toEncode.summers_makeValid();
@@ -37,19 +38,20 @@ void MQuadTree::writeData(ostream &file) {
 	assert( !fringe.empty() && root );
 //	put in the stream the minimal and the maximal used level
 	NodeExtremes extremes= for_each( fringe.begin(), fringe.end(), NodeExtremes() );
-	put<Uchar>(file,extremes.min);
-	put<Uchar>(file,extremes.max);
+	put<Uchar>(file,extremes.min-zoom);
+	put<Uchar>(file,extremes.max-zoom);
 //	put the tree structure in the stream
 	BitWriter bitWriter(file);
 	root->toFile(bitWriter,extremes);
 }
 
-void MQuadTree::readData_buildRanges(istream &file,const Block &block) {
+void MQuadTree::readData_buildRanges(istream &file,const Block &block,int zoom_) {
 	assert( fringe.empty() && !root );
+	zoom= zoom_;
 //	get from the stream the minimal and the maximal used level
 	NodeExtremes extremes;
-	extremes.min= get<Uchar>(file);
-	extremes.max= get<Uchar>(file);
+	extremes.min= get<Uchar>(file)+zoom;
+	extremes.max= get<Uchar>(file)+zoom;
 //	build the range tree
 	BitReader bitReader(file);
 	root= new Node(block);
@@ -111,7 +113,7 @@ void MQuadTree::Node::getHilbertList(RangeList &list,char start,char cw) {
 	}
 	Node *now= son
 	, *sons[4]= {0,0,0,0};
-//	categorize sons by their position into sons[0..3]
+//	categorize sons by their position into sons[0..3] - clockwise from top-left
 	do {
 		int pos= 0;
 		if ( now->x0 > x0 )

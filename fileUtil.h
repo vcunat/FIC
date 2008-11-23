@@ -94,4 +94,25 @@ public:
 	}
 };
 
+inline bool file2string(const char *name,std::string &result) {
+	using namespace std;
+	ifstream file( name, ios_base::binary|ios_base::in );
+	if (!file.good())
+		return false;
+	
+	file.seekg(0,ios::end);
+ 	int length= file.tellg();
+ 	if (!length)
+ 		return false;
+ 	
+ 	string res;
+ 	res.resize(length);
+ 	file.seekg(0,ios::beg);
+ 	file.read(&res[0],length);
+ 	if (file.gcount()!=length)
+ 		return false;
+ 	swap(res,result);
+ 	return true;
+}
+
 #endif // FILEUTIL_HEADER_

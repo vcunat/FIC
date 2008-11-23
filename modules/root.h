@@ -63,11 +63,11 @@ private:
 private:
 //	Module's data
 	Mode myMode;
-	int width, height;
+	int width, height, zoom;
 
 protected:
 //	Construction and destruction
-	MRoot(): myMode(Clear), width(0), height(0) {}
+	MRoot(): myMode(Clear), width(0), height(0), zoom(-1) {}
 
 public:
 /**	\name IRoot interface
@@ -78,8 +78,8 @@ public:
 	bool encode(const QImage &toEncode);
 	void decodeAct(DecodeAct action,int count=1);
 
-	bool toFile(const char *fileName);
-	bool fromFile(const char *fileName);
+	bool toStream(std::ostream &file);
+	bool fromStream(std::istream &file,int zoom);
 ///	@}
 };
 

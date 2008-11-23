@@ -100,7 +100,8 @@ void MDifferentialVLICodec::decode(istream &file,int count,vector<int> &data) {
 	BitReader in(file);
 	int bits= log2ceil(vli.maxLevel+1);
 	for (int i=0; i<count; ++i)
-		levels[i]= in.getBits(bits);
+		if ( (levels[i]= in.getBits(bits)) > vli.maxLevel ) // incorrect data read
+			throw exception();
 //	read the vli data and replace levels[i] with the result
 	for (int i=0; i<count; ++i) {
 		int level= levels[i];

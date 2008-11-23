@@ -72,10 +72,23 @@ struct IRoot: public Interface<IRoot> {
 	/** Performs a decoding action (e.g.\ clearing, multiple iteration) */
 	virtual void decodeAct( DecodeAct action, int count=1 ) =0;
 
-	/** Saves an encoded image to a file - returns true on success */
-	virtual bool toFile(const char *fileName) =0;
-	/** Loads image from a file - returns true on success (to be run on a shallow module) */
-	virtual bool fromFile(const char *fileName) =0;
+	/** Saves an encoded image into a stream, returns true on success */
+	virtual bool toStream(std::ostream &file) =0;
+	/** Loads image from a file - returns true on success (to be run on a shallow module),
+	 *	can load in bigger size: dimension == orig_dim*2^\p zoom */
+	virtual bool fromStream(std::istream &file,int zoom=0) =0;
+
+	/** Shorthand: saves an encoded image to a file - returns true on success */
+	bool toFile(const char *fileName) { 
+		std::ofstream file( fileName, ios_base::binary|ios_base::trunc|ios_base::out );
+		return toStream(file); 
+	}
+	/** Shorthand: loads image from a file - returns true on success, see #fromStream */
+	bool fromFile(const char *fileName,int zoom=0) {
+		std::ifstream file( fileName, ios_base::binary|ios_base::in );
+		return fromStream(file,zoom);
+	}
+	
 };
 
 /** Interface for modules performing color transformations,
@@ -87,15 +100,17 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 
 		static const Plane Empty; ///< an empty instance
 
-		SReal **pixels	/// a Matrix of pixels with values in [0,1], not owned (shared)
+		SReal **pixels	///  a Matrix of pixels with values in [0,1], not owned (shared)
 		, quality;		///< encoding quality for the plane, in [0,1] (higher is better)
-		int domainCountLog2;	///< 2-logarithm of the maximum domain count
+		int domainCountLog2		///  2-logarithm of the maximum domain count
+		, zoom;					///< the zoom
 		ModuleQ2SE *moduleQ2SE;	///< pointer to the module computing maximum SE (not owned)
 
 		/** A simple constructor, only initializes the values from the parameters */
-		Plane(SReal **pixels_,float quality_,int domainCountLog2_,ModuleQ2SE *moduleQ2SE_)
-		: pixels(pixels_), quality(quality_), domainCountLog2(domainCountLog2_)
-		, moduleQ2SE(moduleQ2SE_) {}
+		Plane( SReal **pixels_, float quality_, int domainCountLog2_
+		, int zoom_, ModuleQ2SE *moduleQ2SE_ )
+			: pixels(pixels_), quality(quality_), domainCountLog2(domainCountLog2_)
+			, zoom(zoom_), moduleQ2SE(moduleQ2SE_) {}
 	};
 	/** List of planes */
 	typedef std::vector<Plane> PlaneList;
@@ -107,8 +122,10 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 
 	/** Writes any data needed for plane reconstruction to a stream */
 	virtual void writeData(std::ostream &file) =0;
-	/** Reads any data needed for plane reconstruction from a stream and creates the plane list */
-	virtual PlaneList readData(std::istream &file,const Plane &prototype,int width,int height) =0;
+	/** Reads any data needed for plane reconstruction from a stream and creates the plane list
+	 *	(the dimensions are already zoomed) */
+	virtual PlaneList readData( std::istream &file, const Plane &prototype
+	, int width, int height ) =0;
 };
 
 /** Interface for modules handling pixel-shape changes
@@ -116,7 +133,8 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 struct IShapeTransformer: public Interface<IShapeTransformer> {
 	typedef IColorTransformer::PlaneList PlaneList;
 
-	/** Creates jobs from the list of color planes (takes the ownership of pixels and returns job count) */
+	/** Creates jobs from the list of color planes (the dmiensions are zoomed,
+	 *	takes the ownership of pixels and returns job count) */
 	virtual int createJobs( const PlaneList &planes, int width, int height ) =0;
 	/** Returns the number of jobs */
 	virtual int jobCount() =0;
@@ -142,11 +160,12 @@ struct IShapeTransformer: public Interface<IShapeTransformer> {
 	/** Reads all data needed for reconstruction of every job and prepares for encoding,
 	 *	parameters like #writeJobs */
 	virtual void readJobs (std::istream &file,int phaseBegin,int phaseEnd) =0;
+	
 	/** Shortcut - default parametres "phaseBegin=0,phaseEnd=phaseCount()" */
 	void writeJobs(std::ostream &file,int phaseBegin=0)
 		{ writeJobs( file, phaseBegin, phaseCount() ); }
 	/** Shortcut - default parametres "phaseBegin=0,phaseEnd=phaseCount()" */
-	void readJobs (std::istream &file,int phaseBegin=0)
+	void readJobs(std::istream &file,int phaseBegin=0)
 		{ readJobs( file, phaseBegin, phaseCount() ); }
 };
 
@@ -199,8 +218,9 @@ struct ISquareRanges: public Interface<ISquareRanges> {
 	virtual void writeData(std::ostream &file) =0;
 	/** Reads data from a stream and reconstructs range blocks.
 	 *	\param file	 the stream to read from
-	 *	\param block the position and size of the block in the plane to be reconstructed */
-	virtual void readData_buildRanges( std::istream &file, const Block &block ) =0;
+	 *	\param block the position and size of the block in the plane to be reconstructed (with zoom) 
+	 *	\param zoom  the zoom to decode with */
+	virtual void readData_buildRanges( std::istream &file, const Block &block, int zoom ) =0;
 };
 
 /** Interface for modules deciding what will square domain blocks look like */
@@ -239,14 +259,15 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	/** List of pools */
 	typedef std::vector<Pool> PoolList;
 
-	/** Initializes the pools for given dimensions, assumes settings are OK */
-	virtual void initPools(int width,int height) =0;
+	/** Initializes the pools for given PlaneBlock, assumes settings are OK */
+	virtual void initPools(const PlaneBlock &planeBlock) =0;
 	/** Prepares domains in already initialized pools (and fills summers, etc.) */
-	virtual void fillPixelsInPools(const PlaneBlock &ranges) =0;
+	virtual void fillPixelsInPools(const PlaneBlock &planeBlock) =0;
 
 	/** Returns a reference to internal list of domain pools */
 	virtual const PoolList& getPools() const =0;
-	/** Gets densities for all domain pools on a particular level (with size 2^level) */
+	/** Gets densities for all domain pools on a particular level (with size 2^level),
+	 *	doesn't take zoom into account (returns unzoomed densities) */
 	virtual std::vector<short> getLevelDensities(int level,int stdDomCountLog2) =0;
 
 	/** Writes all data needed for reconstruction that don't depend on the input (=settings) */
@@ -371,7 +392,8 @@ struct IIntCodec: public Interface<IIntCodec> {
 
 ///	@} - interfaces defgroup
 namespace MTypes {
-	/** Represents a rectangle in a color plane (using square pixels) */
+	/** Represents a rectangle in a color plane (using square pixels),
+	 *	the inherited Block represents zoomed coordinates */
 	struct PlaneBlock: public ISquareEncoder::Plane, public Block {
 		BlockSummer summers[2];	///< normal and squares summers for the pixels
 		ISquareRanges  *ranges;	///< module for range blocks generation

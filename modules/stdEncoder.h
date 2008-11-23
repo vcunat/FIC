@@ -142,7 +142,7 @@ public:
 ///	@}
 private:
 	/** Builds #levelPoolInfos[\p level], uses #planeBlock->domains */
-	void buildPoolInfos4aLevel(int level);
+	void buildPoolInfos4aLevel(int level,int zoom);
 	/** Initializes decoding accelerators (in RangeInfo) for all range blocks */
 	void initRangeInfoAccelerators();
 
@@ -150,7 +150,7 @@ private:
 	 *	and sets \p block to the domain's block and returns a reference to its pool */
 	static const Pool& getDomainData
 	( const RangeNode &rangeBlock, const ISquareDomains::PoolList &pools
-	, const PoolInfos &poolInfos, int domIndex, Block &block );
+	, const PoolInfos &poolInfos, int domIndex, int zoom, Block &block );
 
 	/** Return iterator to the pool of domain with index \p domID */
 	static PoolInfos::const_iterator getPoolFromDomID( int domID, const PoolInfos &poolInfos );

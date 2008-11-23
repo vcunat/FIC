@@ -42,6 +42,7 @@ private:
 //	Module's data
 	Node *root;						///< Quad-tree's root node
 	std::vector<RangeNode*> fringe;	///< List of quad-tree's leaves
+	int zoom;						///< The zoom
 #ifndef NDEBUG
 	int badDivides, triedMerges, badTries;
 #endif
@@ -50,7 +51,7 @@ protected:
 //	Construction and destruction
 	/** Only zeroes #root */
 	MQuadTree()
-	: root(0)
+	: root(0), zoom(-1)
 	#ifndef NDEBUG
 	, badDivides(0), triedMerges(0), badTries(0)
 	#endif
@@ -69,7 +70,7 @@ public:
 	void readSettings(std::istream&) {}
 
 	void writeData(std::ostream &file);
-	void readData_buildRanges(std::istream &file,const Block &block);
+	void readData_buildRanges(std::istream &file,const Block &block,int zoom);
 ///	@}
 protected:
 	struct NodeExtremes;

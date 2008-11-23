@@ -14,6 +14,14 @@ template<typename T> inline T sqr(T i)
 template<typename T> inline T cube(T i)
 	{ return i*i*i; }
 
+/** Returns i*2^bits */
+template<typename T> inline T lShift(T i,T bits)
+	{ assert(bits>=0); return i<<bits; }
+	
+/** Returns i/2^bits */
+template<typename T> inline T rShift(T i,T bits)
+	{ assert(bits>=0 && i>=0); return i>>bits; }
+
 /** Returns ceil(log2(i)) */
 inline int log2ceil(int i) {
 	assert(i>0);
@@ -147,7 +155,7 @@ public:
 		assert(nextIndex<=bulkCount);
 	//	allocate a new bulk if needed
 		if (nextIndex==bulkCount) {
-			nextIndex=0;
+			nextIndex= 0;
 			pools.push_back( new T[bulkCount] );
 		}
 		return & (pools.back()[nextIndex++]);

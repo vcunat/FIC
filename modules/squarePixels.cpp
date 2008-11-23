@@ -8,7 +8,7 @@ int MSquarePixels::createJobs( const PlaneList &planes, int width, int height ) 
 	&& moduleRanges() && moduleDomains() && moduleEncoder() );
 
 //	create the joblist
-	int maxPixels= powers[maxPartSize()];
+	int maxPixels= powers[maxPartSize()+2*planes.front().zoom]; // the zoom only affects maxPixels
 	if ( width*height <= maxPixels )
 	//	not dividing the planes -> pass them as they are
 		for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it)
@@ -47,7 +47,7 @@ int MSquarePixels::createJobs( const PlaneList &planes, int width, int height ) 
 		for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it)
 			for (patIt=pattern.begin(); patIt!=pattern.end(); ++patIt)
 				jobs.push_back(makeJob( *it, *patIt ));
-	}
+	} // if(!<dividing planes>)... else... 
 
 //	take the ownership of the matrices
 	for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it)
@@ -87,13 +87,15 @@ void MSquarePixels::writeJobs(ostream &file,int phaseBegin,int phaseEnd) {
 //	if writing phase 0, for each job: write data of domain and range modules
 	if (!phaseBegin)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) {
+			STREAM_POS(file);
 			it->ranges->writeData(file);
+			STREAM_POS(file);
 			it->domains->writeData(file);
 		}
 //	write all the requested phases of all jobs (phase-sequentially)
 	for (int phase=phaseBegin; phase<phaseEnd; ++phase)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it)
-			it->encoder->writeData(file,phase);
+			STREAM_POS(file), it->encoder->writeData(file,phase);
 }
 
 void MSquarePixels::readJobs(istream &file,int phaseBegin,int phaseEnd) {
@@ -101,13 +103,15 @@ void MSquarePixels::readJobs(istream &file,int phaseBegin,int phaseEnd) {
 //	if reading phase 0, for each job: read data of domain and range modules
 	if (!phaseBegin)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) {
-			it->ranges->readData_buildRanges(file,*it);
+			STREAM_POS(file);
+			it->ranges->readData_buildRanges(file,*it,it->zoom);
+			STREAM_POS(file);
 			it->domains->readData(file);
 			it->encoder->initialize(IRoot::Decode,*it);
 		}
 //	read all the requested phases of all jobs (phase-sequentially)
 	for (int phase=phaseBegin; phase<phaseEnd; ++phase)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) 
-			it->encoder->readData(file,phase);
+			STREAM_POS(file), it->encoder->readData(file,phase);
 		
 }

@@ -2,6 +2,7 @@
 #define COLORMODEL_HEADER_
 
 #include "../interfaces.h"
+#include "../fileUtil.h"
 
 #include <QColor>
 
@@ -36,13 +37,14 @@ public:
 	PlaneList image2planes(const QImage &toEncode,const Plane &prototype);
 	QImage planes2image(const MatrixList &pixels,int width,int height);
 
-	void writeData(std::ostream &file);
+	void writeData(std::ostream &file)
+		{ put<Uchar>( file , colorModel() ); }
 	PlaneList readData(std::istream &file,const Plane &prototype,int width,int height);
 ///	@}
 private:
 	/** Creates a list of planes according to \p prototype,
-	 *	makes new matrices and adjusts encoding parameters */
-	PlaneList createPlanes(IRoot::Mode mode,const Plane &prototype,int width,int height);
+	 *	makes new matrices and adjusts encoding parameters (takes zoomed dimensions) */
+	PlaneList createPlanes(IRoot::Mode mode,const Plane &prototype,int zwidth,int zheight);
 };
 
 
@@ -62,7 +64,7 @@ inline QRgb getColor( const SReal (*coeffs)[4], const SReal *planes ) {
 	}
 	typedef Float2int<8,Real> Conv;
 	return qRgb
-	( Conv::convertCheck(rgb[0]), Conv::convertCheck(rgb[1]), Conv::convertCheck(rgb[2]) );
+		( Conv::convertCheck(rgb[0]), Conv::convertCheck(rgb[1]), Conv::convertCheck(rgb[2]) );
 }
 inline int getGray(QRgb color) {
 	return Float2int<8,Real>::convert( getColor( color, MColorModel::YCbCrCoeffs[0] ) );

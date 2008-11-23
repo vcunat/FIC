@@ -51,10 +51,14 @@ private:
 //	Module's data
 	/** The list of domain pools, pool IDs are the indices, the Pool::pixels are owned */
 	PoolList pools;
-	int width	/// Width of the original image
-	, height;	///< Height of the original image
+	int width	///  Width of the original image (zoomed)
+	, height	///  Height of the original image (zoomed)
+	, zoom;		///< the zoom
 protected:
 //	Construction and destruction
+	#ifndef NDEBUG
+		MStdDomains(): width(-1), height(-1), zoom(-1) {}
+	#endif
 	/** Only frees the #pools */
 	~MStdDomains()
 		{ for_each( pools.begin(), pools.end(), mem_fun_ref(&Pool::free) ); }
@@ -62,8 +66,8 @@ protected:
 public:
 /**	\name ISquareDomains interface
  *	@{ */
-	void initPools(int width_,int height_);
-	void fillPixelsInPools(const PlaneBlock &ranges);
+	void initPools(const PlaneBlock &planeBlock);
+	void fillPixelsInPools(const PlaneBlock &planeBlock);
 
 	const PoolList& getPools() const
 		{ return pools; }

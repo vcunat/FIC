@@ -1,5 +1,4 @@
 #include "colorModel.h"
-#include "../fileUtil.h"
 
 #include <QImage>
 using namespace std;
@@ -63,16 +62,12 @@ QImage MColorModel::planes2image(const MatrixList &pixels,int width,int height) 
 	return result;
 }
 
-void MColorModel::writeData(std::ostream &file) {
-	put<Uchar>( file , colorModel() );
-}
-
 MColorModel::PlaneList MColorModel::readData
-( std::istream &file, const Plane &prototype, int width, int height ) {
+( istream &file, const Plane &prototype, int width, int height ) {
 //	read the color-model identifier and check it
 	colorModel()= get<Uchar>(file);
 	checkThrow( 0<=colorModel() && colorModel()<numOfModels() );
-	return createPlanes(IRoot::Decode,prototype,width,height);
+	return createPlanes( IRoot::Decode, prototype, width, height );
 }
 
 MColorModel::PlaneList MColorModel::createPlanes
