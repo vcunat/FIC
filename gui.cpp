@@ -39,7 +39,8 @@ static QString getPSNRmessage(const QImage &img1,const QImage &img2) {
 
 ////	Public members
 ImageViewer::ImageViewer(QApplication &app)
-: modules_settings( IRoot::newCompatibleModule() ), modules_encoding(0), zoom(0)
+: modules_settings( IRoot::newCompatibleModule() ), modules_encoding(0)
+, zoom(0), lastPath(QDir::current().filePath("x"))
 , readAct(this), writeAct(this), compareAct(this), exitAct(this)
 , settingsAct(this), encodeAct(this), saveAct(this)
 , loadAct(this), clearAct(this), iterateAct(this), zoomIncAct(this), zoomDecAct(this) {
@@ -170,10 +171,11 @@ void ImageViewer::updateActions() {
 void ImageViewer::read() {
 //	get the file name
 	QString fname= QFileDialog::getOpenFileName( this, tr("Read image file")
-	, QDir::currentPath(), tr("PNG images (*.png)\nAll files (*.*)") );
+	, lastDir(), tr("PNG images (*.png)\nAll files (*.*)") );
 	if (fname.isEmpty())
 	//	no file selected
 		return;
+	lastPath.setPath(fname);
 //	try to load, check for errors
 	QImage image(fname);
 	if (image.isNull()) {
@@ -188,10 +190,13 @@ void ImageViewer::read() {
 	updateActions();
 }
 void ImageViewer::write() {
+//	get the file name
 	QString fname= QFileDialog::getSaveFileName( this, tr("Write image file")
-	, QDir::currentPath(), tr("PNG images (*.png)\nAll files (*.*)") );
+	, lastDir(), tr("PNG images (*.png)\nAll files (*.*)") );
 	if (fname.isEmpty())
 		return;
+	lastPath.setPath(fname);
+//	try to save the image
 	if ( !imageLabel->pixmap()->save(fname) ) {
 		QMessageBox::information( this, tr("Error"), tr("Cannot write file %1.").arg(fname) );
 		return;
@@ -201,10 +206,11 @@ void ImageViewer::write() {
 void ImageViewer::compare() {
 //	let the user choose a file
 	QString fname= QFileDialog::getOpenFileName
-	( this, tr("Compare to image"), QDir::currentPath()
+	( this, tr("Compare to image"), lastDir()
 	, tr("PNG images (*.png)\nJFIF images (*.jpg *.jpeg)\nAll files (*.*)") );
 	if (fname.isEmpty())
 		return;
+	lastPath.setPath(fname);
 //	open the file as an image, check it's got the same dimensions as the diplayed one
 	QImage image(fname);
 	image= image.convertToFormat(QImage::Format_RGB32);
@@ -288,18 +294,23 @@ void ImageViewer::encode() {
 	updateActions();
 }
 void ImageViewer::save() {
-	QString fname= QFileDialog::getSaveFileName
-	( this, tr("Save encoded image"), QDir::currentPath(), tr("FIC images (*.fic)") );
+//	get a filename to suggest
+    QFileInfo finfo(lastPath.path());
+    QString fname= finfo.dir().filePath( finfo.completeBaseName() + tr(".fic") );
+	fname= QFileDialog::getSaveFileName
+	( this, tr("Save encoded image"), fname, tr("FIC images (*.fic)") );
 	if (fname.isEmpty())
 		return;
+	lastPath.setPath(fname);
 	if ( !modules_encoding->toFile( fname.toStdString().c_str() ) )
 		QMessageBox::information( this, tr("Error"), tr("Cannot write file %1.").arg(fname) );
 }
 void ImageViewer::load() {
 	QString fname= QFileDialog::getOpenFileName
-	( this, tr("Load encoded image"), QDir::currentPath(), tr("FIC images (*.fic)") );
+	( this, tr("Load encoded image"), lastDir(), tr("FIC images (*.fic)") );
 	if (fname.isEmpty())
 		return;
+	lastPath.setPath(fname);
 //	IRoot needs to be loaded from cleared state
 	IRoot *modules_old= modules_encoding;
 	modules_encoding= clone(modules_settings,Module::ShallowCopy);

@@ -9,6 +9,7 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QLabel>
@@ -27,8 +28,6 @@
 #include <QTranslator>
 #include <QTreeWidgetItem>
 
-#include <sstream>
-
 class ImageViewer;
 class SettingsDialog;
 class EncodingProgress;
@@ -44,6 +43,8 @@ class ImageViewer: public QMainWindow { Q_OBJECT
 
 	QTranslator translator;	///< The application's only translator
 	QLabel *imageLabel; 	///< A pointer to the label showing images
+	
+	QDir lastPath;
 /**	\name Actions
  *	@{ */
 	QAction
@@ -87,6 +88,9 @@ public:
 private:
 	/** Reloads the image, iterates and shows it (returns true on success) */
 	bool rezoom();
+	/** Gets the path of the last used directory (from #lastPath) */
+	QString lastDir() 
+		{ QDir dir(lastPath); return dir.cdUp() ? dir.path() : QDir::currentPath();	}
 #ifndef NDEBUG
 	void mousePressEvent(QMouseEvent *event);
 #endif
