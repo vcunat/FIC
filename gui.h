@@ -34,6 +34,8 @@ class EncodingProgress;
 
 /** Represents the main window of the program, providing a GUI */
 class ImageViewer: public QMainWindow { Q_OBJECT
+	friend class SettingsDialog;
+	
 	static const int AutoIterationCount= 10;
 
 	IRoot *modules_settings		///  Module tree holding current settings
@@ -107,14 +109,31 @@ inline void aConnect( const QObject *sender, const char *signal, const QObject *
 
 /** Represents the encoding-settings dialog  */
 class SettingsDialog: public QDialog { Q_OBJECT
-	QGroupBox *setBox;
-	QTreeWidget *treeWidget;
-	IRoot *settings;
+	QGroupBox *setBox;					///< the settings group-box
+	QTreeWidget *treeWidget;			///< the settings tree
+	QDialogButtonBox *loadSaveButtons;	///< the button-box for loading and saving
+	IRoot *settings;					///< the settings we edit
+	
+	/** Returns a reference to the parent instance of ImageViewer */
+	ImageViewer& parentViewer() { 
+		ImageViewer *result= debugCast<ImageViewer*>(parent()); 
+		assert(result); 
+		return *result; 
+	}
+	/** Initializes the settings tree and group-box contents from #settings */
+	void initialize();
 private slots:
+	/** Changes the contents of the settings group-box when selecting in the settings tree */
 	void currentItemChanged(QTreeWidgetItem *current,QTreeWidgetItem *previous);
+	/** Adjusts the #settings when changed in the settings group-box */
 	void settingChanges(int which);
+	/** Handles loading and saving of the settings */
+	void loadSaveClick(QAbstractButton *button);
 public:
+	/** Initializes all the widgets in the dialog */
 	SettingsDialog(ImageViewer *parent,IRoot *settingsHolder);
+	/** Returns the edited #settings */
+	IRoot* getSettings() { return settings; }
 };
 
 

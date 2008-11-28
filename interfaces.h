@@ -59,8 +59,8 @@ struct IRoot: public Interface<IRoot> {
 		Decode	///< contains an image decoded from a file
 	};
 
-	/** Magic number - 16-bit integer identifying FIC files */
-	static const Uint16 Magic= 65535-4063;
+	static const Uint16 Magic= 65535-4063	/// magic number - integer identifying FIC files
+	, SettingsMagic= Magic^12345;			/// magic number - integer identifying settings files
 
 	/** A status-query method */
 	virtual Mode getMode() =0;
@@ -89,6 +89,10 @@ struct IRoot: public Interface<IRoot> {
 		return fromStream(file,zoom);
 	}
 	
+	/** Saves all settings to a file (incl.\ child modules), returns true on success */
+	bool allSettingsToFile(const char *fileName);
+	/** Loads all settings from a file (to be run on a shallow module), returns true on success */
+	bool allSettingsFromFile(const char *fileName);
 };
 
 /** Interface for modules performing color transformations,

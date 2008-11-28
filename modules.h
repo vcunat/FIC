@@ -37,7 +37,7 @@ public:
 		SettingValue defaults;	///< The default setting
 
 		union {
-			int i[2];			///< Lower and upper bound (type==Int)
+			int i[2];			///< Lower and upper bound (type==Int,IntLog2)
 			float f[2];			///< Lower and upper bound (type==Float)
 			const char *text;	///< Lines of the combo-box (type==Combo)
 			/** Pointer to the vector of IDs of compatible modules (type==ModuleCombo),
@@ -108,6 +108,10 @@ protected:
 	virtual Module* abstractClone(CloneMethod method) const =0;
 	/** Concrete cloning method - templated by the actual type of the module */
 	template<class M> M* concreteClone(CloneMethod method) const;
+	
+	/** Saves all the settings, icluding child modules */
+	void saveAllSettings(std::ostream &stream);
+	void loadAllSettings(std::istream &stream);
 public:
 	/** Friend non-member cloning function (returns the type it gets) */
 	template<class M> friend M* clone( const M *module, CloneMethod method=Module::DeepCopy )

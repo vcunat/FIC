@@ -147,11 +147,66 @@ void Module::file_loadModuleType( istream &is, int which ) {
 	checkThrow( 0<=newId && newId<Loki::TL::Length<Modules>::value );
 //	check module compatibility
 	const vector<int> &v= *setType.type.data.compatIDs;
-	checkThrow( find(v.begin(),v.end(),newId) != v.end() );
+	settings[which].val.i= find(v.begin(),v.end(),newId) - v.begin();
+	checkThrow( settings[which].val.i < (int)v.size() );
 //	create a new correct empty module
 	setItem.m= ModuleFactory::newModule(newId,ShallowCopy);
 }
 
+void Module::saveAllSettings(std::ostream &stream) {
+	int setLength= info().setLength;
+	if (!setLength)
+		return;
+	else
+		assert( settings && setLength>0 );
+	
+	const SettingsTypeItem *setType= info().setType;
+	for (int i=0; i<setLength; ++i)
+		switch(setType[i].type.type) {
+		case Int:
+		case IntLog2:
+		case Combo:
+			put<Uint32>( stream, settings[i].val.i );
+			break;
+		case Float:
+			put<float>( stream, settings[i].val.f );
+			break;
+		case ModuleCombo:
+			file_saveModuleType( stream, i );
+			settings[i].m->saveAllSettings(stream);
+			break;
+		default:
+			assert(false);
+		} // switch
+}
+
+void Module::loadAllSettings(std::istream &stream) {
+	int setLength= info().setLength;
+	assert(setLength>=0);
+	if (!setLength)
+		return;
+	if (!settings)
+		settings= new SettingsItem[setLength];
+	
+	const SettingsTypeItem *setType= info().setType;
+	for (int i=0; i<setLength; ++i)
+		switch(setType[i].type.type) {
+		case Int:
+		case IntLog2:
+		case Combo:
+			settings[i].val.i= get<Uint32>(stream);
+			break;
+		case Float:
+			settings[i].val.f= get<float>(stream);
+			break;
+		case ModuleCombo:
+			file_loadModuleType( stream, i );
+			settings[i].m->loadAllSettings(stream);
+			break;
+		default:
+			assert(false);
+		} // switch
+}
 
 ////	ModuleFactory class members
 ModuleFactory* ModuleFactory::instance=0;

@@ -24,6 +24,29 @@ template<> inline Uint16 get(std::istream &is) {
 	return res*256+get<Uchar>(is);
 }
 
+template<> inline void put(std::ostream &os,Uint32 i) {
+	put<Uchar>(os,i/(256*256*256));
+    put<Uchar>(os,i/(256*256)%256);
+    put<Uchar>(os,i/256%256);
+    put<Uchar>(os,i%256);
+}
+template<> inline Uint32 get(std::istream &is) {
+	Uint16 res= 0;
+	for (int i=0; i<4; ++i)
+		res= res*256+get<Uchar>(is);
+	return res;
+}
+
+template<> inline void put(std::ostream &os,float f) {
+	assert( sizeof(float)==4 );
+	os.write( (const char*)&f, sizeof(float) );
+}
+template<> inline float get(std::istream &is) {
+	assert( sizeof(float)==4 );
+	float result;
+	is.read( (char*)&result, sizeof(float) );
+	return result;
+}
 
 inline int float01ToBits(Real f,int bitCount) {
 	int result= (int)std::ldexp(f,bitCount);

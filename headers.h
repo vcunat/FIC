@@ -25,5 +25,6 @@ class QWidget;
 	class QPoint;
 #endif
 
-typedef unsigned char Uchar;
-typedef unsigned short Uint16;
+typedef unsigned char	Uchar;
+typedef unsigned short	Uint16;
+typedef unsigned int	Uint32;

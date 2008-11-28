@@ -49,10 +49,7 @@ void MRoot::decodeAct(DecodeAct action,int count) {
 
 bool MRoot::toStream(std::ostream &file) {
 	assert( getMode()!=Clear && settings && moduleColor() && moduleShape() );
-	
-//	check the stream
-	if ( !file.good() )
-		return false;
+//	an exception is thrown on write/save errors
 	try {
 		file.exceptions( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
 		
@@ -88,10 +85,7 @@ bool MRoot::toStream(std::ostream &file) {
 bool MRoot::fromStream(istream &file,int newZoom) {
 	assert( newZoom>=0 && getMode()==Clear && settings && !moduleColor() && !moduleShape() );
 	zoom= newZoom;
-	
-//	check the stream
-	if ( !file.good() )
-		return false;
+//	an exception is thrown on read/load errors
 	try {
 		file.exceptions( ifstream::eofbit | ifstream::failbit | ifstream::badbit );
 		

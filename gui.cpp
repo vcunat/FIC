@@ -231,6 +231,7 @@ void ImageViewer::compare() {
 void ImageViewer::settings() {
 	IRoot *newSettings= clone(modules_settings);
 	SettingsDialog dialog(this,newSettings);
+	newSettings= dialog.getSettings();
 	if ( dialog.exec() )
 	//	the dialog wasn't cancelled -> swap with the current and new settings
 		swap(newSettings,modules_settings);
@@ -394,28 +395,41 @@ SettingsDialog::SettingsDialog( ImageViewer *parent, IRoot *settingsHolder )
 	QGridLayout *layout= new QGridLayout;
 	setLayout(layout);
 //	add a tree widget
-	treeWidget= new QTreeWidget(this);
+	this->treeWidget= new QTreeWidget(this);
 	treeWidget->setHeaderLabel(tr("Modules"));
 	layout->addWidget(treeWidget,0,0);
-//	add a group-box
-	setBox= new QGroupBox(this);
+//	add a group-box to display settings of a module
+	this->setBox= new QGroupBox(this);
 	layout->addWidget(setBox,0,1);
+//	add a load/save button-box and connect it to a slot of this dialog
+	this->loadSaveButtons= new QDialogButtonBox
+	( QDialogButtonBox::Open|QDialogButtonBox::Save, Qt::Horizontal, this );
+	aConnect( loadSaveButtons, SIGNAL(clicked(QAbstractButton*))
+	, this, SLOT(loadSaveClick(QAbstractButton*)) );
+	layout->addWidget(loadSaveButtons,1,0,Qt::AlignLeft);
 //	add a button-box and connect the clicking actions
 	QDialogButtonBox *buttons= new QDialogButtonBox
 	( QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this );
-	layout->addWidget(buttons,1,0,1,-1); //	span across the bottom
+	layout->addWidget(buttons,1,1); // the right-bottom cell
 	aConnect( buttons, SIGNAL(accepted()), this, SLOT(accept()) );
 	aConnect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
 //	create the tree
 	QTreeWidgetItem *treeRoot= new QTreeWidgetItem;
-	treeRoot->setText( 0, tr("Root") );
-	settings->adjustSettings(-1,treeRoot,setBox);
 	treeWidget->addTopLevelItem(treeRoot);
-	treeWidget->expandAll();
+	treeRoot->setText( 0, tr("Root") );
 
 	aConnect( treeWidget, SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*))
 	, this, SLOT(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)) );
+	
+	initialize();
+}
+void SettingsDialog::initialize() {
+	QTreeWidgetItem *treeRoot= treeWidget->topLevelItem(0);
+	assert( treeRoot && settings && setBox );
+	clearContainer( treeRoot->takeChildren() );
+	settings->adjustSettings(-1,treeRoot,setBox);
 	treeWidget->setCurrentItem(treeRoot);
+	treeWidget->expandAll();
 }
 void SettingsDialog::currentItemChanged(QTreeWidgetItem *curItem,QTreeWidgetItem*) {
 //	get the module that should show its settings
@@ -432,7 +446,42 @@ void SettingsDialog::settingChanges(int which) {
 	Module *module= static_cast<Module*>( tree->data(0,Qt::UserRole).value<void*>() );
 	module->adjustSettings(which,tree,setBox);
 }
-
+void SettingsDialog::loadSaveClick(QAbstractButton *button) {
+	QDialogButtonBox::StandardButton test= loadSaveButtons->standardButton(button);
+	switch ( test ) {
+	case QDialogButtonBox::Open: { // open-button has been clicked
+	//	ask for the name to load from
+		QString fname= QFileDialog::getOpenFileName( this, tr("Load settings file")
+		, parentViewer().lastDir(), tr("FIC settings (*.fms)") );
+		if (fname.isEmpty())
+			return;
+	//	try to load the settings
+		IRoot *newSettings= clone(settings,Module::ShallowCopy);
+		if ( newSettings->allSettingsFromFile(fname.toStdString().c_str()) ) {
+			delete settings;
+			settings= newSettings;
+			initialize();
+		} else {
+			QMessageBox::information( this, tr("Error")
+			, tr("Cannot load settings from %1.").arg(fname) );
+			delete newSettings;
+		}
+	}	break;
+	case QDialogButtonBox::Save: { // save-button has been clicked
+	//	ask for the name to save in
+		QString fname= QFileDialog::getSaveFileName( this, tr("Save settings file")
+		, parentViewer().lastDir(), tr("FIC settings (*.fms)") );
+		if (fname.isEmpty())
+			return;
+	//	try to save the settings
+		if ( !settings->allSettingsToFile(fname.toStdString().c_str()) )
+			QMessageBox::information( this, tr("Error")
+			, tr("Cannot save settings into %1.").arg(fname) );
+	}	break;
+	default:
+		assert(false);
+	}
+}
 
 ////	GUI-related Module members
 namespace NOSPACE {
