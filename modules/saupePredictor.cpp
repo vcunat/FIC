@@ -59,10 +59,10 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 				Real sum, sum2;
 				sum= pool.summers[0].getSum(x0,y0,x0+sideLength,y0+sideLength);
 				sum2= pool.summers[1].getSum(x0,y0,x0+sideLength,y0+sideLength);
-			//	the same as  = 1 / sqrt( sum2 - sqr(sum)/pixelCount    ) );
-				Real multiply= 1 / sqrt( sum2 - ldexp(sqr(sum),-2*level) );
-				if ( isnan(multiply) )
-					multiply= 1;
+			//	the same as  = 1 / sqrt( sum2 - sqr(sum)/pixelCount  ) );
+				Real multiply= 1 / sqrt( sum2 - sqr(ldexp(sum,-level)) );
+				if ( !finite(multiply) )  
+					multiply= 1; // it would be better not to add the domains into the tree
 			//	if inversion is allowed and the first pixel is below zero then invert the block
 				//if ( data.allowInversion && *domPixNow < 0 )
 				//	multiply= -multiply;

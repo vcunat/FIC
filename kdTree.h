@@ -127,7 +127,7 @@ namespace NOSPACE {
 }
 /** Computes the bounding box of \p count vectors with length \p length stored in \p data.
  *	The vectors in \p data are stored linearly, bounds[0] and bounds[1] sould be preallocated */
-template<class T> void getBounds(const T *data,int length,int count,T **bounds) {
+template<class T> void getBounds(const T *data,int length,int count,T (*bounds)[2]) {
 	using namespace FieldMath;
 	assert(length>0);
 //	make the initial bounds only contain the first point
@@ -165,6 +165,7 @@ class KDTree {
 		int coord;	///< The coordinate along which the tree splits in this node
 		T threshold;///< The threshold of the split (left[#coord] <= #threshold <= right[#coord])
 	};
+	typedef T (*Bounds)[2];
 
 public:
 	const int depth			///  The depth of the tree = ::log2ceil(#count)
@@ -174,7 +175,7 @@ public:
 private:
 	Node *nodes;	///< The array of the tree-nodes
 	int *dataIDs;	///< Data IDs for children of "leaf" nodes
-	T *bounds[2];	///< The bounding box for all the data
+	Bounds bounds;	///< The bounding box for all the data
 
 public:
 //	Builds a new KD-tree from \p count_ vectors of \p length_ elements stored in \data
@@ -186,8 +187,7 @@ public:
 		for (int i=0; i<count; ++i)
 			dataIDs[i]= i;
 	//	get the overall bounds
-		bounds[0]= new T[length];
-		bounds[1]= new T[length];
+		bounds= new T[length][2];
 		getBounds(data,length,count,bounds);
 	//	build the tree
 		buildNode(data,1,dataIDs,dataIDs+count,depth);
@@ -196,8 +196,7 @@ public:
 	~KDTree() {
 	//	clean up
 		delete[] nodes;
-		delete[] bounds[0];
-		delete[] bounds[1];
+		delete[] bounds;
 		delete[] dataIDs;
 	}
 	/** Takes an index of "leaf" (nonexistent) node and returns the appropriate data ID */
