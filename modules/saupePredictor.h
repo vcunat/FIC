@@ -98,7 +98,8 @@ private:
 		int chunkSize		///  The suggested count for predicted ranges returned at once
 		, chunksRemain		///  Max. remaining count of chunks to be returned
 		, heapCount;		///< The number of heaps
-		bool firstChunk; 	///< True if nothing has been predicted yet, false otherwise
+		bool firstChunk 	///  True if nothing has been predicted yet, false otherwise
+		, allowRotations;	///< NewPredictorData::allowRotations
 	#ifndef NDEBUG
 	public: long *predicted;
 	#endif

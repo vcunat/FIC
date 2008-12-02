@@ -8,8 +8,9 @@ MSaupePredictor::OneRangePred* MSaupePredictor::newPredictor(const NewPredictorD
 		levelTrees.resize( level+1, (Tree*)0 );
 //	ensure the tree is built for the level
 	Tree *tree= levelTrees[level];
-	if ( !tree )
+	if (!tree)
 		tree= levelTrees[level]= createTree(data);
+	assert(tree);
 
 	int maxChunks= (int)ceil(maxChunkCoeff()*tree->count);
 	if (maxChunks<=0)
@@ -80,8 +81,8 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 	}
 	assert( domPixNow-domPix == domainCount*pixelCount ); // check we are just at the end
 //	create the tree from obtained data
-	Tree *result= new Tree
-		( domPix, pixelCount, domainCount, &KDCoordChoosers::boundBoxLongest );
+	Tree *result= Tree::Builder
+		::makeTree( domPix, pixelCount, domainCount, &Tree::Builder::chooseLongest );
 //	clean up temporaries, return the tree
 	delete[] domPix;
 	return result;
@@ -106,11 +107,11 @@ namespace NOSPACE {
 }
 MSaupePredictor::OneRangePredictor::OneRangePredictor
 ( const NewPredictorData &data, int chunkSize_, const Tree &tree, int maxChunks )
-: chunkSize(chunkSize_), chunksRemain(maxChunks), firstChunk(true) {
-//	we can't handle irregular ranges yet
-	assert(data.isRegular);
+: chunkSize(chunkSize_), chunksRemain(maxChunks)
+, firstChunk(true), allowRotations(data.allowRotations) {
+	assert(data.isRegular); // TODO: we can't handle irregular ranges yet
 //	compute some accelerators, allocate space for normalized range (+rotations,inversion)
-	int rotationCount= data.allowRotations ? 8 : 1;
+	int rotationCount= allowRotations ? 8 : 1;
 	heapCount= rotationCount * (data.allowInversion ? 2 : 1);
 	points= new KDReal[tree.length*heapCount];
 //	compute normalizing transformation and initialize a normalizator object
@@ -185,7 +186,7 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 		assert( 0<=bestInfo.index && bestInfo.index<heapCount );
 		Tree::PointHeap &bestHeap= *heaps[bestInfo.index];
 		it->domainID= bestHeap.popLeaf();
-		it->rotation= bestInfo.index%8; // modulo - for the case of inversion
+		it->rotation= allowRotations ? bestInfo.index%8 : 0; // modulo - for the case of inversion
 	//	check for emptying the heap
 		if ( !bestHeap.isEmpty() ) {
 		//	rebuild the infoHeap heap
