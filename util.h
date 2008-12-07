@@ -5,7 +5,7 @@
 #include "debug.h"
 
 /** Field containing 2^i on i-th position, defined in modules.cpp */
-extern const int powers[];
+extern const int powers[31];
 
 /** Helper template function computing the square of a number */
 template<typename T> inline T sqr(T i)

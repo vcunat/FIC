@@ -26,9 +26,8 @@ private:
 	/** Indices for settings */
 	enum Settings { ChunkSize, MaxPredPercent };
 
-	/** maxChunkCoeff() * <the number of domains> == <max. number of chunks> */
-	Real maxChunkCoeff()
-		{ return settings[MaxPredPercent].val.f / Real( 100*settingsInt(ChunkSize) ); }
+	/**  maxPredCoeff() * <the number of domains> == <max. number of predictions> */
+	Real maxPredCoeff()	{ return settings[MaxPredPercent].val.f / Real(100); }
 
 public:
 	typedef float KDReal;		///< The floating point type used in the KD-tree
@@ -45,14 +44,16 @@ protected:
 	#ifndef NDEBUG
 	MSaupePredictor(): predicted(0), maxpred(0) {}
 	#endif
-	~MSaupePredictor()
-		{ cleanUp(); }
+	~MSaupePredictor() { cleanUp(); }
 
 public:
 /**	\name IStdEncPredictor interface
  *	@{ */
 	OneRangePred* newPredictor(const NewPredictorData &data);
-	void cleanUp();
+	void cleanUp() {
+		clearContainer(levelTrees);
+		levelTrees.clear();
+	}
 ///	@}
 
 private:
@@ -91,15 +92,18 @@ private:
 				return result;
 			}
 		} normalizator;
+		
+		typedef Tree::PointHeap PointHeap;
 
-		std::vector<Tree::PointHeap*> heaps; ///< Pointers to the heaps for every rotation and inversion
-		std::vector<HeapInfo> infoHeap; ///< Heap built from #heaps according to their best SEs
+		std::vector<PointHeap*> heaps;	///< Pointers to the heaps for every rotation and inversion
+		std::vector<HeapInfo> infoHeap;	///< Heap built from #heaps according to their best SEs
 		KDReal *points; 	///< Normalized range rotations and inversions used by the heaps
 		int chunkSize		///  The suggested count for predicted ranges returned at once
-		, chunksRemain		///  Max. remaining count of chunks to be returned
+		, predsRemain		///  Max. remaining count of predictions to be returned
 		, heapCount;		///< The number of heaps
 		bool firstChunk 	///  True if nothing has been predicted yet, false otherwise
-		, allowRotations;	///< NewPredictorData::allowRotations
+		, allowRotations	///  NewPredictorData::allowRotations
+		, isRegular;
 	#ifndef NDEBUG
 	public: long *predicted;
 	#endif
@@ -107,7 +111,7 @@ private:
 	public:
 		/** Creates a new predictor for a range block (prepares tree-heaps, etc.) */
 		OneRangePredictor( const NewPredictorData &data, int chunkSize_
-		, const Tree &tree, int maxChunks );
+		, const Tree &tree, int maxPredicts );
 
 	/**	\name OneRangePred interface
 	 *	@{ */

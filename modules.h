@@ -198,7 +198,7 @@ protected:
 #define DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_...) \
 	friend class Module;  \
 	friend class ModuleFactory; \
-	friend struct ModuleFactory::Creator<CNAME_>; /* Needed for GCC-3 */ \
+	/*friend struct ModuleFactory::Creator<CNAME_>; * Needed for GCC-3 */ \
 public: \
 	CNAME_* abstractClone(CloneMethod method=DeepCopy) const \
 		{ return concreteClone<CNAME_>(method); } \

@@ -20,9 +20,10 @@ typedef Loki::TL::MakeTypelist< MRoot, MColorModel, MSquarePixels, MQuadTree, MS
 , MQuality2SE_std, MStandardEncoder, MDifferentialVLICodec, MSaupePredictor, NoPredictor >
 ::Result Modules;
 
-const int powers[]={1,2,4,8,16,32,64,128,256,512,1024,2*1024,4*1024,8*1024,16*1024
-    ,32*1024,64*1024,128*1024,256*1024,512*1024,1024*1024,2*1024*1024,4*1024*1024
-    ,8*1024*1024,16*1024*1024,32*1024*1024,64*1024*1024,128*1024*1024,256*1024*1024};
+const int powers[31]= { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2*1024			/* 2^11 */
+    , 4*1024, 8*1024, 16*1024, 32*1024, 64*1024, 128*1024, 256*1024, 512*1024		/* 2^19 */
+    , 1024*1024, 2*1024*1024, 4*1024*1024, 8*1024*1024, 16*1024*1024, 32*1024*1024	/* 2^25 */
+    , 64*1024*1024, 128*1024*1024, 256*1024*1024, 512*1024*1024, 1024*1024*1024 };	/* 2^30 */
 
 ////	Compatible<TypeList,Iface> struct template - leaves in the TypeList only derivates
 ////	of Iface class parameter - used by Inteface<Iface>, hidden for others
@@ -242,10 +243,12 @@ void ModuleFactory::changeDefaultSettings(const Module &module) {
 		}
 }
 
+
 template<class T> int ModuleFactory::Instantiator<T>::operator()() const {
 	T::newCompatibleModule();
 	getModuleID<T>();
 	((T*)(0))->T::abstractClone();
+	T::getCompMods().size();
 	return 0;
 }
 void ModuleFactory::instantiateModules() {

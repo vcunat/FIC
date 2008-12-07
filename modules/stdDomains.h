@@ -51,8 +51,8 @@ private:
 //	Module's data
 	/** The list of domain pools, pool IDs are the indices, the Pool::pixels are owned */
 	PoolList pools;
-	int width	///  Width of the original image (zoomed)
-	, height	///  Height of the original image (zoomed)
+	int width	///  Width of the original image (not zoomed)
+	, height	///  Height of the original image (not zoomed)
 	, zoom;		///< the zoom
 protected:
 //	Construction and destruction
@@ -79,6 +79,8 @@ public:
 	void writeData(std::ostream &) {}
 	void readData(std::istream &) {}
 ///	@}
+private:
+	
 };
 
 #endif // STDDOMAINS_HEADER_

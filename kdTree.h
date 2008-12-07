@@ -38,13 +38,15 @@ namespace FieldMath {
 	}
 
 	namespace NOSPACE {
-		template<class T> struct MoveToBounds {
+		template<class T,bool CheckNaNs> struct MoveToBounds {
 			T sqrError; // TODO: double?
 
 			MoveToBounds()
 			: sqrError(0) {}
 
 			void operator()(const T &point,const T bounds[2],T &result) {
+				if ( CheckNaNs && isnan(point) )
+					return;
 				if ( point < bounds[0] ) {
 					sqrError+= sqr(bounds[0]-point);
 					result= bounds[0];
@@ -59,9 +61,10 @@ namespace FieldMath {
 	}
 	/** Copy_moves a vector (\p point) to the nearest point (\p result)
 	 *	within bounds (\p bounds) and returns SE (distance^2) */
-	template<class T>
+	template<class T,bool CheckNaNs>
 	T moveToBounds_copy(const T *point,const T (*bounds)[2],int length,T *result) {
-		return transform3( point, point+length, bounds, result, MoveToBounds<T>() ) .sqrError;
+		return transform3( point, point+length, bounds, result
+			, MoveToBounds<T,CheckNaNs>() ) .sqrError;
 	}
 //	namespace NOSPACE {
 //		template<class T> struct Min {
@@ -174,7 +177,6 @@ public:
 	 *	from a given fixed point. It can return a lower bound of the SEs of the remaining
 	 *	vectors at any time. */
 	class PointHeap {
-	// TODO (admin#2#): Incomplete range blocks searching
 		/** One element of the heap representing a node in the KDTree */
 		struct HeapNode {
 			int nodeIndex;	///< Index of the node in #kd
@@ -192,7 +194,7 @@ public:
 			/** Returns pointer to the nearest point to this node's bounding box */
 			T* getNearest()		{ return data+1; }
 		};
-		/** Defines the order of #heap - ascending according tho #getSE */
+		/** Defines the order of #heap - ascending according to #getSE */
 		struct HeapOrder {
 			bool operator()(const HeapNode &a,const HeapNode &b) 
 				{ return a.getSE() > b.getSE(); }
@@ -205,14 +207,16 @@ public:
 	public:
 		/** Build the heap from the KDTree \p tree and vector \p point_
 		 *	(they've got to remain valid until destruction) */
-		PointHeap(const KDTree &tree,const T *point_)
+		PointHeap(const KDTree &tree,const T *point_,bool checkNaNs)
 		: kd(tree), point(point_) {
 			assert(point);
 		//	create the root heap-node
 			HeapNode rootNode( 1, allocator.makeField(kd.length+1) );
 		//	compute the nearest point within the global bounds and corresponding SE
-			rootNode.getSE()= FieldMath::moveToBounds_copy
-			( point, kd.bounds, kd.length, rootNode.getNearest() );
+			using namespace FieldMath;
+			rootNode.getSE()= checkNaNs 
+				? moveToBounds_copy<T,true> ( point, kd.bounds, kd.length, rootNode.getNearest() )
+				: moveToBounds_copy<T,false>( point, kd.bounds, kd.length, rootNode.getNearest() );
 		//	push it onto the heap (and reserve more to speed up the first leaf-gettings)
 			heap.reserve(kd.depth*2);
 			heap.push_back(rootNode);
@@ -229,9 +233,9 @@ public:
 		}
 
 		/** Removes a leaf, returns the matching vector's index */
-		int popLeaf() {
+		template<bool CheckNaNs> int popLeaf() {
 		//	ensure a leaf is on the top of the heap and get its ID
-			makeTopLeaf();
+			makeTopLeaf<CheckNaNs>();
 			int result= kd.leafID2dataID( heap.front().nodeIndex );
 		//	remove the top from the heap (no need to free the memory - #allocator)
 			pop_heap( heap.begin(), heap.end(), HeapOrder() );
@@ -240,13 +244,14 @@ public:
 		}
 	protected:
 		/** Divides the top nodes until there's a leaf on the top */
-		void makeTopLeaf();
+		template<bool CheckNaNs> void makeTopLeaf();
 		
 	}; // PointHeap class
 }; // KDTree class
 
 
-template<class T> void KDTree<T>::PointHeap::makeTopLeaf() {
+template<class T> template<bool CheckNaNs> 
+void KDTree<T>::PointHeap::makeTopLeaf() {
 	assert( !isEmpty() );
 //	exit if there's a leaf on the top already
 	if ( !(heap[0].nodeIndex<kd.count) )
@@ -263,29 +268,37 @@ template<class T> void KDTree<T>::PointHeap::makeTopLeaf() {
 	//	create a new heap-node and allocate it's data
 		HeapNode newHNode;
 		newHNode.data= allocator.makeField(kd.length+1);
+	//	assign index of the left child for both the heap-nodes (for now)
+		newHNode.nodeIndex= (heapRoot.nodeIndex*= 2); 
 	//	the nearest point of the new heap-node only differs in one coordinate
 		FieldMath::assign( heapRoot.getNearest(), kd.length, newHNode.getNearest() );
-		newHNode.getNearest()[node.coord]= node.threshold;
-
-	//	the SE of the child heap-nodes can be computed from the parent heap-node
-		Real oldDistance= Real(point[node.coord]) - heapRoot.getNearest()[node.coord];
-		Real newDistance= Real(point[node.coord]) - node.threshold;
-		newHNode.getSE()= heapRoot.getSE() - sqr(oldDistance) + sqr(newDistance);
-		assert( newHNode.getSE() >= heapRoot.getSE() );
-	/*	another way to do this, according to: A^2-B^2 = (A-B)*(A+B)
-		Real nearestInCoord= heapRoot.getNearest()[node.coord];
-		newHNode.getSE()= heapRoot.getSE() + (nearestInCoord-node.threshold)
-			* ( ldexp((Real)point[node.coord],1) - nearestInCoord - node.threshold );
-	*/
-
-	//	correctly assign the nodeIndex of the new children
-		newHNode.nodeIndex= (heapRoot.nodeIndex*= 2);
-		if ( newDistance <= 0 )
-		//	the point is in the left part -> the left child will be on the top
+		
+		if ( !CheckNaNs || !isnan(point[node.coord]) ) { // valid coordinate -> normal processing
+			newHNode.getNearest()[node.coord]= node.threshold;
+	
+		//	the SE of the child heap-nodes can be computed from the parent heap-node
+			Real oldDistance= Real(point[node.coord]) - heapRoot.getNearest()[node.coord];
+			Real newDistance= Real(point[node.coord]) - node.threshold;
+			newHNode.getSE()= heapRoot.getSE() - sqr(oldDistance) + sqr(newDistance);
+			assert( newHNode.getSE() >= heapRoot.getSE() );
+		/*	another way to do this, according to: A^2-B^2 = (A-B)*(A+B)
+			Real nearestInCoord= heapRoot.getNearest()[node.coord];
+			newHNode.getSE()= heapRoot.getSE() + (nearestInCoord-node.threshold)
+				* ( ldexp((Real)point[node.coord],1) - nearestInCoord - node.threshold );
+		*/
+		//	correct the nodeIndex of the new children				
+			if ( newDistance <= 0 )
+			//	the point is in the left part -> the left child will be on the top
+				++newHNode.nodeIndex;
+			else
+			//	the point is in the right part -> the right child will be on the top
+				++heapRoot.nodeIndex;
+			
+		} else  { // the coordinate doesn't have any effect
+			newHNode.getSE()= heapRoot.getSE();
 			++newHNode.nodeIndex;
-		else
-		//	the point is in the right part -> the right child will be on the top
-			++heapRoot.nodeIndex;
+		}
+		
 	//	add the new node to the back, restore the heap-property later
 		heap.push_back(newHNode);
 	} while ( heapRoot.nodeIndex<kd.count );
@@ -296,7 +309,7 @@ template<class T> void KDTree<T>::PointHeap::makeTopLeaf() {
 	do
 		push_heap( heap.begin(), it, HeapOrder() );
 	while ( it++ != heap.end() );
-} // KDTree<T>::PointHeap::makeTopLeaf() method
+} // KDTree<T>::PointHeap::makeTopLeaf<CheckNaNs>() method
 
 
 template<class T> class KDBuilder: public KDTree<T> {
@@ -463,6 +476,5 @@ template<class T> void KDBuilder<T>
 		;
 	}
 }
-
 
 #endif // KDTREE_HEADER_

@@ -11,6 +11,9 @@ namespace MTypes {
 		int width()	 const	{ return xend-x0; }
 		int height() const	{ return yend-y0; }
 		int size()	 const	{ return width()*height(); }
+		
+		bool contains(short x,short y) const
+			{ return x0<=x && x<xend && y0<=y && y<yend; }
 
 		Block() {}
 		Block(short x0_,short y0_,short xend_,short yend_)
@@ -231,8 +234,8 @@ struct ISquareRanges: public Interface<ISquareRanges> {
 struct ISquareDomains: public Interface<ISquareDomains> {
 	/** Describes one domain pool */
 	struct Pool {
-		short width	///		The width of the pool
-		, height; ///<		The height of the pool
+		short width	///		The width of the pool (zoomed)
+		, height; ///<		The height of the pool (zoomed)
 		SReal **pixels; ///<The matrix of pixels (of the pool)
 		char type ///		The pool-type identifier (like diamond, module-specific)
 		, level; ///<		The count of down-scaling steps (1 for basic domains)
@@ -240,9 +243,10 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 		BlockSummer summers[2]; ///< Domain summers for quick computations
 
 	public:
-		/** Constructor allocating a matrix with correct dimensions */
-		Pool(short width_,short height_,char type_,char level_,float cFactor)
-		: width(width_), height(height_), pixels(newMatrix<SReal>(width_,height_))
+		/** Constructor allocating a matrix with correct dimensions (increased according to \p zoom) */
+		Pool(short width_,short height_,char type_,char level_,float cFactor,short zoom)
+		: width(lShift(width_,zoom)), height(lShift(height_,zoom))
+		, pixels(newMatrix<SReal>(width,height))
 		, type(type_), level(level_), contrFactor(cFactor) {}
 		/** Only deletes #pixels matrix */
 		void free()
@@ -270,8 +274,8 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 
 	/** Returns a reference to internal list of domain pools */
 	virtual const PoolList& getPools() const =0;
-	/** Gets densities for all domain pools on a particular level (with size 2^level),
-	 *	doesn't take zoom into account (returns unzoomed densities) */
+	/** Gets densities for all domain pools on a particular level (with size 2^level - zoomed),
+	 *	returns unzoomed densities */
 	virtual std::vector<short> getLevelDensities(int level,int stdDomCountLog2) =0;
 
 	/** Writes all data needed for reconstruction that don't depend on the input (=settings) */

@@ -12,12 +12,13 @@ MSaupePredictor::OneRangePred* MSaupePredictor::newPredictor(const NewPredictorD
 		tree= levelTrees[level]= createTree(data);
 	assert(tree);
 
-	int maxChunks= (int)ceil(maxChunkCoeff()*tree->count);
-	if (maxChunks<=0)
-		maxChunks= 1;
+	int maxPredicts= (int)ceil(maxPredCoeff()*tree->count);
+	if (maxPredicts<=0)
+		maxPredicts= 1;
 
-	OneRangePredictor *result=
-		new OneRangePredictor(data,settingsInt(ChunkSize),*tree,maxChunks);
+	OneRangePredictor *result= 
+		new OneRangePredictor(data,settingsInt(ChunkSize),*tree,maxPredicts);
+
 
 	#ifndef NDEBUG
 	maxpred+= tree->count*(data.allowRotations?8:1)*(data.allowInversion?2:1);
@@ -25,11 +26,6 @@ MSaupePredictor::OneRangePred* MSaupePredictor::newPredictor(const NewPredictorD
 	#endif
 
 	return result;
-}
-
-void MSaupePredictor::cleanUp() {
-	clearContainer(levelTrees);
-	levelTrees.clear();
 }
 
 MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data) {
@@ -106,14 +102,17 @@ namespace NOSPACE {
 	};
 }
 MSaupePredictor::OneRangePredictor::OneRangePredictor
-( const NewPredictorData &data, int chunkSize_, const Tree &tree, int maxChunks )
-: chunkSize(chunkSize_), chunksRemain(maxChunks)
-, firstChunk(true), allowRotations(data.allowRotations) {
-	assert(data.isRegular); // TODO: we can't handle irregular ranges yet
+( const NewPredictorData &data, int chunkSize_, const Tree &tree, int maxPredicts )
+: chunkSize(chunkSize_), predsRemain(maxPredicts)
+, firstChunk(true), allowRotations(data.allowRotations), isRegular(data.isRegular) {
+
 //	compute some accelerators, allocate space for normalized range (+rotations,inversion)
 	int rotationCount= allowRotations ? 8 : 1;
 	heapCount= rotationCount * (data.allowInversion ? 2 : 1);
 	points= new KDReal[tree.length*heapCount];
+//	if the block isn't regular, fill the space with NaNs (to be left on unused places)
+	if (!isRegular)
+		fill( points, points+tree.length*heapCount, numeric_limits<KDReal>::quiet_NaN() );
 //	compute normalizing transformation and initialize a normalizator object
 	Real multiply= sqrt(data.pixCount) / data.rnDev;
 	AddMulCopyTo2nd<Real> oper( -data.rSum/data.pixCount, multiply );
@@ -144,7 +143,7 @@ MSaupePredictor::OneRangePredictor::OneRangePredictor
 	heaps.reserve(heapCount);
 	infoHeap.reserve(heapCount);
 	for (int i=0; i<heapCount; ++i) {
-		Tree::PointHeap *heap= new Tree::PointHeap( tree, points+i*tree.length );
+		PointHeap *heap= new PointHeap( tree, points+i*tree.length, !data.isRegular );
 		heaps.push_back(heap);
 		infoHeap.push_back(HeapInfo( i, heap->getTopSE() ));
 	}
@@ -155,7 +154,7 @@ MSaupePredictor::OneRangePredictor::OneRangePredictor
 MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 ::getChunk(float maxPredictedSE,Predictions &store) {
 	assert( heaps.size()==(size_t)heapCount && infoHeap.size()<=(size_t)heapCount );
-	if ( infoHeap.empty() || chunksRemain<=0 ) {
+	if ( infoHeap.empty() || predsRemain<=0 ) {
 		store.clear();
 		return store;
 	}
@@ -166,6 +165,10 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 		if (heapCount>predCount)
 			predCount= heapCount;
 	}
+//	check the limit for prediction count
+	if (predCount>predsRemain)
+		predCount= predsRemain;
+	predsRemain-= predCount;
 //	compute the max. normalized SE to predict
 	float maxNormalizedSE= normalizator.normSE(maxPredictedSE);
 //	make a local working copy for the result (the prediction), adjust its size
@@ -184,8 +187,10 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 		}
 	//	fill the prediction and pop the heap
 		assert( 0<=bestInfo.index && bestInfo.index<heapCount );
-		Tree::PointHeap &bestHeap= *heaps[bestInfo.index];
-		it->domainID= bestHeap.popLeaf();
+		PointHeap &bestHeap= *heaps[bestInfo.index];
+		it->domainID= isRegular
+			? bestHeap.popLeaf<false>()
+			: bestHeap.popLeaf<true>();
 		it->rotation= allowRotations ? bestInfo.index%8 : 0; // modulo - for the case of inversion
 	//	check for emptying the heap
 		if ( !bestHeap.isEmpty() ) {
@@ -201,7 +206,6 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 	}
 //	return the result
 	swap(result,store);
-	--chunksRemain;
 
 	#ifndef NDEBUG
 	*predicted+= store.size();
