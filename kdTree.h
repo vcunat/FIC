@@ -33,7 +33,10 @@ namespace FieldMath {
 
 	/** Means b[i]=a[i]; */
 	template<class T> T* assign(const T *a,int length,T *b) {
-		copy(a,a+length,b);
+		//copy(a,a+length,b);
+		
+		memcpy(b,a,length*sizeof(T));
+		
 		return b;
 	}
 
@@ -325,15 +328,18 @@ protected:
 	
 	const T *data;
 	const CoordChooser chooser;
+	mutable Bounds chooserTmp;
 	
 	KDBuilder(const T *data_,int length,int count,CoordChooser chooser_)
-	: Tree(length,count), data(data_), chooser(chooser_) { 
+	: Tree(length,count), data(data_), chooser(chooser_), chooserTmp(0) { 
 		assert( length>0 && count>1 && chooser && data );
 	//	create the index-vector, coumpute the bounding box, build the tree
 		for (int i=0; i<count; ++i)
 			dataIDs[i]= i;
 		getBounds(bounds); 
 		buildNode(1,dataIDs,dataIDs+count,depth);
+		delete[] chooserTmp;
+		DEBUG_ONLY( chooserTmp= 0; )
 	}
 	
 	/** Creates bounds containing one value */
@@ -386,7 +392,14 @@ protected:
 	
 public:
 	/** CoordChooser choosing the longest coordinate of the bounding box of the current interval */
-	int chooseLongest(int nodeIndex,int *beginIDs,int *endIDs,int /*depthLeft*/) const;
+	int choosePrecise(int nodeIndex,int *beginIDs,int *endIDs,int /*depthLeft*/) const;
+	/** CoordChooser choosing the coordinate only according to the depth */
+	int chooseFast(int /*nodeIndex*/,int* /*beginIDs*/,int* /*endIDs*/,int depthLeft) const
+		{ return depthLeft%length; }
+	/** CoordChooser choosing a random coordinate */	
+	int chooseRand(int /*nodeIndex*/,int* /*beginIDs*/,int* /*endIDs*/,int /*depthLeft*/) const
+		{ return rand()%length; }
+	int chooseApprox(int nodeIndex,int* /*beginIDs*/,int* /*endIDs*/,int depthLeft) const;
 	
 	static Tree* makeTree(const T *data,int length,int count,CoordChooser chooser) {
 		KDBuilder builder(data,length,count,chooser);
@@ -418,7 +431,7 @@ namespace NOSPACE {
 	};
 }
 template<class T> int KDBuilder<T>
-::chooseLongest(int nodeIndex,int *beginIDs,int *endIDs,int /*depthLeft*/) const {
+::choosePrecise(int nodeIndex,int *beginIDs,int *endIDs,int) const {
 	assert( nodeIndex>0 && beginIDs && endIDs && beginIDs<endIDs );
 //	temporary storage for computed bounding box
 	BoundsPair boundsStorage[length];
@@ -430,8 +443,36 @@ template<class T> int KDBuilder<T>
 	} else // we are in the root -> we can use already computed bounds
 		localBounds= bounds;
 //	find and return the longest coordinate
-	MaxDiffCoord<T> mdc= std::for_each
+	MaxDiffCoord<T> mdc= for_each
 		( localBounds+1, localBounds+length, MaxDiffCoord<T>(localBounds[0]) );
+	assert( mdc.nextIndex == length );
+	return mdc.bestIndex;
+}
+template<class T> int KDBuilder<T>::chooseApprox(int nodeIndex,int*,int*,int depthLeft) const { 
+	using namespace FieldMath;
+	assert(nodeIndex>0);
+	
+	
+	if (nodeIndex==1) { // I'm in the root - copy the bounds
+		chooserTmp= new BoundsPair[length*(depth+1)]; // allocate my temporary bound-array
+		assign( bounds, length, chooserTmp );
+	} 
+	
+	int myDepth= log2ceil(nodeIndex)-1;
+	Bounds myBounds= chooserTmp+length*myDepth;
+	if (nodeIndex!=1) { // I'm not the root - copy parent's bounds and modify them
+		const typename Tree::Node &parent= nodes[nodeIndex/2];
+		Bounds parentBounds= myBounds-length;
+		if (nodeIndex%2) {	// I'm the right son -> bounds on this level not initialized
+			assign( parentBounds, length, myBounds );
+			myBounds[parent.coord][0]= parent.threshold; // adjusting the lower bound
+		} else {			// I'm the left son -> only adjust the coordinate
+			myBounds[parent.coord][0]= parentBounds[parent.coord][0];
+			myBounds[parent.coord][1]= parent.threshold;
+		}
+	}
+//	find out the widest dimension
+	MaxDiffCoord<T> mdc= for_each( myBounds+1, myBounds+length, MaxDiffCoord<T>(myBounds[0]) );
 	assert( mdc.nextIndex == length );
 	return mdc.bestIndex;
 }

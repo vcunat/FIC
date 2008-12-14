@@ -173,31 +173,41 @@ signals:
 	void notify(int);
 };
 
+/** A dialog showing encoding progress */
 class EncodingProgress: public QProgressDialog { Q_OBJECT
-	static EncodingProgress *instance;
+	static EncodingProgress *instance; ///< Pointer to the single instance of the class
 
-	bool terminate;
+	bool terminate;	///< Value indicating whether the encoding should be interrupted
+	int progress;	///< The progress of the encoding - "the number of pixels encoded"
 
 private:
+	/** Sets the maximum progress (the value corresponding to 100%) */
 	static void setMaxProgress(int maximum)
 		{ instance->setMaximum(maximum); }
+	/** Increase the progress by a value */
 	static void incProgress(int increment)
-		{ instance->setValue( instance->value() + increment ); }
+		{ instance->setValue( instance->progress+= increment ); }
+	//	TODO: Should we provide a thread-safe version?
+	//	q_atomic_fetch_and_add_acquire_int(&instance->progress,increment);
+	//	instance->setValue((volatile int&)instance->progress);
 
 private slots:
+	/** Slot for catching cancel-pressed signal */
 	void setTerminate()
 		{ terminate= true; }
 public:
+	/** Creates and initializes the dialog */
 	EncodingProgress(QWidget *parent)
 	: QProgressDialog( tr("Encoding..."), tr("Cancel"), 0, 100, parent, Qt::Dialog )
-	, terminate(false) {
+	, terminate(false), progress(0) {
 		setWindowModality(Qt::ApplicationModal);
-		setValue(0);
+		setValue(progress);
 		setAutoClose(false);
 		setAutoReset(false);
 		aConnect( this, SIGNAL(canceled()), this, SLOT(setTerminate()) );
 		instance= this;
 	}
+	/** Returns a correct UpdatingInfo structure */
 	UpdatingInfo getUpdatingInfo() const
 		{ return UpdatingInfo( terminate, &setMaxProgress, &incProgress ); }
 };

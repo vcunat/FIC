@@ -78,7 +78,7 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 	assert( domPixNow-domPix == domainCount*pixelCount ); // check we are just at the end
 //	create the tree from obtained data
 	Tree *result= Tree::Builder
-		::makeTree( domPix, pixelCount, domainCount, &Tree::Builder::chooseLongest );
+		::makeTree( domPix, pixelCount, domainCount, &Tree::Builder::chooseApprox );
 //	clean up temporaries, return the tree
 	delete[] domPix;
 	return result;

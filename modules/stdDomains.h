@@ -79,8 +79,6 @@ public:
 	void writeData(std::ostream &) {}
 	void readData(std::istream &) {}
 ///	@}
-private:
-	
 };
 
 #endif // STDDOMAINS_HEADER_

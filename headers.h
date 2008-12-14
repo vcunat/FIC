@@ -5,6 +5,7 @@
 /** Standard C++ includes */
 #include <algorithm>
 #include <cmath>
+#include <cstring>		// memcpy
 #include <exception>
 #include <fstream>
 #include <functional>
