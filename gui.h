@@ -25,6 +25,7 @@
 #include <QStatusBar>
 #include <QThread>
 #include <QTime>
+#include <QTimer>
 #include <QTranslator>
 #include <QTreeWidgetItem>
 
@@ -35,6 +36,7 @@ class EncodingProgress;
 /** Represents the main window of the program, providing a GUI */
 class ImageViewer: public QMainWindow { Q_OBJECT
 	friend class SettingsDialog;
+	friend class EncodingProgress;
 	
 	static const int AutoIterationCount= 10;
 
@@ -81,6 +83,7 @@ private slots:
 	void zoomInc();
 	void zoomDec();
 ///	@}
+	void encDone();
 public:
 	/** Initializes the object to default settings */
 	ImageViewer(QApplication &app);
@@ -98,6 +101,7 @@ private:
 #endif
 };
 
+/** A simple wrapper around QObject::connect that asserts successfulness of the connection */
 inline void aConnect( const QObject *sender, const char *signal, const QObject *receiver
 , const char *slot, Qt::ConnectionType type=Qt::AutoCompatConnection ) {
 	#ifndef NDEBUG
@@ -136,10 +140,12 @@ public:
 	IRoot* getSettings() { return settings; }
 };
 
-
+/** Converts signals from various types of widgets */
 class SignalChanger: public QObject { Q_OBJECT
 	int signal;
 public:
+	/** Configures to emit notify(\p whichSignal) when the state of widget \p parent changes
+	 *	(it represents settings of type \p type) */
 	SignalChanger( int whichSignal, QWidget *parent=0, Module::ChoiceType type=Module::Stop )
 	: QObject(parent), signal(whichSignal) {
 		if (!parent)
@@ -171,45 +177,117 @@ public slots:
 	void notifyDouble(double)	{ emit notify(signal); }
 signals:
 	void notify(int);
-};
+}; // SignalChanger class
+
+
 
 /** A dialog showing encoding progress */
 class EncodingProgress: public QProgressDialog { Q_OBJECT
+	/** Encoding-thread type */
+	class EncThread: public QThread { //Q_OBJECT
+		IRoot *root;
+		QImage image;
+		bool success;
+		UpdateInfo updateInfo;
+	public:
+		EncThread(IRoot *root_,const QImage &image_,const UpdateInfo &updateInfo_)
+		: root(root_), image(image_), updateInfo(updateInfo_) {}
+		virtual void run()
+			{ success= root->encode(image,updateInfo); }
+		bool getSuccess() const
+			{ return success; }
+	}; // EncThread class
+	
 	static EncodingProgress *instance; ///< Pointer to the single instance of the class
 
-	bool terminate;	///< Value indicating whether the encoding should be interrupted
-	int progress;	///< The progress of the encoding - "the number of pixels encoded"
+	bool terminate	///  Value indicating whether the encoding should be interrupted
+	, needUpdate;
+	int progress	///  The progress of the encoding - "the number of pixels encoded"
+	, maxProgress;	///< The maximum value of progress
+	
+	IRoot *modules_encoding;///< The encoding modules
+	UpdateInfo updateInfo;	///< UpdateInfo passed to encoding modules
+	
+	QTimer updateTimer;		///< Updates the dialog regularly
+	QTime encTime;			///< Measures encoding time
+	EncThread encThread;	///< The encoding thread
 
 private:
 	/** Sets the maximum progress (the value corresponding to 100%) */
-	static void setMaxProgress(int maximum)
-		{ instance->setMaximum(maximum); }
+	static void incMaxProgress(int increment) { 
+		instance->maxProgress+= increment;
+		instance->needUpdate= true;
+	}
 	/** Increase the progress by a value */
-	static void incProgress(int increment)
-		{ instance->setValue( instance->progress+= increment ); }
+	static void incProgress(int increment) { 
+		instance->progress+= increment;
+		instance->needUpdate= true;
+	}
 	//	TODO: Should we provide a thread-safe version?
 	//	q_atomic_fetch_and_add_acquire_int(&instance->progress,increment);
 	//	instance->setValue((volatile int&)instance->progress);
 
 private slots:
 	/** Slot for catching cancel-pressed signal */
-	void setTerminate()
+	void setTerminate()			
 		{ terminate= true; }
-public:
-	/** Creates and initializes the dialog */
-	EncodingProgress(QWidget *parent)
-	: QProgressDialog( tr("Encoding..."), tr("Cancel"), 0, 100, parent, Qt::Dialog )
-	, terminate(false), progress(0) {
-		setWindowModality(Qt::ApplicationModal);
+	/** Updating slot - called regularly by a timer */
+	void update() {
+		if (!needUpdate)
+			return;
+		needUpdate= false;
+		setMaximum(maxProgress);
 		setValue(progress);
+	}
+private:
+	/** Creates and initializes the dialog */
+	EncodingProgress(ImageViewer *parent)
+	: QProgressDialog( tr("Encoding..."), tr("Cancel"), 0, 100, parent, Qt::Dialog )
+	, terminate(false), needUpdate(false)
+	, progress(0), maxProgress(0)
+	, modules_encoding(clone(parent->modules_settings))
+	, updateInfo( terminate, &incMaxProgress, &incProgress ), updateTimer(this)
+	, encThread( modules_encoding, parent->imageLabel->pixmap()->toImage(), updateInfo ) {
+		assert(!instance);
+		instance= this;
+	//	set some dialog features
+		setWindowModality(Qt::ApplicationModal);
 		setAutoClose(false);
 		setAutoReset(false);
+	//	to switch to terminating status when cancel is clicked
 		aConnect( this, SIGNAL(canceled()), this, SLOT(setTerminate()) );
-		instance= this;
+	//	start the updating timer
+		aConnect( &updateTimer, SIGNAL(timeout()), this, SLOT(update()) );
+     	updateTimer.start(500);
+		encTime.start(); //	start measuring the time
+	//	start the encoding thread, set it to call ImageViewer::encDone when finished	
+		aConnect( &encThread, SIGNAL(finished()), parent, SLOT(encDone()) );
+		encThread.start(QThread::LowPriority);
 	}
-	/** Returns a correct UpdatingInfo structure */
-	UpdatingInfo getUpdatingInfo() const
-		{ return UpdatingInfo( terminate, &setMaxProgress, &incProgress ); }
-};
+	/** Only zeroes #instance */
+	~EncodingProgress() {
+		assert(this==instance);
+		instance= 0;
+	}
+public:
+	/** Creates the dialog and starts encoding */
+	static void create(ImageViewer *parent) {
+		new EncodingProgress(parent);
+	}
+	/** Collects results and destroys the dialog */
+	static IRoot* destroy(int &elapsed) {
+		assert( instance && instance->encThread.isFinished() );
+	//	get the encoding result if successful, delete it otherwise
+		IRoot *result= instance->modules_encoding;
+		if ( !instance->encThread.getSuccess() ) {
+			delete result;
+			result= 0;
+		}
+		elapsed= instance->encTime.elapsed();
+	//	delete the dialog
+		delete instance;
+		return result;
+	}
+}; // EncodingProgress class
 
 #endif // GUI_HEADER_

@@ -237,61 +237,35 @@ void ImageViewer::settings() {
 		swap(newSettings,modules_settings);
 	delete newSettings;
 }
-namespace NOSPACE {
-	class EncThread: public QThread {
-		IRoot *root;
-		QImage image;
-		bool success;
-	public:
-		EncThread(IRoot *root_,const QImage &image_)
-		: root(root_), image(image_) {}
-		virtual void run()
-			{  success= root->encode(image); }
-		bool getSuccess() const
-			{ return success; }
-	};
-}
 void ImageViewer::encode() {
-//	start measuring the time
-	QTime encTime;
-    encTime.start();
-//	create a new encoding tree
-	IRoot *modules_old= modules_encoding;
-	modules_encoding= clone(modules_settings);
-//	create the dialog and the encoding thread
-	EncThread encThread( modules_encoding, imageLabel->pixmap()->toImage() );
-	{
-		EncodingProgress encDialog(this);
-	//	ensure the dialog is closed when the encoding finishes
-		aConnect( &encThread, SIGNAL(finished()), &encDialog, SLOT(accept()) );
-	//	start the thread and execute the dialog
-		#ifdef NDEBUG
-			encThread.start(QThread::LowPriority);
-			encDialog.exec();
-			encThread.wait();
-			//0=0; // waiting for the thread, etc.
-		#else
-			encThread.run(); // no threading in debug mode
-		#endif
+	EncodingProgress::create(this);
+}
+void ImageViewer::encDone() {
+	int encMsecs;
+	IRoot *modules_encoded= EncodingProgress::destroy(encMsecs);
+	
+	if (modules_encoded) { // encoding successful - iterate the image and display some info
+	//	replace the old state
+		delete modules_encoding;
+		modules_encoding= modules_encoded;
+	//	decode the image	
+		QImage beforeImg= modules_encoding->toImage();
+		
+		QTime decTime;
+		decTime.start();
+		modules_encoding->decodeAct(MTypes::Clear);
+		modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
+		int decMsecs= decTime.elapsed();
+	
+		QImage afterImg= modules_encoding->toImage();
+		changePixmap( QPixmap::fromImage(afterImg) );
+	//	show some info		
+		QString message= tr("Time to encode: %1 seconds\nTime to decode: %2 seconds\n") 
+			.arg(encMsecs/1000.0) .arg(decMsecs/1000.0)	+ getPSNRmessage(beforeImg,afterImg);
+		QMessageBox::information( this, tr("encoded"), message );
+		encData.clear();
 	}
-	if ( !encThread.getSuccess() )
-	//	the encoding was interrupted - return to the backup
-		swap(modules_encoding,modules_old);
-	else { // encoding successful - iterate the image and display some info
-		//#ifdef NDEBUG
-			QImage beforeImg= modules_encoding->toImage();
-			modules_encoding->decodeAct(MTypes::Clear);
-			modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
-			QImage afterImg= modules_encoding->toImage();
-			changePixmap( QPixmap::fromImage(afterImg) );
-			QString message= tr("Time to encode: %1 seconds\n") .arg(encTime.elapsed()/1000.0f)
-			+ getPSNRmessage(beforeImg,afterImg);
-			QMessageBox::information( this, tr("encoded"), message );
-			encData.clear();
-		//#endif
-	}
-//	delete the unneeded modules (either the backup or the unsuccessful)
-	delete modules_old;
+	
 	updateActions();
 }
 void ImageViewer::save() {
@@ -658,9 +632,6 @@ void Module::settingsType2widget(QWidget *widget,const SettingsTypeItem &typeIte
 }
 
 
-EncodingProgress *EncodingProgress::instance= 0;
-
-
 #ifndef NDEBUG
 void ImageViewer::mousePressEvent(QMouseEvent *event) {
 //	check the event, get the clicking point coordinates relative to the image
@@ -682,4 +653,8 @@ void ImageViewer::mousePressEvent(QMouseEvent *event) {
 
 	changePixmap(pixmap);
 }
+
+
+EncodingProgress *EncodingProgress::instance= 0;
+
 #endif

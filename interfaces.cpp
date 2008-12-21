@@ -3,7 +3,7 @@
 
 using namespace std;
 
-const IColorTransformer::Plane IColorTransformer::Plane::Empty(0,-1,-1,-1,0);
+const IColorTransformer::Plane IColorTransformer::Plane::Empty(0,-1,-1,-1,0,UpdateInfo());
 
 void IQuality2SquareError::completeSquareRangeErrors
 ( float quality, int levelEnd, float *errors ) {

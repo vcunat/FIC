@@ -50,8 +50,10 @@ int MSquarePixels::createJobs( const PlaneList &planes, int width, int height ) 
 	} // if(!<dividing planes>)... else... 
 
 //	take the ownership of the matrices
-	for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it)
+	for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it) {
 		ownedMatrices.push_back(it->pixels);
+		it->updateInfo.incMaxProgress(width*height);
+	}
 
 	return jobs.size();
 }

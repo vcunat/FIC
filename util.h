@@ -186,21 +186,18 @@ public:
 	}
 };
 
-struct UpdatingInfo {
-	typedef void (*SetMaxProgress)(int maxProgress);
-	typedef void (*IncProgress)(int increase);
+struct UpdateInfo {
+	typedef void (*IncInt)(int increment);
 
-	volatile const bool &terminate;
-	const SetMaxProgress setMaxProgress;
-	const IncProgress incProgress;
+	volatile const bool *terminate;
+	IncInt incMaxProgress, incProgress;
 
-	static void emptyFunction(int);
+	static void emptyFunction(int) {}
+	static const bool noTerminate= false;	///< defined in modules.cpp
 
-	UpdatingInfo( const bool &terminate_, SetMaxProgress setMaxProgress_=&emptyFunction
-	, IncProgress incProgress_=&emptyFunction )
-	: terminate(terminate_), setMaxProgress(setMaxProgress_), incProgress(incProgress_) {}
-private:
-	UpdatingInfo& operator=(const UpdatingInfo&);
+	UpdateInfo( const bool &terminate_= noTerminate, IncInt incMaxProgress_=&emptyFunction
+	, IncInt incProgress_=&emptyFunction )
+	: terminate(&terminate_), incMaxProgress(incMaxProgress_), incProgress(incProgress_) {}
 };
 
 #endif // UTIL_HEADER_

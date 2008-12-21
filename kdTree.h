@@ -452,24 +452,29 @@ template<class T> int KDBuilder<T>::chooseApprox(int nodeIndex,int*,int*,int dep
 	using namespace FieldMath;
 	assert(nodeIndex>0);
 	
-	
-	if (nodeIndex==1) { // I'm in the root - copy the bounds
+	int myDepth= log2ceil(nodeIndex+1)-1;
+	if (!myDepth) { // I'm in the root - copy the bounds
+		assert(nodeIndex==1);
 		chooserTmp= new BoundsPair[length*(depth+1)]; // allocate my temporary bound-array
 		assign( bounds, length, chooserTmp );
 	} 
 	
-	int myDepth= log2ceil(nodeIndex)-1;
 	Bounds myBounds= chooserTmp+length*myDepth;
-	if (nodeIndex!=1) { // I'm not the root - copy parent's bounds and modify them
+	if (myDepth) { // I'm not the root - copy parent's bounds and modify them
 		const typename Tree::Node &parent= nodes[nodeIndex/2];
 		Bounds parentBounds= myBounds-length;
 		if (nodeIndex%2) {	// I'm the right son -> bounds on this level not initialized
 			assign( parentBounds, length, myBounds );
 			myBounds[parent.coord][0]= parent.threshold; // adjusting the lower bound
-		} else {			// I'm the left son -> only adjust the coordinate
-			myBounds[parent.coord][0]= parentBounds[parent.coord][0];
-			myBounds[parent.coord][1]= parent.threshold;
-		}
+		} else // I'm the left son
+			if ( nodeIndex+1 < count ) { // almost the same as brother -> only adjust the coordinate
+				myBounds[parent.coord][0]= parentBounds[parent.coord][0];
+				myBounds[parent.coord][1]= parent.threshold;
+			} else { // I've got no brother
+				assert( nodeIndex+1 == count );
+				assign( parentBounds, length, myBounds );
+				myBounds[parent.coord][1]= parent.threshold;
+			}
 	}
 //	find out the widest dimension
 	MaxDiffCoord<T> mdc= for_each( myBounds+1, myBounds+length, MaxDiffCoord<T>(myBounds[0]) );

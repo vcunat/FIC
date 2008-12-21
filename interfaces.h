@@ -71,7 +71,7 @@ struct IRoot: public Interface<IRoot> {
 	virtual QImage toImage() =0;
 
 	/** Encodes an image - returns false on exception */
-	virtual bool encode(const QImage &toEncode) =0;
+	virtual bool encode(const QImage &toEncode,const UpdateInfo &updateInfo=UpdateInfo()) =0;
 	/** Performs a decoding action (e.g.\ clearing, multiple iteration) */
 	virtual void decodeAct( DecodeAct action, int count=1 ) =0;
 
@@ -112,12 +112,13 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 		int domainCountLog2		///  2-logarithm of the maximum domain count
 		, zoom;					///< the zoom
 		ModuleQ2SE *moduleQ2SE;	///< pointer to the module computing maximum SE (not owned)
+		UpdateInfo updateInfo;	///< structure for communication with user
 
 		/** A simple constructor, only initializes the values from the parameters */
 		Plane( SReal **pixels_, float quality_, int domainCountLog2_
-		, int zoom_, ModuleQ2SE *moduleQ2SE_ )
+		, int zoom_, ModuleQ2SE *moduleQ2SE_, const UpdateInfo &updateInfo_ )
 			: pixels(pixels_), quality(quality_), domainCountLog2(domainCountLog2_)
-			, zoom(zoom_), moduleQ2SE(moduleQ2SE_) {}
+			, zoom(zoom_), moduleQ2SE(moduleQ2SE_), updateInfo(updateInfo_) {}
 	};
 	/** List of planes */
 	typedef std::vector<Plane> PlaneList;
@@ -140,7 +141,7 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 struct IShapeTransformer: public Interface<IShapeTransformer> {
 	typedef IColorTransformer::PlaneList PlaneList;
 
-	/** Creates jobs from the list of color planes (the dmiensions are zoomed,
+	/** Creates jobs from the list of color planes (the dimensions are zoomed,
 	 *	takes the ownership of pixels and returns job count) */
 	virtual int createJobs( const PlaneList &planes, int width, int height ) =0;
 	/** Returns the number of jobs */

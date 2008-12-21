@@ -149,16 +149,20 @@ int MQuadTree::Node::getSonCount() const {
 	return count;
 }
 bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
+	if (*toEncode.updateInfo.terminate)
+		throw exception();
+		
 	MQuadTree *mod= debugCast<MQuadTree*>(toEncode.ranges);
 	assert( mod && level>=mod->minLevel() );
+	int pixCount= size();
 //	check for minimal level -> cannot be divided, find the best domain
 	if ( level == mod->minLevel() ) {
 	//	try to find the best mapping, not restricting the max.\ SE and exit
 		toEncode.encoder->findBestSE(*this,true);
+		toEncode.updateInfo.incProgress(pixCount);
 		return false;
 	}
 
-	int pixCount= size();
 //	TODO: regular ranges optimization
 	float maxSE= toEncode.moduleQ2SE->rangeSE( toEncode.quality, pixCount );
 	bool tryEncode= true;
@@ -174,8 +178,10 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 				tryEncode= false;
 		}
 	//	if we decided to try to encode, do it and return if the quality is sufficient
-		if ( tryEncode && toEncode.encoder->findBestSE(*this) <= maxSE )
+		if ( tryEncode && toEncode.encoder->findBestSE(*this) <= maxSE ) {
+			toEncode.updateInfo.incProgress(pixCount);
 			return false;
+		}
 		#ifndef NDEBUG
 		else // tried to encode, but unsuccessfully and forced to be divided
 			++debugCast<MQuadTree*>(toEncode.ranges)->badTries;

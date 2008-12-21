@@ -25,6 +25,8 @@ const int powers[31]= { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2*1024			/*
     , 1024*1024, 2*1024*1024, 4*1024*1024, 8*1024*1024, 16*1024*1024, 32*1024*1024	/* 2^25 */
     , 64*1024*1024, 128*1024*1024, 256*1024*1024, 512*1024*1024, 1024*1024*1024 };	/* 2^30 */
 
+const bool UpdateInfo::noTerminate;
+
 ////	Compatible<TypeList,Iface> struct template - leaves in the TypeList only derivates
 ////	of Iface class parameter - used by Inteface<Iface>, hidden for others
 namespace NOSPACE {

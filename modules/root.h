@@ -75,7 +75,7 @@ public:
 	Mode getMode()		{ return myMode; }
 	QImage toImage();
 
-	bool encode(const QImage &toEncode);
+	bool encode(const QImage &toEncode,const UpdateInfo &updateInfo);
 	void decodeAct(DecodeAct action,int count=1);
 
 	bool toStream(std::ostream &file);

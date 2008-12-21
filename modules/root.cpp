@@ -12,11 +12,12 @@ QImage MRoot::toImage() {
 	return moduleColor()->planes2image( moduleShape()->collectJobs() , width, height );
 }
 
-bool MRoot::encode(const QImage &toEncode) {
+bool MRoot::encode(const QImage &toEncode,const UpdateInfo &updateInfo) {
 	assert( getMode()==Clear && settings && moduleColor() && moduleShape() );
 	zoom= 0;
 //	get the plane list, create the jobs from it
-	Plane planeProto( 0, quality(), settingsInt(DomainCountLog2), 0/*zoom*/, moduleQuality() );
+	Plane planeProto( 0, quality(), settingsInt(DomainCountLog2)
+	, 0/*zoom*/, moduleQuality(), updateInfo );
 	PlaneList planes= moduleColor()->image2planes( toEncode, planeProto );
 	this->width= toEncode.width();
 	this->height= toEncode.height();
