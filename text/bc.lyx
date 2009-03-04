@@ -81,8 +81,7 @@ IFS
 \begin_layout Standard
 Základy fraktálové komprese byly položeny v druhé polovině 80.\InsetSpace ~
 let, kdy Barnsley
- studoval systémy iterovaných funkcí\InsetSpace ~
-(IFS).
+ studoval systémy iterovaných funkcí (IFS).
  IFS je množina bodů v\InsetSpace ~
 úplném metrickém prostoru definována pomocí souboru
  kontraktivních zobrazení prostoru do sebe.
@@ -192,7 +191,7 @@ key "Fish95"
 , která dává horní odhad na odchylku atraktoru od požadovaného obrázku:
  
 \begin_inset Formula \[
-f\mbox{ je zobrazení s kontraktivitou }s<1\mbox{ v metrice }d\mbox{, pak}\]
+f\mbox{ je zobrazení, }\exists k\; f^{k}\mbox{ je kontraktivní s faktorem }s<1\mbox{ v metrice }d\mbox{, pak}\]
 
 \end_inset
 
@@ -208,8 +207,8 @@ Díky tomu stačí hledat zobrazení, která obrázek transformují a přitom ho
 status collapsed
 
 \begin_layout Standard
-triviální identické zobrazení zde samozřejmě fungovat nebude, přestože zkonvergu
-je, protože není kontraktivní
+triviální identické zobrazení sice vždy zkonverguje, ale jinak samozřejmě
+ fungovat nebude, nesplňuje předpoklad kontraktivity
 \end_layout
 
 \end_inset
@@ -218,6 +217,8 @@ je, protože není kontraktivní
  Ukázalo se, že největší problém je v tom, že na rozdíl od klasických IFS
  málokterý obrázek lze charakterizovat jako sjednocení několika transformovaných
  zmenšenin celého obrázku.
+ Bylo sice možné obrázek rozdělit na menší kusy charakterizované IFS, ale
+ tuto metodu se nepodařilo zautomatizovat.
 \end_layout
 
 \begin_layout Subsection
@@ -225,7 +226,7 @@ PIFS
 \end_layout
 
 \begin_layout Standard
-Pro kompresi obrázků tedy bylo nutné najít lepší model, než množinu bodů
+Pro kompresi obrázků také bylo nutné najít lepší model, než množinu bodů
  v 
 \begin_inset Formula $\mathbb{R}^{2}$
 \end_inset
@@ -245,42 +246,179 @@ možností reprezentace obrázků ve stupních šedi je funkce tvaru
 \end_inset
 
 .
- Pak každý obrázek odpovídá množině bodů v\InsetSpace ~
-
-\begin_inset Formula $I^{3}$
-\end_inset
-
- -- grafu funkce.
- Zase budeme hledat soubor funkcí takový, aby jejich sjednocením vznikla
- funkce 
-\begin_inset Formula $f$
+ Zde budeme analogicky hledat soubor operátorů takový, aby jejich sjednocením
+ vznikl operátor 
+\begin_inset Formula $F$
 \end_inset
 
  s\InsetSpace ~
-pevným bodem co nejblíže danému obrázku.
- Zde je ale nutné zajistit, aby po zobrazení množina stále reprezentovala
- korektní obrázek, tedy aby platilo:
-\begin_inset Formula \[
-\forall x,y\in I\quad\exists!z\in I\quad\left(x,y,z\right)\in A\qquad\longrightarrow\qquad\forall x,y\in I\quad\exists!z\in I\quad\left(x,y,z\right)\in f\left(A\right)\]
-
-\end_inset
-
-PIFS (partitioned IFS) řeší tento problém tak, že prostor obrázku je rozdělen
- na disjunktní části:
+pevným bodem co nejblíže danému obrázku (jeho funkci).
+ Aby bylo zaručeno, že sjednocení lze provést, v\InsetSpace ~
+PIFS (partitioned IFS) je
+ prostor obrázku rozdělen na disjunktní části
 \begin_inset Formula \[
 \forall i\in J\quad R_{i}\subset I^{2},\qquad\bigcup_{i\in J}R_{i}=I^{2},\qquad\forall i,j\in J\quad i\neq j\rightarrow R_{i}\cap R_{j}=\emptyset\]
 
 \end_inset
 
-A zobrazení jsou tvaru 
-\begin_inset Formula $f_{i}:D_{i}\rightarrow R_{i}$
+a operátory jsou tvaru 
+\begin_inset Formula $F_{i}:\left(I^{2}\rightarrow I\right)\rightarrow\left(R_{i}\rightarrow I\right)$
 \end_inset
 
-
+.
 \end_layout
 
 \begin_layout Standard
-Navíc budeme pro jednoduchost uvažovat pouze afinní zobrazení.
+PIFS dnes tvoří základ naprosté většiny technik pro fraktální kompresi obrazu.
+ Pro zjednodušení se typicky uvažují pouze afinní operátory, kde se navíc
+ vzájemně neovlivňuje transformace polohy s transformací barvy, formálně
+ 
+\begin_inset Formula \[
+F_{i}g=h_{i},\qquad h_{i}:R_{i}\rightarrow I,\qquad h_{i}\left(\left[\begin{array}{c}
+x\\
+y\end{array}\right]\right)=\left(c_{i}\circ g\circ w_{i}\right)\left(\left[\begin{array}{c}
+x\\
+y\end{array}\right]\right)\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\mbox{pro nějaká afinní zobrazení\quad} w_{i}:R_{i}\rightarrow I^{2}\mbox{\quad a\quad}c_{i}:I\rightarrow I\]
+
+\end_inset
+
+Za 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $R_{i}$
+\end_inset
+
+ se volí souvislé části obrazu, typicky čtverce o straně délky 
+\begin_inset Formula $2^{k}$
+\end_inset
+
+, a nazývají se zdrojové bloky.
+ Díky spojitosti 
+\begin_inset Formula $w_{i}$
+\end_inset
+
+ jsou 
+\begin_inset Formula $D_{i}=w_{i}\left(R_{i}\right)$
+\end_inset
+
+ také souvislé části obrazu a nazývají se zdrojové bloky
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+značení pochází z anglických termínů 
+\family default
+\series default
+\shape default
+\size default
+\emph on
+\bar default
+\noun default
+\color inherit
+domain block
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+ a 
+\family default
+\series default
+\shape default
+\size default
+\emph on
+\bar default
+\noun default
+\color inherit
+range block
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Konvergence PIFS
+\end_layout
+
+\begin_layout Standard
+Pro konvergenci a horní odhad chyby PIFS modelu lze zase použít kolážovou
+ větu.
+ Následující důkaz je modifikací důkazu uvedeného v 
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+.
+ Zde se hodí metrika
+\begin_inset Formula \[
+d_{sup}\left(g_{1},g_{2}\right)=\sup_{\vec{z}\in I^{2}}\left\{ \left|g_{1}\left(\vec{z}\right)-g_{2}\left(\vec{z}\right)\right|\right\} \]
+
+\end_inset
+
+Postačí, aby 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\exists s<1\;\forall i\in J\quad c_{i}$
+\end_inset
+
+ mělo lineární člen 
+\begin_inset Formula $a_{i}:\;\left|a_{i}\right|\le s$
+\end_inset
+
+, pak pro obrázky 
+\begin_inset Formula $g_{1},g_{2}:I^{2}\rightarrow I\quad$
+\end_inset
+
+
+\begin_inset Formula $\forall\vec{z}\in I^{2}\quad\exists!i\in J\quad\vec{z}\in R_{i}\quad$
+\end_inset
+
+a platí 
+\begin_inset Formula \[
+\left|\left(F_{i}g_{1}\right)\left(\vec{z}\right)-\left(F_{i}g_{2}\right)\left(\vec{z}\right)\right|\quad\le\quad s\left|\left(g_{1}\circ w_{i}\right)\left(\vec{z}\right)-\left(g_{2}\circ w_{i}\right)\left(\vec{z}\right)\right|\quad\leq\quad s\ d_{sup}\left(g_{1},g_{2}\right)\]
+
+\end_inset
+
+Z toho už plyne kontraktivita celého operátoru 
+\begin_inset Formula $F:\quad d_{sup}\left(Fg_{1},Fg_{2}\right)\;\le\; s\ d_{sup}\left(g_{1},g_{2}\right)$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
