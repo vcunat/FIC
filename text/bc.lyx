@@ -99,7 +99,7 @@ let, kdy Barnsley
 \end_inset
 
 , 
-\begin_inset Formula $f(A)=\left\{ f_{i}(a)\mid i\in J,\ a\in A\right\} $
+\begin_inset Formula $f\left(A\right)=\left\{ f_{i}\left(a\right)\mid i\in J,\ a\in A\right\} $
 \end_inset
 
 , kde zápisem 
@@ -178,6 +178,43 @@ IFS mají několik zajímavých vlastností.
  Barnsley zkoumal, zda by nebylo možné proces obrátit -- k\InsetSpace ~
 danému obrázku
  najít soubor zobrazení, jehož pevný bod by obrázku byl velmi blízký.
+ 
+\end_layout
+
+\begin_layout Standard
+Zde se používá takzvaná kolážová věta, uvedená například v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+, která dává horní odhad na odchylku atraktoru od požadovaného obrázku:
+ 
+\begin_inset Formula \[
+f\mbox{ je zobrazení s kontraktivitou }s<1\mbox{ v metrice }d\mbox{, pak}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+d\left(A,\lim_{n\rightarrow\infty}f^{n}\left(A\right)\right)\le\frac{1}{1-s}d\left(A,f\left(A\right)\right)\]
+
+\end_inset
+
+Díky tomu stačí hledat zobrazení, která obrázek transformují a přitom ho
+ změní co nejméně
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+triviální identické zobrazení zde samozřejmě fungovat nebude, přestože zkonvergu
+je, protože není kontraktivní
+\end_layout
+
+\end_inset
+
+.
  Ukázalo se, že největší problém je v tom, že na rozdíl od klasických IFS
  málokterý obrázek lze charakterizovat jako sjednocení několika transformovaných
  zmenšenin celého obrázku.
@@ -252,7 +289,7 @@ Navíc budeme pro jednoduchost uvažovat pouze afinní zobrazení.
 
 \begin_inset LatexCommand bibtex
 options "bibtotoc,plain"
-bibfiles "fractals,fractal-image-comp"
+bibfiles "fractals"
 
 \end_inset
 
