@@ -1,4 +1,4 @@
-#LyX 1.5.5 created this file. For more info see http://www.lyx.org/
+#LyX 1.5.7 created this file. For more info see http://www.lyx.org/
 \lyxformat 276
 \begin_document
 \begin_header
@@ -18,7 +18,7 @@
 \font_tt_scale 100
 \graphics default
 \paperfontsize default
-\spacing single
+\spacing onehalf
 \papersize default
 \use_geometry false
 \use_amsmath 1
@@ -67,6 +67,195 @@ preview false
 \end_layout
 
 \begin_layout Standard
+<Představení práce, motivace a přehled obsahu kapitol.>
+\end_layout
+
+\begin_layout Section
+Vývoj a principy fraktálové komprese obrazu
+\end_layout
+
+\begin_layout Subsection
+IFS
+\end_layout
+
+\begin_layout Standard
+Základy fraktálové komprese byly položeny v druhé polovině 80.\InsetSpace ~
+let, kdy Barnsley
+ studoval systémy iterovaných funkcí\InsetSpace ~
+(IFS).
+ IFS je množina bodů v\InsetSpace ~
+úplném metrickém prostoru definována pomocí souboru
+ kontraktivních zobrazení prostoru do sebe.
+ Mějme soubor zobrazení 
+\begin_inset Formula $f_{i}:X\rightarrow X$
+\end_inset
+
+ pro 
+\begin_inset Formula $i\in J$
+\end_inset
+
+ a definujme jejich sjednocení 
+\begin_inset Formula $f:2^{X}\rightarrow2^{X}$
+\end_inset
+
+, 
+\begin_inset Formula $f(A)=\left\{ f_{i}(a)\mid i\in J,\ a\in A\right\} $
+\end_inset
+
+, kde zápisem 
+\begin_inset Formula $2^{X}$
+\end_inset
+
+ je značena množina všech podmnožin 
+\begin_inset Formula $X$
+\end_inset
+
+.
+ Na 
+\begin_inset Formula $2^{X}$
+\end_inset
+
+ lze definovat metriku tak, abychom dostali zase úplný metrický prostor
+ a zobrazení 
+\begin_inset Formula $f$
+\end_inset
+
+ bylo kontraktivní
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+ukázáno například v 
+\begin_inset LatexCommand cite
+key "Barn88b"
+
+\end_inset
+
+ pomocí Hausdorffovy metriky
+\end_layout
+
+\end_inset
+
+.
+ To spolu s\InsetSpace ~
+Banachovou větou o\InsetSpace ~
+pevném bodě dává, že zobrazení 
+\begin_inset Formula $f$
+\end_inset
+
+ má právě jeden pevný bod, kterým je právě hledaná množina bodů, často nazývaná
+ atraktor nebo fraktál
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+fraktály lze konstruovat i jinými způsoby než pomocí IFS
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+IFS mají několik zajímavých vlastností.
+ Pro získání atraktoru stačí znát zobrazení 
+\begin_inset Formula $f$
+\end_inset
+
+ a iterovat ho na libovolné neprázdné kompaktní podmnožině 
+\begin_inset Formula $X$
+\end_inset
+
+.
+ Navíc vzniklé fraktály můžou mít detailní kresbu při libovolném přiblížení,
+ přestože jejich matematický popis je velmi malý.
+ Mezi nejznámější IFS patří Barnsleyho kapradina, generovaná v 
+\begin_inset Formula $\mathbb{R}^{2}$
+\end_inset
+
+ pomocí čtyř afinních zobrazení.
+ Barnsley zkoumal, zda by nebylo možné proces obrátit -- k\InsetSpace ~
+danému obrázku
+ najít soubor zobrazení, jehož pevný bod by obrázku byl velmi blízký.
+ Ukázalo se, že největší problém je v tom, že na rozdíl od klasických IFS
+ málokterý obrázek lze charakterizovat jako sjednocení několika transformovaných
+ zmenšenin celého obrázku.
+\end_layout
+
+\begin_layout Subsection
+PIFS
+\end_layout
+
+\begin_layout Standard
+Pro kompresi obrázků tedy bylo nutné najít lepší model, než množinu bodů
+ v 
+\begin_inset Formula $\mathbb{R}^{2}$
+\end_inset
+
+.
+ Jedna z\InsetSpace ~
+možností reprezentace obrázků ve stupních šedi je funkce tvaru 
+\begin_inset Formula $g:I^{2}\rightarrow I$
+\end_inset
+
+, kde 
+\begin_inset Formula $I$
+\end_inset
+
+ je značení pro interval 
+\begin_inset Formula $\left[0,1\right]\subset\mathbb{R}$
+\end_inset
+
+.
+ Pak každý obrázek odpovídá množině bodů v\InsetSpace ~
+
+\begin_inset Formula $I^{3}$
+\end_inset
+
+ -- grafu funkce.
+ Zase budeme hledat soubor funkcí takový, aby jejich sjednocením vznikla
+ funkce 
+\begin_inset Formula $f$
+\end_inset
+
+ s\InsetSpace ~
+pevným bodem co nejblíže danému obrázku.
+ Zde je ale nutné zajistit, aby po zobrazení množina stále reprezentovala
+ korektní obrázek, tedy aby platilo:
+\begin_inset Formula \[
+\forall x,y\in I\quad\exists!z\in I\quad\left(x,y,z\right)\in A\qquad\longrightarrow\qquad\forall x,y\in I\quad\exists!z\in I\quad\left(x,y,z\right)\in f\left(A\right)\]
+
+\end_inset
+
+PIFS (partitioned IFS) řeší tento problém tak, že prostor obrázku je rozdělen
+ na disjunktní části:
+\begin_inset Formula \[
+\forall i\in J\quad R_{i}\subset I^{2},\qquad\bigcup_{i\in J}R_{i}=I^{2},\qquad\forall i,j\in J\quad i\neq j\rightarrow R_{i}\cap R_{j}=\emptyset\]
+
+\end_inset
+
+A zobrazení jsou tvaru 
+\begin_inset Formula $f_{i}:D_{i}\rightarrow R_{i}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Navíc budeme pro jednoduchost uvažovat pouze afinní zobrazení.
+\end_layout
+
+\begin_layout Standard
+
+\newpage
+
+\begin_inset LatexCommand bibtex
+options "bibtotoc,plain"
+bibfiles "fractals,fractal-image-comp"
+
+\end_inset
+
 
 \end_layout
 
