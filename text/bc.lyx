@@ -22,7 +22,7 @@
 \papersize default
 \use_geometry false
 \use_amsmath 1
-\use_esint 0
+\use_esint 1
 \cite_engine basic
 \use_bibtopic false
 \paperorientation portrait
@@ -124,7 +124,8 @@ let, kdy Barnsley
 status collapsed
 
 \begin_layout Standard
-ukázáno například v 
+ukázáno například v\InsetSpace ~
+
 \begin_inset LatexCommand cite
 key "Barn88b"
 
@@ -174,7 +175,8 @@ IFS mají několik zajímavých vlastností.
 \end_inset
 
  pomocí čtyř afinních zobrazení.
- Barnsley zkoumal, zda by nebylo možné proces obrátit -- k\InsetSpace ~
+ Barnsley zkoumal, zda by nebylo možné proces obrátit\InsetSpace ~
+-- k\InsetSpace ~
 danému obrázku
  najít soubor zobrazení, jehož pevný bod by obrázku byl velmi blízký.
  
@@ -197,7 +199,7 @@ f\mbox{ je zobrazení, }\exists k\; f^{k}\mbox{ je kontraktivní s faktorem }s<1
 
 
 \begin_inset Formula \[
-d\left(A,\lim_{n\rightarrow\infty}f^{n}\left(A\right)\right)\le\frac{1}{1-s}d\left(A,f\left(A\right)\right)\]
+d\left(A,\lim_{n\rightarrow\infty}f^{n}\left(A\right)\right)\;\le\;\frac{1}{1-s}d\left(A,f\left(A\right)\right)\]
 
 \end_inset
 
@@ -214,7 +216,8 @@ triviální identické zobrazení sice vždy zkonverguje, ale jinak samozřejmě
 \end_inset
 
 .
- Ukázalo se, že největší problém je v tom, že na rozdíl od klasických IFS
+ Ukázalo se, že největší problém je v\InsetSpace ~
+tom, že na rozdíl od klasických IFS
  málokterý obrázek lze charakterizovat jako sjednocení několika transformovaných
  zmenšenin celého obrázku.
  Bylo sice možné obrázek rozdělit na menší kusy charakterizované IFS, ale
@@ -227,7 +230,8 @@ PIFS
 
 \begin_layout Standard
 Pro kompresi obrázků také bylo nutné najít lepší model, než množinu bodů
- v 
+ v\InsetSpace ~
+
 \begin_inset Formula $\mathbb{R}^{2}$
 \end_inset
 
@@ -269,10 +273,11 @@ a operátory jsou tvaru
 \end_layout
 
 \begin_layout Standard
-PIFS dnes tvoří základ naprosté většiny technik pro fraktální kompresi obrazu.
- Pro zjednodušení se typicky uvažují pouze afinní operátory, kde se navíc
- vzájemně neovlivňuje transformace polohy s transformací barvy, formálně
- 
+PIFS, které zavedl Jacquin, dnes tvoří základ naprosté většiny technik pro
+ fraktální kompresi obrazu.
+ Pro zjednodušení se zde uvažují pouze afinní operátory, kde se navíc vzájemně
+ neovlivňuje transformace polohy s\InsetSpace ~
+transformací barvy, formálně 
 \begin_inset Formula \[
 F_{i}g=h_{i},\qquad h_{i}:R_{i}\rightarrow I,\qquad h_{i}\left(\left[\begin{array}{c}
 x\\
@@ -284,7 +289,7 @@ y\end{array}\right]\right)\]
 
 
 \begin_inset Formula \[
-\mbox{pro nějaká afinní zobrazení\quad} w_{i}:R_{i}\rightarrow I^{2}\mbox{\quad a\quad}c_{i}:I\rightarrow I\]
+\mbox{pro nějaká afinní zobrazení\quad}w_{i}:R_{i}\rightarrow I^{2}\mbox{\quad a\quad}c_{i}:I\rightarrow\mathbb{R}\]
 
 \end_inset
 
@@ -301,11 +306,13 @@ Za
 \begin_inset Formula $R_{i}$
 \end_inset
 
- se volí souvislé části obrazu, typicky čtverce o straně délky 
+ se volí souvislé části obrazu, typicky čtverce o\InsetSpace ~
+straně délky 
 \begin_inset Formula $2^{k}$
 \end_inset
 
-, a nazývají se zdrojové bloky.
+, a\InsetSpace ~
+nazývají se cílové bloky.
  Díky spojitosti 
 \begin_inset Formula $w_{i}$
 \end_inset
@@ -314,7 +321,7 @@ Za
 \begin_inset Formula $D_{i}=w_{i}\left(R_{i}\right)$
 \end_inset
 
- také souvislé části obrazu a nazývají se zdrojové bloky
+ také souvislé části obrazu a nazývají se zdrojové bloky.
 \begin_inset Foot
 status collapsed
 
@@ -328,7 +335,8 @@ status collapsed
 \bar no
 \noun off
 \color none
-značení pochází z anglických termínů 
+značení pochází z\InsetSpace ~
+anglických termínů 
 \family default
 \series default
 \shape default
@@ -360,7 +368,19 @@ range block
 
 \end_inset
 
-.
+ Transformace 
+\begin_inset Formula $w_{i}$
+\end_inset
+
+ určuje, která část obrazu bude zobrazena do cílového bloku a také jak bude
+ otočena a případně symetricky převrácena.
+ Za 
+\begin_inset Formula $w_{i}$
+\end_inset
+
+ se volí kontraktivní zobrazení, přestože to pro níže uvedené tvrzení o\InsetSpace ~
+konvergen
+ci není potřeba.
 \end_layout
 
 \begin_layout Subsubsection
@@ -370,7 +390,8 @@ Konvergence PIFS
 \begin_layout Standard
 Pro konvergenci a horní odhad chyby PIFS modelu lze zase použít kolážovou
  větu.
- Následující důkaz je modifikací důkazu uvedeného v 
+ Následující důkaz je modifikací důkazu uvedeného v\InsetSpace ~
+
 \begin_inset LatexCommand cite
 key "Fish95"
 
@@ -393,7 +414,7 @@ Postačí, aby
 \noun off
 \color none
 
-\begin_inset Formula $\exists s<1\;\forall i\in J\quad c_{i}$
+\begin_inset Formula $\exists s<1\;\forall i\in J\; c_{i}$
 \end_inset
 
  mělo lineární člen 
@@ -408,16 +429,154 @@ Postačí, aby
 \begin_inset Formula $\forall\vec{z}\in I^{2}\quad\exists!i\in J\quad\vec{z}\in R_{i}\quad$
 \end_inset
 
-a platí 
+ a platí 
 \begin_inset Formula \[
 \left|\left(F_{i}g_{1}\right)\left(\vec{z}\right)-\left(F_{i}g_{2}\right)\left(\vec{z}\right)\right|\quad\le\quad s\left|\left(g_{1}\circ w_{i}\right)\left(\vec{z}\right)-\left(g_{2}\circ w_{i}\right)\left(\vec{z}\right)\right|\quad\leq\quad s\ d_{sup}\left(g_{1},g_{2}\right)\]
 
 \end_inset
 
 Z toho už plyne kontraktivita celého operátoru 
-\begin_inset Formula $F:\quad d_{sup}\left(Fg_{1},Fg_{2}\right)\;\le\; s\ d_{sup}\left(g_{1},g_{2}\right)$
+\begin_inset Formula $F:\; d_{sup}\left(Fg_{1},Fg_{2}\right)\;\le\; s\ d_{sup}\left(g_{1},g_{2}\right)$
 \end_inset
 
+ a díky tomu lze použít kolážovou větu.
+\end_layout
+
+\begin_layout Standard
+Ukazuje se ale, že pro použití v\InsetSpace ~
+implementaci je tento odhad příliš volný,
+ stejně jako použitá metrika nedává dobré vizuální výsledky.
+\end_layout
+
+\begin_layout Subsubsection
+Optimální zobrazení
+\end_layout
+
+\begin_layout Standard
+Pro daný cílový blok 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $R_{i}$
+\end_inset
+
+ se volí afinní zobrazení 
+\begin_inset Formula $w_{i}$
+\end_inset
+
+ tak, aby mapovalo blok na jeden ze souboru zdrojových bloků, který bývá
+ pevně daný kvůli zjednodušení ukládání a vyhledávání.
+ Tato volba je hlavním zdrojem výpočetní složitosti celé komprese a jejímu
+ urychlení byla věnována značná část výzkumu v oblasti.
+ Obecně je snaha zvolit takový zdrojový blok 
+\begin_inset Formula $D_{i}$
+\end_inset
+
+, že spolu s\InsetSpace ~
+optimálním barevným zobrazením 
+\begin_inset Formula $c_{i}$
+\end_inset
+
+ bude pro složený operátor 
+\begin_inset Formula $F_{i}g=\left(c_{i}\circ g\circ w_{i}\right)$
+\end_inset
+
+ vzdálenost 
+\begin_inset Formula $d\left(\ c_{i}\circ g\circ w_{i},\ g\ \right)$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+měřená na 
+\begin_inset Formula $R_{i}$
+\end_inset
+
+ co nejmenší.
+\end_layout
+
+\begin_layout Standard
+Volba optimálního zobrazení 
+\begin_inset Formula $c_{i}$
+\end_inset
+
+ a tedy i následně volba 
+\begin_inset Formula $w_{i}$
+\end_inset
+
+ je silně závislá na použité metrice.
+ Ve fraktální kompresi se téměř výhradně používá RMSE metrika (zde uvedena
+ v\InsetSpace ~
+nebvyklé spojité podobě):
+\begin_inset Formula \[
+d_{RMSE}\left(g_{1},g_{2}\right)=\sqrt{\frac{\iintop_{R_{i}}\left[g_{1}\left(x,y\right)-g_{2}\left(x,y\right)\right]^{2}dxdy}{\iintop_{R_{i}}dxdy}}\]
+
+\end_inset
+
+Její hlavní výhody i nevýhody jsou dány tím, že se vždy berou v\InsetSpace ~
+úvahu pouze
+ sobě odpovídající body 
+\begin_inset Formula $g_{1}\left(x,y\right)$
+\end_inset
+
+ a 
+\begin_inset Formula $g_{2}\left(x,y\right)$
+\end_inset
+
+.
+ To umožnuje velmi jednoduchou a rychlou práci s\InsetSpace ~
+metrikou a také optimalizaci
+ v\InsetSpace ~
+ní, na druhou stranu díky tomu pro větší bloky nedává metrika výsledky
+ odpovídající vizuálnímu rozdílu.
+\end_layout
+
+\begin_layout Standard
+Při použití RMSE lze optimální 
+\begin_inset Formula $c_{i}$
+\end_inset
+
+ (pro dané 
+\begin_inset Formula $g$
+\end_inset
+
+ a 
+\begin_inset Formula $w_{i}$
+\end_inset
+
+) spočítat analyticky.
+ Podrobnosti jsou pro diskrétní případ rozebrány v\InsetSpace ~
+části <odkaz na kapitolu
+ o\InsetSpace ~
+encoderu>.
+\end_layout
+
+\begin_layout Subsubsection
+xx
+\end_layout
+
+\begin_layout Standard
 
 \end_layout
 
