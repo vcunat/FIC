@@ -431,12 +431,12 @@ Postačí, aby
 
  a platí 
 \begin_inset Formula \[
-\left|\left(F_{i}g_{1}\right)\left(\vec{z}\right)-\left(F_{i}g_{2}\right)\left(\vec{z}\right)\right|\quad\le\quad s\left|\left(g_{1}\circ w_{i}\right)\left(\vec{z}\right)-\left(g_{2}\circ w_{i}\right)\left(\vec{z}\right)\right|\quad\leq\quad s\ d_{sup}\left(g_{1},g_{2}\right)\]
+\left|\left(F_{i}g_{1}\right)\left(\vec{z}\right)-\left(F_{i}g_{2}\right)\left(\vec{z}\right)\right|\quad\le\quad s\left|\left(g_{1}\circ w_{i}\right)\left(\vec{z}\right)-\left(g_{2}\circ w_{i}\right)\left(\vec{z}\right)\right|\quad\leq\quad s\, d_{sup}\left(g_{1},g_{2}\right)\]
 
 \end_inset
 
 Z toho už plyne kontraktivita celého operátoru 
-\begin_inset Formula $F:\; d_{sup}\left(Fg_{1},Fg_{2}\right)\;\le\; s\ d_{sup}\left(g_{1},g_{2}\right)$
+\begin_inset Formula $F:\; d_{sup}\left(Fg_{1},Fg_{2}\right)\;\le\; s\, d_{sup}\left(g_{1},g_{2}\right)$
 \end_inset
 
  a díky tomu lze použít kolážovou větu.
@@ -530,7 +530,7 @@ Volba optimálního zobrazení
  v\InsetSpace ~
 nebvyklé spojité podobě):
 \begin_inset Formula \[
-d_{RMSE}\left(g_{1},g_{2}\right)=\sqrt{\frac{\iintop_{R_{i}}\left[g_{1}\left(x,y\right)-g_{2}\left(x,y\right)\right]^{2}dxdy}{\iintop_{R_{i}}dxdy}}\]
+d_{RMSE}\left(g_{1},g_{2}\right)=\sqrt{\frac{\iintop_{R_{i}}\left[g_{1}\left(x,y\right)-g_{2}\left(x,y\right)\right]^{2}\,\mathrm{d}x\mathrm{\, d}y}{\iintop_{R_{i}}\,\mathrm{d}x\mathrm{\, d}y}}\]
 
 \end_inset
 
@@ -553,11 +553,42 @@ ní, na druhou stranu díky tomu pro větší bloky nedává metrika výsledky
 \end_layout
 
 \begin_layout Standard
-Při použití RMSE lze optimální 
+Při použití RMSE existuje právě jedno
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+platí za předpokladu, že 
+\begin_inset Formula $g\circ w_{i}$
+\end_inset
+
+ není konstantní na 
+\begin_inset Formula $R_{i}$
+\end_inset
+
+ (tj.\InsetSpace ~
+
+\begin_inset Formula $g$
+\end_inset
+
+ není konstantní na 
+\begin_inset Formula $D_{i}$
+\end_inset
+
+)\InsetSpace ~
+-- jinak by se jednalo o\InsetSpace ~
+aproximaci konstantním blokem, volba lineárního
+ koeficientu by byla libovolná a výsledek vždy horší, než při výběru jakéhokoliv
+ nekonstantního zdrojového bloku
+\end_layout
+
+\end_inset
+
+ optimální 
 \begin_inset Formula $c_{i}$
 \end_inset
 
- (pro dané 
+ a lze ho (pro dané 
 \begin_inset Formula $g$
 \end_inset
 
@@ -565,7 +596,7 @@ Při použití RMSE lze optimální
 \begin_inset Formula $w_{i}$
 \end_inset
 
-) spočítat analyticky.
+) snadno spočítat analyticky.
  Podrobnosti jsou pro diskrétní případ rozebrány v\InsetSpace ~
 části <odkaz na kapitolu
  o\InsetSpace ~
@@ -573,11 +604,138 @@ encoderu>.
 \end_layout
 
 \begin_layout Subsubsection
-xx
+Rychlá konvergence
 \end_layout
 
 \begin_layout Standard
+Fraktálová komprese v\InsetSpace ~
+této podobě stále trpěla jedním skrytým problémem.
+ Při dodržení kontraktivity všech zobrazení 
+\begin_inset Formula $c_{i}$
+\end_inset
 
+ kolážová věta sice zaručovala, že obrázek zkonverguje a nebude se příliš
+ lišit, ale nijak neomezovala počet nutných iteračních kroků.
+ Ukázalo se, že tento problém není jen teoretický\InsetSpace ~
+-- i\InsetSpace ~
+při přísnějších omezeních
+ na kontraktivitu bylo pro některé obrázky nutné provádět mnoho desítek
+ iterací než změny přestaly být okem viditelné.
+\end_layout
+
+\begin_layout Standard
+Řešení tohoto problému bylo publikováno v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Oien94"
+
+\end_inset
+
+ a podrobněji rozebráno v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+.
+ Jedná se jen o\InsetSpace ~
+drobnou modifikaci barevného zobrazení.
+ Pokud bylo původní optimální barevné zobrazení ve tvaru 
+\begin_inset Formula $c_{i}\left(z\right)=p_{i}\, z+q_{i}$
+\end_inset
+
+, pak místo ukládání 
+\begin_inset Formula $p_{i}$
+\end_inset
+
+ i 
+\begin_inset Formula $q_{i}$
+\end_inset
+
+ je uloženo 
+\begin_inset Formula $p_{i}$
+\end_inset
+
+ a průměrná barva bloku 
+\begin_inset Formula $R_{i}$
+\end_inset
+
+.
+ Nové zobrazení pak znormalizuje barvu zdrojového bloku 
+\begin_inset Formula $D_{i}$
+\end_inset
+
+ odečtením jeho aktuálního průměru, výsledek vynásobí lineárním koeficienem
+ 
+\begin_inset Formula $p_{i}$
+\end_inset
+
+ a přičte předpočítanou průměrnou barvu bloku 
+\begin_inset Formula $R_{i}$
+\end_inset
+
+ ve vstupním obrázku.
+\end_layout
+
+\begin_layout Standard
+Formálně bude zobrazení vypadat 
+\begin_inset Formula \[
+\bar{c_{i}}\left(z\right)=p_{i}\left(z-\frac{\iintop_{D_{i}}\bar{g}\left(x,y\right)\,\mathrm{d}x\mathrm{\, d}y}{\iintop_{D_{i}}\,\mathrm{d}x\mathrm{\, d}y}\right)+\frac{\iintop_{R_{i}}g\left(x,y\right)\,\mathrm{d}x\mathrm{\, d}y}{\iintop_{R_{i}}\,\mathrm{d}x\mathrm{\, d}y}\mbox{,}\]
+
+\end_inset
+
+kde 
+\begin_inset Formula $g$
+\end_inset
+
+ značí vstupní obrázek a 
+\begin_inset Formula $\bar{g}$
+\end_inset
+
+ právě dekódovaný obrázek z\InsetSpace ~
+předchozí iterace.
+ Je důležité, že zatímco druhý zlomek je uložený v\InsetSpace ~
+charakteristice zobrazení
+ a je stále stejný, první zlomek se může měnit s\InsetSpace ~
+každou iterací, takže z\InsetSpace ~
+matematic
+kého hlediska se 
+\begin_inset Formula $\bar{c_{i}}$
+\end_inset
+
+ chová pokaždé jako jiné zobrazení.
+\end_layout
+
+\begin_layout Standard
+V\InsetSpace ~
+rámci jedné iterace je ale 
+\begin_inset Formula $\bar{c_{i}}$
+\end_inset
+
+ stále afinní zobrazení.
+ Navíc lze snadno ukázat, že při použití RMSE metriky optimální afinní zobrazení
+ 
+\begin_inset Formula $c_{i}$
+\end_inset
+
+ vždy zobrazuje průměnou barvu 
+\begin_inset Formula $D_{i}$
+\end_inset
+
+ na průměrnou barvu 
+\begin_inset Formula $R_{i}$
+\end_inset
+
+, takže když 
+\begin_inset Formula $\bar{g}\rightarrow g$
+\end_inset
+
+, pak 
+\begin_inset Formula $\bar{c_{i}}\rightarrow c_{i}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
