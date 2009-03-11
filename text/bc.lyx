@@ -193,13 +193,13 @@ key "Fish95"
 , která dává horní odhad na odchylku atraktoru od požadovaného obrázku:
  
 \begin_inset Formula \[
-f\mbox{ je zobrazení, }\exists k\; f^{k}\mbox{ je kontraktivní s faktorem }s<1\mbox{ v metrice }d\mbox{, pak}\]
+f\mbox{ je zobrazení, které je kontraktivní s faktorem }s<1\mbox{ v metrice }d\mbox{, pak}\]
 
 \end_inset
 
 
 \begin_inset Formula \[
-d\left(A,\lim_{n\rightarrow\infty}f^{n}\left(A\right)\right)\;\le\;\frac{1}{1-s}d\left(A,f\left(A\right)\right)\]
+d\left(A,\lim_{n\rightarrow\infty}f^{n}\left(A\right)\right)\;\le\;\frac{1}{1-s}\, d\left(A,f\left(A\right)\right)\]
 
 \end_inset
 
@@ -213,6 +213,15 @@ triviální identické zobrazení sice vždy zkonverguje, ale jinak samozřejmě
  fungovat nebude, nesplňuje předpoklad kontraktivity
 \end_layout
 
+\end_inset
+
+.
+ Pro jistotu konvergence dokonce stačí, že 
+\begin_inset Formula $\exists k\ f^{k}$
+\end_inset
+
+ je kontraktivní s faktorem 
+\begin_inset Formula $s<1$
 \end_inset
 
 .
