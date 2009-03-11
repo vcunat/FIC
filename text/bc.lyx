@@ -745,6 +745,91 @@ rámci jedné iterace je ale
 \end_inset
 
 .
+ 
+\end_layout
+
+\begin_layout Standard
+V tomto přístupu je tedy iterační operátor složitější na vyhodnocení, ale
+ má lepší vlastnosti, například efektivnější ukládání koeficientů zobrazení
+ díky jejich menší korelaci.
+ Koeficienty 
+\begin_inset Formula $q_{i}$
+\end_inset
+
+ zobrazení 
+\begin_inset Formula $c_{i}$
+\end_inset
+
+ byla většinou v\InsetSpace ~
+absolutní hodnotě malá čísla, ale mohla se pohybovat ve
+ velkém rozsahu.
+ Průměrná barva bloku se může pohybovat jen v\InsetSpace ~
+rozmezí 
+\begin_inset Formula $\left[0,1\right]$
+\end_inset
+
+ a má jasnější význam\InsetSpace ~
+-- to pomáhá při volbě způsobu kvantizace při uložení
+ do souboru a umožnuje například využít toho, že sousední bloky budou mít
+ pravděpodobně blízkou barvu.
+\end_layout
+
+\begin_layout Standard
+Další výhodou je mnohem rychlejší a jistější konvergence.
+ Je vidět, že po každé iteraci mají všechny bloky 
+\begin_inset Formula $R_{i}$
+\end_inset
+
+ správnou průměrnou barvu.
+ Tím se vzhled zdrojových bloků 
+\begin_inset Formula $D_{i}$
+\end_inset
+
+ hned po první iteraci dostane blízko vzorovému obrázku, což se při další
+ iteraci promítne do cílových bloků 
+\begin_inset Formula $R_{i}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Ve\InsetSpace ~
+výše odkazovaných publikacích je ukázáno, že po takovéto úpravě barevných
+ zobrazení iterování konverguje ke stejnému výsledku a také, že za trochu
+ silnějších předpokladů než zde uvedené bude potřebný počet iterací malý
+ a bude záviset pouze na velikostech zdrojových a cílových bloků.
+ Používá se zde diskrétní model obrázku\InsetSpace ~
+-- posloupnost reálných čísel, kde
+ cílové bloky jsou tvořeny 
+\begin_inset Formula $2^{b_{i}}$
+\end_inset
+
+ po sobě jdoucími hodnotami a zdrojové bloky o velikosti 
+\begin_inset Formula $2^{d_{i}}$
+\end_inset
+
+ jsou tvořeny několika po sobě jdoucími cílovými bloky.
+ Zmenšování bloků vždy probíhá zprůměrováním 
+\begin_inset Formula $2^{d_{i}-b_{i}}$
+\end_inset
+
+ po sobě jdoucích hodnot.
+\end_layout
+
+\begin_layout Standard
+Na rozdíl od konvergence založené na kolážové větě je důkaz proveden bez
+ jakéhokoliv omezení na kontraktivitu barevných zobrazení 
+\begin_inset Formula $\bar{c_{i}}$
+\end_inset
+
+, což umožnuje mnohem přesnější aproximaci bloků s ostrými přechody bez
+ ztráty jistoty konvergence.
+ Zde se naopak využívá kontraktivity transformací 
+\begin_inset Formula $w_{i}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
