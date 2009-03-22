@@ -8,15 +8,15 @@ using namespace std;
 
 
 QImage MRoot::toImage() {
-	assert( getMode()!=Clear && settings && moduleColor() && moduleShape() );
+	ASSERT( getMode()!=Clear && settings && moduleColor() && moduleShape() );
 	return moduleColor()->planes2image( moduleShape()->collectJobs() , width, height );
 }
 
 bool MRoot::encode(const QImage &toEncode,const UpdateInfo &updateInfo) {
-	assert( getMode()==Clear && settings && moduleColor() && moduleShape() );
+	ASSERT( getMode()==Clear && settings && moduleColor() && moduleShape() );
 	zoom= 0;
 //	get the plane list, create the jobs from it
-	Plane planeProto( 0, quality(), settingsInt(DomainCountLog2)
+	Plane planeProto( SMatrix(), quality(), settingsInt(DomainCountLog2)
 	, 0/*zoom*/, moduleQuality(), updateInfo );
 	PlaneList planes= moduleColor()->image2planes( toEncode, planeProto );
 	this->width= toEncode.width();
@@ -33,23 +33,23 @@ bool MRoot::encode(const QImage &toEncode,const UpdateInfo &updateInfo) {
 	else
 	//	multithreaded
 	// TODO (admin#7#): Multi-threaded encoding
-		return assert(false),false;
+		return ASSERT(false),false;
 
 	myMode= Encode;
 	return true;
 }
 
 void MRoot::decodeAct(DecodeAct action,int count) {
-	assert( getMode()!=Clear && settings && moduleColor() && moduleShape() );
+	ASSERT( getMode()!=Clear && settings && moduleColor() && moduleShape() );
 	int jobCount= moduleShape()->jobCount();
-	assert(jobCount>0);
+	ASSERT(jobCount>0);
 //	there will be probably no need to parallelize decoding
 	for (int i=0; i<jobCount; ++i)
 		moduleShape()->jobDecodeAct(i,action,count);
 }
 
 bool MRoot::toStream(std::ostream &file) {
-	assert( getMode()!=Clear && settings && moduleColor() && moduleShape() );
+	ASSERT( getMode()!=Clear && settings && moduleColor() && moduleShape() );
 //	an exception is thrown on write/save errors
 	try {
 		file.exceptions( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
@@ -84,7 +84,7 @@ bool MRoot::toStream(std::ostream &file) {
 }
 
 bool MRoot::fromStream(istream &file,int newZoom) {
-	assert( newZoom>=0 && getMode()==Clear && settings && !moduleColor() && !moduleShape() );
+	ASSERT( newZoom>=0 && getMode()==Clear && settings && !moduleColor() && !moduleShape() );
 	zoom= newZoom;
 //	an exception is thrown on read/load errors
 	try {

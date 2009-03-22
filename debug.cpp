@@ -64,7 +64,7 @@ namespace NOSPACE {
 		//	find and increment the pool of the range's domain (if exists)
 			if ( info.rotation>=0 ) {
 				int index= info.decAccel.pool - &*pools->begin() ;
-				assert( index>=0 && index<(int)pools->size() );
+				ASSERT( index>=0 && index<(int)pools->size() );
 				++poolCounts[index];
 			}
 		}
@@ -79,7 +79,7 @@ namespace NOSPACE {
 			if ( b.x0<=x && b.y0<=y && b.xend>x && b.yend>y )
 				return *it;
 		}
-		assert(false); return 0;
+		ASSERT(false); return 0;
 	}
 }
 
@@ -92,7 +92,7 @@ namespace NOSPACE {
 		layout->addWidget(label);
 	}
 	template<class Assigner>
-	QImage imageFromMatrix(const SReal **matrix,Block block,int rotation,Assigner assigner) {
+	QImage imageFromMatrix(CSMatrix matrix,Block block,int rotation,Assigner assigner) {
 		QImage image(block.width(),block.height(),QImage::Format_RGB32);
 				
 		using namespace MatrixWalkers;
@@ -107,7 +107,7 @@ namespace NOSPACE {
 	struct GrayImageAssigner {
 		void operator()(QRgb &rgb,const SReal &pixel) {
 			int gray= Float2int<8,Real>::convertCheck(pixel);
-			rgb= qRgb(gray,gray,255);
+			rgb= qRgb(gray,gray,255); // not gray colour (intentionally)
 		}
 		void innerEnd() const {}
 	};
@@ -151,20 +151,20 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 		if (info.qrDev2) {
 			layout->addWidget( new QLabel("Domain block:") );
 			addFramedImage( layout
-			, imageFromMatrix( bogoCast(info.decAccel.pool->pixels), info.decAccel.domBlock
+			, imageFromMatrix( info.decAccel.pool->pixels, info.decAccel.domBlock
 				, 0, GrayImageAssigner() )
 			);
 			
 			layout->addWidget( new QLabel("Domain block, transformed (encode-mode-only):") );
 			addFramedImage( layout
-			, imageFromMatrix( bogoCast(info.decAccel.pool->pixels), info.decAccel.domBlock
+			, imageFromMatrix( info.decAccel.pool->pixels, info.decAccel.domBlock
 				, info.rotation, GrayImageMulAddAssigner(info.exact.linCoeff,info.exact.constCoeff) )
 			);
 		}
 		
 		layout->addWidget( new QLabel("Range block:") );
 		addFramedImage( layout
-		, imageFromMatrix( bogoCast(planeBlock->pixels), range, 0, GrayImageAssigner() )
+		, imageFromMatrix( planeBlock->pixels, range, 0, GrayImageAssigner() )
 		);
 		
 	} else { // provide general info

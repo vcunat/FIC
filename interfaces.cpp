@@ -3,11 +3,12 @@
 
 using namespace std;
 
-const IColorTransformer::Plane IColorTransformer::Plane::Empty(0,-1,-1,-1,0,UpdateInfo());
+const IColorTransformer::Plane IColorTransformer::Plane
+::Empty(SMatrix(),-1,-1,-1,0,UpdateInfo());
 
 void IQuality2SquareError::completeSquareRangeErrors
 ( float quality, int levelEnd, float *errors ) {
-	assert( checkBoundsFunc<float>(0,quality,1)==quality && levelEnd>2 && errors );
+	ASSERT( checkBoundsFunc<float>(0,quality,1)==quality && levelEnd>2 && errors );
 
 	float (IQuality2SquareError::*func)(float,int)= &IQuality2SquareError::rangeSE;
 
@@ -28,7 +29,7 @@ bool IRoot::allSettingsToFile(const char *fileName) {
 }
 
 bool IRoot::allSettingsFromFile(const char *fileName) {
-	assert(getMode()==Clear);
+	ASSERT(getMode()==Clear);
 	try {
 		ifstream file( fileName, ios_base::binary|ios_base::in );
 		file.exceptions( ifstream::eofbit | ifstream::failbit | ifstream::badbit );

@@ -1,24 +1,12 @@
 #ifndef INTERFACES_HEADER_
 #define INTERFACES_HEADER_
 
+
+
 namespace MTypes {
 	typedef double Real; ///< The floating-point type in which most computations are made
 	typedef float SReal; ///< The floating-point type for long-term pixel-value storage
-	/** Structure representing a rectangle */
-	struct Block {
-		short x0, y0, xend, yend;
-
-		int width()	 const	{ return xend-x0; }
-		int height() const	{ return yend-y0; }
-		int size()	 const	{ return width()*height(); }
-		
-		bool contains(short x,short y) const
-			{ return x0<=x && x<xend && y0<=y && y<yend; }
-
-		Block() {}
-		Block(short x0_,short y0_,short xend_,short yend_)
-		: x0(x0_), y0(y0_), xend(xend_), yend(yend_) {}
-	};
+	
 }
 
 #include "modules.h"
@@ -37,8 +25,10 @@ struct IIntCodec;
 
 /** Contains basic types frequently used in modules */
 namespace MTypes {
-	typedef MatrixSummer<Real,SReal,int> BlockSummer; ///< Summer instanciation used for pixels
-	typedef std::vector<SReal**> MatrixList;
+	typedef MatrixSummer<Real,SReal,size_t> BlockSummer; ///< Summer instanciation used for pixels
+	typedef Matrix<SReal> SMatrix;
+	typedef Matrix<const SReal> CSMatrix;
+	typedef std::vector< Matrix<SReal> > MatrixList;
 
 	enum DecodeAct { Clear, Iterate }; ///< Possible decoding actions
 
@@ -107,15 +97,15 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 
 		static const Plane Empty; ///< an empty instance
 
-		SReal **pixels	///  a Matrix of pixels with values in [0,1], not owned (shared)
-		, quality;		///< encoding quality for the plane, in [0,1] (higher is better)
+		SMatrix pixels;			///< a Matrix of pixels with values in [0,1], not owned (shared)
+		SReal quality;			///< encoding quality for the plane, in [0,1] (higher is better)
 		int domainCountLog2		///  2-logarithm of the maximum domain count
 		, zoom;					///< the zoom
 		ModuleQ2SE *moduleQ2SE;	///< pointer to the module computing maximum SE (not owned)
 		UpdateInfo updateInfo;	///< structure for communication with user
 
 		/** A simple constructor, only initializes the values from the parameters */
-		Plane( SReal **pixels_, float quality_, int domainCountLog2_
+		Plane( SMatrix pixels_, float quality_, int domainCountLog2_
 		, int zoom_, ModuleQ2SE *moduleQ2SE_, const UpdateInfo &updateInfo_ )
 			: pixels(pixels_), quality(quality_), domainCountLog2(domainCountLog2_)
 			, zoom(zoom_), moduleQ2SE(moduleQ2SE_), updateInfo(updateInfo_) {}
@@ -237,7 +227,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	struct Pool {
 		short width	///		The width of the pool (zoomed)
 		, height; ///<		The height of the pool (zoomed)
-		SReal **pixels; ///<The matrix of pixels (of the pool)
+		SMatrix pixels; ///<The matrix of pixels (of the pool)
 		char type ///		The pool-type identifier (like diamond, module-specific)
 		, level; ///<		The count of down-scaling steps (1 for basic domains)
 		float contrFactor; ///< The contractive factor (0,1) - the quotient of areas
@@ -246,12 +236,12 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	public:
 		/** Constructor allocating a matrix with correct dimensions (increased according to \p zoom) */
 		Pool(short width_,short height_,char type_,char level_,float cFactor,short zoom)
-		: width(lShift(width_,zoom)), height(lShift(height_,zoom))
-		, pixels(newMatrix<SReal>(width,height))
+		: width( lShift(width_,zoom) ), height( lShift(height_,zoom) )
+		, pixels( SMatrix(width,height) )
 		, type(type_), level(level_), contrFactor(cFactor) {}
 		/** Only deletes #pixels matrix */
 		void free()
-			{ delMatrix(pixels); }
+			{ pixels.free(); }
 
 		/** Makes both summers ready for work */
 		void summers_makeValid() {
@@ -260,7 +250,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 		}
 		/** A shortcut for getting both sums for a block */
 		void getSums( const Block &block
-		, BlockSummer::result_type &sum, BlockSummer::result_type &sum2 ) const	{
+		, BlockSummer::Result &sum, BlockSummer::Result &sum2 ) const {
 			sum=	summers[0].getSum(block.x0,block.y0,block.xend,block.yend);
 			sum2=	summers[1].getSum(block.x0,block.y0,block.xend,block.yend);
 		}
@@ -303,7 +293,7 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 	typedef std::vector< std::vector<LevelPoolInfo> > LevelPoolInfos;
 
 	/** Initializes the module for encoding or decoding of a PlaneBlock */
-	virtual void initialize( IRoot::Mode mode, const PlaneBlock &planeBlock ) =0;
+	virtual void initialize( IRoot::Mode mode, PlaneBlock &planeBlock ) =0;
 	/** Finds mapping with the best square error for a range (returns the SE),
 	 *	data neccessary for decoding are stored in RangeNode.encoderData */
 	virtual float findBestSE(const RangeNode &range,bool allowHigherSE=false) =0;
@@ -333,17 +323,17 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 		explicit Prediction( int domainID_=-1, char rotation_=-1 )
 		: domainID(domainID_), rotation(rotation_) {}
 
-		int domainID;
-		char rotation; ///<	the rotation of the domain
+		int domainID;	///< domain's identification number
+		char rotation;	///< the rotation of the domain
 	};
 	/** List of predictions (later often reffered to as a chunk) */
 	typedef std::vector<Prediction> Predictions;
 
 	/** %Interface for objects that predict domains for a concrete range block */
-	class OneRangePred {
+	class IOneRangePredictor {
 	public:
 		/** Virtual destructor needed for safe deletion of derived classes */
-		virtual ~OneRangePred() {}
+		virtual ~IOneRangePredictor() {}
 		/** Makes several predictions at once, returns \p store reference */
 		virtual Predictions& getChunk(float maxPredictedSE,Predictions &store) =0;
 	};
@@ -351,7 +341,7 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 	/** Holds plenty precomputed information about the range block to be predicted for */
 	struct NewPredictorData {
 		const ISquareRanges::RangeNode *rangeBlock;	///< Pointer to the range block
-		const SReal **rangePixels;					///< Pointer to range's pixels
+		CSMatrix rangePixels;						///< Pointer to range's pixels
 		const ISquareDomains::PoolList *pools;		///< Pointer to the domain pools
 		const ISquareEncoder::LevelPoolInfos::value_type *poolInfos;
 			///< Pointer to LevelPoolInfos for all pools (for this level)
@@ -359,7 +349,7 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 		bool allowRotations	/// Are rotations allowed?
 		, quantError		///	Should quantization errors be taken into account?
 		, allowInversion	/// Are mappings with negative linear coefficients allowed?
-		, isRegular;		///< Is this range block regular?
+		, isRegular;		///< Is this range block regular? (see RangeNode::isRegular)
 
 		Real maxLinCoeff2	/// The maximum linear coefficient squared (or <0 if none)
 		, bigScaleCoeff;	///< The coefficient of big-scaling penalization
@@ -374,12 +364,12 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 		, qrDev2; 	///< sqr(#qrDev)
 		#ifndef NDEBUG
 		NewPredictorData()
-		: rangeBlock(0), rangePixels(0), pools(0), poolInfos(0) {}
+		: rangeBlock(0), rangePixels(), pools(0), poolInfos(0) {}
 		#endif
 	}; // NewPredictorData struct
 
 	/** Creates a predictor (passing the ownership) for a range block */
-	virtual OneRangePred* newPredictor(const NewPredictorData &data) =0;
+	virtual IOneRangePredictor* newPredictor(const NewPredictorData &data) =0;
 	/** Releases common resources (called when encoding is complete) */
 	virtual void cleanUp() =0;
 };
@@ -405,7 +395,7 @@ namespace MTypes {
 	 *	the inherited Block represents zoomed coordinates */
 	struct PlaneBlock: public ISquareEncoder::Plane, public Block {
 		BlockSummer summers[2];	///< normal and squares summers for the pixels
-		ISquareRanges  *ranges;	///< module for range blocks generation
+		ISquareRanges  *ranges; ///< module for range blocks generation
 		ISquareDomains *domains;///< module for domain blocks generation
 		ISquareEncoder *encoder;///< module for encoding (maintaining domain-range mappings)
 
@@ -413,7 +403,7 @@ namespace MTypes {
 		PlaneBlock( const Plane &plane, const Block &range
 		, ISquareRanges *ranges_, ISquareDomains *domains_, ISquareEncoder *encoder_ )
 			: Plane(plane), Block(range), ranges(ranges_), domains(domains_), encoder(encoder_)
-				{ assert( ranges && domains && encoder ); }
+				{ ASSERT( ranges && domains && encoder ); }
 		/** Just deletes the modules (the destructor is empty,
 		 *	#free has to be called explicitly if needed) */
 		void free() {
@@ -421,10 +411,17 @@ namespace MTypes {
 			delete domains;
 			delete encoder;
 		}
+		
+		/** Returns #pixels shifted into the correct position */
+		CSMatrix getShiftedPixels() const {
+			CSMatrix result= pixels;
+			result.shiftMatrix(x0,y0);
+			return result;
+		}
 
 		/** A simple integrity test - needs nonzero modules and pixel-matrix */
 		bool isReady() const
-			{ return this && ranges && domains && encoder && pixels && moduleQ2SE; }
+			{ return this && ranges && domains && encoder && pixels.isValid() && moduleQ2SE; }
 		/** Just validates both summers (if needed) */
 		void summers_makeValid() const {
 			for (int i=0; i<2; ++i)
@@ -438,7 +435,7 @@ namespace MTypes {
 			constCast(summers[1]).invalidate();
 		}
 		/** A shortcut for getting sums from summers relative to the block's coordinates */
-		BlockSummer::result_type getSum( const Block &block, BlockSummer::SumType type ) const {
+		BlockSummer::Result getSum( const Block &block, BlockSummer::SumType type ) const {
 			return summers[type].getSum( block.x0-x0, block.y0-y0, block.xend-x0, block.yend-y0 );
 		}
 	};// PlaneBlock struct

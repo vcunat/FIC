@@ -20,7 +20,7 @@ const SReal
 
 
 MColorModel::PlaneList MColorModel::image2planes(const QImage &image,const Plane &prototype) {
-	assert( !image.isNull() );
+	ASSERT( !image.isNull() );
 //	get the dimensions and create the planes
 	int width= image.width(), height= image.height();
 	PlaneList result= createPlanes(IRoot::Encode,prototype,width,height);
@@ -29,7 +29,7 @@ MColorModel::PlaneList MColorModel::image2planes(const QImage &image,const Plane
 	int planeCount= result.size();
 //	fill pixels in all planes
 	for (int i=0; i<planeCount; ++i) {
-		SReal **pixels= result[i].pixels;
+		SMatrix pixels= result[i].pixels;
 	//	fill the pixels in this plane
 		for (int y=0; y<height; ++y) {
 		//	fill pixels in this line
@@ -42,7 +42,7 @@ MColorModel::PlaneList MColorModel::image2planes(const QImage &image,const Plane
 }
 
 QImage MColorModel::planes2image(const MatrixList &pixels,int width,int height) {
-	assert( colorModel()>=0 && colorModel()<numOfModels() && pixels.size()==3 );
+	ASSERT( colorModel()>=0 && colorModel()<numOfModels() && pixels.size()==3 );
 //	get the correct coefficients
 	const SReal (*coeffs)[4]= 3 + (colorModel() ? YCbCrCoeffs : RGBCoeffs);
 //	create and fill the image
@@ -71,14 +71,14 @@ MColorModel::PlaneList MColorModel::readData
 }
 
 MColorModel::PlaneList MColorModel::createPlanes
-( IRoot::Mode mode, const Plane &prototype, int width, int height ) {
-	assert( 0<=colorModel() && colorModel()<numOfModels()
+( IRoot::Mode DEBUG_ONLY(mode), const Plane &prototype, int width, int height ) {
+	ASSERT( 0<=colorModel() && colorModel()<numOfModels()
 	&& width>0 && height>0 && mode!=IRoot::Clear );
 //	create the plane list
 	int planeCount= 3;
 	PlaneList result( planeCount, prototype );
 	for (int i=0; i<planeCount; ++i)
-		result[i].pixels= newMatrix<SReal>(width,height);
+		result[i].pixels.allocate(width,height);
 	//	TODO (admin#4#): We don't adjust max. domain count and quality in encoding mode
 	return result;
 }

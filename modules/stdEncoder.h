@@ -110,9 +110,9 @@ public:
 
 private:
 //	Module's data
-	const PlaneBlock *planeBlock;	///< Pointer to the block to encode/decode
+	PlaneBlock *planeBlock;			///< Pointer to the block to encode/decode
 	std::vector<float> stdRangeSEs;	///< Caches the result of IQuality2SquareError::completeSquareRangeErrors
-	LevelPoolInfos levelPoolInfos;	///< [level][pool] -> LevelPoolInfo
+	LevelPoolInfos levelPoolInfos;	///< [level][pool] -> LevelPoolInfo (the levels are zoomed)
 
 	BulkAllocator<RangeInfo> rangeInfoAlloc; ///< Allocator for RangeNode::encoderData
 
@@ -124,7 +124,7 @@ protected:
 public:
 /**	\name ISquareEncoder interface
  *	@{ */
-	void initialize( IRoot::Mode mode, const PlaneBlock &planeBlock_ );
+	void initialize( IRoot::Mode mode, PlaneBlock &planeBlock_ );
 	float findBestSE(const RangeNode &range,bool allowHigherSE);
 	void finishEncoding() {
 		initRangeInfoAccelerators();	// prepare for saving/decoding

@@ -108,7 +108,7 @@ inline void aConnect( const QObject *sender, const char *signal, const QObject *
 		bool result=
 	#endif
 	QObject::connect(sender,signal,receiver,slot,type);
-	assert(result);
+	ASSERT(result);
 }
 
 /** Represents the encoding-settings dialog  */
@@ -121,7 +121,7 @@ class SettingsDialog: public QDialog { Q_OBJECT
 	/** Returns a reference to the parent instance of ImageViewer */
 	ImageViewer& parentViewer() { 
 		ImageViewer *result= debugCast<ImageViewer*>(parent()); 
-		assert(result); 
+		ASSERT(result); 
 		return *result; 
 	}
 	/** Initializes the settings tree and group-box contents from #settings */
@@ -168,7 +168,7 @@ public:
 				slotString= SLOT(notifyInt(int));
 				break;
 			default:
-				assert(false);
+				ASSERT(false);
 		}//	switch
 		aConnect( parent, signalString, this, slotString );
 	}
@@ -248,7 +248,7 @@ private:
 	, modules_encoding(clone(parent->modules_settings))
 	, updateInfo( terminate, &incMaxProgress, &incProgress ), updateTimer(this)
 	, encThread( modules_encoding, parent->imageLabel->pixmap()->toImage(), updateInfo ) {
-		assert(!instance);
+		ASSERT(!instance);
 		instance= this;
 	//	set some dialog features
 		setWindowModality(Qt::ApplicationModal);
@@ -266,7 +266,7 @@ private:
 	}
 	/** Only zeroes #instance */
 	~EncodingProgress() {
-		assert(this==instance);
+		ASSERT(this==instance);
 		instance= 0;
 	}
 public:
@@ -276,7 +276,7 @@ public:
 	}
 	/** Collects results and destroys the dialog */
 	static IRoot* destroy(int &elapsed) {
-		assert( instance && instance->encThread.isFinished() );
+		ASSERT( instance && instance->encThread.isFinished() );
 	//	get the encoding result if successful, delete it otherwise
 		IRoot *result= instance->modules_encoding;
 		if ( !instance->encThread.getSuccess() ) {

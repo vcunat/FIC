@@ -12,7 +12,7 @@ class NoPredictor: public IStdEncPredictor {
 public:
 /**	\name IStdEncPredictor interface
  *	@{ */
-	OneRangePred* newPredictor(const NewPredictorData &data)
+	IOneRangePredictor* newPredictor(const NewPredictorData &data)
 		{ return new OneRangePredictor( data.poolInfos->back().indexBegin, data.allowRotations ); }
 	void cleanUp() {} // nothing to clean up
 ///	@}
@@ -20,7 +20,7 @@ public:
 private:
 	/** Predictor class returned when calling #newPredictor
 	 *	- returns all domains in all rotations in one chunk */
-	class OneRangePredictor: public OneRangePred {
+	class OneRangePredictor: public IOneRangePredictor {
 		int domCount /// the domain count
 		, rotations; ///< the number of rotations used
 

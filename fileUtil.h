@@ -38,11 +38,11 @@ template<> inline Uint32 get(std::istream &is) {
 }
 
 template<> inline void put(std::ostream &os,float f) {
-	assert( sizeof(float)==4 );
+	ASSERT( sizeof(float)==4 );
 	os.write( (const char*)&f, sizeof(float) );
 }
 template<> inline float get(std::istream &is) {
-	assert( sizeof(float)==4 );
+	ASSERT( sizeof(float)==4 );
 	float result;
 	is.read( (char*)&result, sizeof(float) );
 	return result;
@@ -72,7 +72,7 @@ public:
 		{ flush(); }
 	/** Puts bits */
 	void putBits(int val,int bits) {
-		assert( bits>0 && 0<=val && val<powers[bits] );
+		ASSERT( bits>0 && 0<=val && val<powers[bits] );
 		buffer+= powers[bufbits]*val;
 		bufbits+= bits;
 		while (bufbits>=8) {
@@ -101,7 +101,7 @@ public:
 	: buffer(0), bufbits(0), is(stream) {}
 	/** Reads bits */
 	int getBits(int bits) {
-		assert(bits>0);
+		ASSERT(bits>0);
 		while (bufbits<bits) {
 			buffer+= powers[bufbits]*Uchar(is.get());
 			bufbits+= 8;

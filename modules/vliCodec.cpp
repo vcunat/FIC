@@ -18,7 +18,7 @@ class VLI {
 
 	/** Returns the lowest number of a level (works with non-negative integers only) */
     int getBase(int level) const {
-    	assert( level>=0 && level<=maxLevel );
+    	ASSERT( level>=0 && level<=maxLevel );
     	return powers[level+expAdd] -powers[expAdd];
 	}
 public:
@@ -42,17 +42,17 @@ public:
     , possib(possibilities)
     #endif
     , maxLevel_Bits(log2ceil( possibilities-getBase(maxLevel) ))
-		{ assert( possibilities>0 && exponentAddition>=0 ); }
+		{ ASSERT( possibilities>0 && exponentAddition>=0 ); }
 	/** Gets the number of bits needed to encode the residues of numbers at a given level */
     int bitsForLevel(int level) const {
-    	assert( level>=0 && level<=maxLevel );
+    	ASSERT( level>=0 && level<=maxLevel );
     	return level==maxLevel ? maxLevel_Bits : level+expAdd ;
 	}
 
 	/** Converts from signed integer to VLI */
     Type toVLI(int value) const {
 		value= toPositive(value);
-		assert( value>=0 && value<possib );
+		ASSERT( value>=0 && value<possib );
 		Type result;
 		result.level= getLevel(value,expAdd);
 		result.data= value -getBase(result.level);

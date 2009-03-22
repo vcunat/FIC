@@ -2,9 +2,10 @@
 	#define NDEBUG
 #endif
 
-/** Standard C++ includes */
+/* Standard C++ includes */
 #include <algorithm>
 #include <cmath>
+//#include <cstdlib>		// size_t
 #include <cstring>		// memcpy
 #include <exception>
 #include <fstream>
@@ -16,7 +17,7 @@
 
 #include "FerrisLoki/static_check.h"
 
-/** Qt forwards */
+/* Qt forwards */
 class QImage;
 class QGroupBox;
 class QTreeWidgetItem;

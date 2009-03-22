@@ -13,7 +13,7 @@ public:
 /**	\name IQuality2SquareError interface
  *	@{ */
 	float rangeSE(float quality,int /*pixelCount*/) {
-		assert( quality>=0 && quality<=1 );
+		ASSERT( quality>=0 && quality<=1 );
 		return 1-cbrt(quality);
 	}
 ///	@}

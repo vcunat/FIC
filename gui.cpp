@@ -243,29 +243,29 @@ void ImageViewer::encode() {
 void ImageViewer::encDone() {
 	int encMsecs;
 	IRoot *modules_encoded= EncodingProgress::destroy(encMsecs);
-	
+
 	if (modules_encoded) { // encoding successful - iterate the image and display some info
 	//	replace the old state
 		delete modules_encoding;
 		modules_encoding= modules_encoded;
-	//	decode the image	
+	//	decode the image
 		QImage beforeImg= modules_encoding->toImage();
-		
+
 		QTime decTime;
 		decTime.start();
 		modules_encoding->decodeAct(MTypes::Clear);
 		modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
 		int decMsecs= decTime.elapsed();
-	
+
 		QImage afterImg= modules_encoding->toImage();
 		changePixmap( QPixmap::fromImage(afterImg) );
-	//	show some info		
-		QString message= tr("Time to encode: %1 seconds\nTime to decode: %2 seconds\n") 
+	//	show some info
+		QString message= tr("Time to encode: %1 seconds\nTime to decode: %2 seconds\n")
 			.arg(encMsecs/1000.0) .arg(decMsecs/1000.0)	+ getPSNRmessage(beforeImg,afterImg);
 		QMessageBox::information( this, tr("encoded"), message );
 		encData.clear();
 	}
-	
+
 	updateActions();
 }
 void ImageViewer::save() {
@@ -289,12 +289,12 @@ void ImageViewer::load() {
 //	IRoot needs to be loaded from cleared state
 	IRoot *modules_old= modules_encoding;
 	modules_encoding= clone(modules_settings,Module::ShallowCopy);
-	
+
 	string decData;
 	bool error= !file2string( fname.toStdString().c_str(), decData );
 	if (!error) {
 		stringstream stream(decData);
-		
+
 		error= !modules_encoding->fromStream( stream, zoom );
 	}
 
@@ -323,25 +323,26 @@ void ImageViewer::iterate() {
 }
 void ImageViewer::zoomInc() {
 	++zoom;
-	if (!rezoom()) 
+	if (!rezoom())
 		--zoom, QMessageBox::information( this, tr("Error"), tr("Zooming failed.") );
 }
 void ImageViewer::zoomDec() {
 	--zoom;
-	assert(zoom>=0);
-	if (!rezoom()) 
+	ASSERT(zoom>=0);
+	if (!rezoom())
 		++zoom, QMessageBox::information( this, tr("Error"), tr("Zooming failed.") );
 }
 
 bool ImageViewer::rezoom() {
+//	create a stream that contains the "saved image"
 	stringstream stream;
-	if ( encData.empty() ) {
+	if ( encData.empty() ) {	// cache is empty - we have to create it (save the image)
 		if ( !modules_encoding->toStream(stream) )
 			return false;
 		encData= stream.str();
-	} else
+	} else						// reusing the cache
 		stream.str(encData);
-	
+//	reload the image from the stream
 	IRoot *newRoot= clone(modules_settings,Module::ShallowCopy);
 	if ( newRoot->fromStream(stream,zoom) ) {
 		delete modules_encoding;
@@ -350,7 +351,7 @@ bool ImageViewer::rezoom() {
 		delete newRoot;
 		return false;
 	}
-	
+//	successfully reloaded -> auto-iterate the image and show it
 	modules_encoding->decodeAct(MTypes::Clear);
 	modules_encoding->decodeAct(MTypes::Iterate,AutoIterationCount);
 	changePixmap( QPixmap::fromImage(modules_encoding->toImage()) );
@@ -394,12 +395,12 @@ SettingsDialog::SettingsDialog( ImageViewer *parent, IRoot *settingsHolder )
 
 	aConnect( treeWidget, SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*))
 	, this, SLOT(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)) );
-	
+
 	initialize();
 }
 void SettingsDialog::initialize() {
 	QTreeWidgetItem *treeRoot= treeWidget->topLevelItem(0);
-	assert( treeRoot && settings && setBox );
+	ASSERT( treeRoot && settings && setBox );
 	clearContainer( treeRoot->takeChildren() );
 	settings->adjustSettings(-1,treeRoot,setBox);
 	treeWidget->setCurrentItem(treeRoot);
@@ -407,9 +408,9 @@ void SettingsDialog::initialize() {
 }
 void SettingsDialog::currentItemChanged(QTreeWidgetItem *curItem,QTreeWidgetItem*) {
 //	get the module that should show its settings
-	assert(curItem);
+	ASSERT(curItem);
 	Module *curMod= static_cast<Module*>( curItem->data(0,Qt::UserRole).value<void*>() );
-	assert(curMod);
+	ASSERT(curMod);
 //	clear the settings box and make the module fill it
 	clearContainer( setBox->children() );
 	setBox->setTitle( tr("%1 module settings") .arg(curMod->info().name) );
@@ -453,7 +454,7 @@ void SettingsDialog::loadSaveClick(QAbstractButton *button) {
 			, tr("Cannot save settings into %1.").arg(fname) );
 	}	break;
 	default:
-		assert(false);
+		ASSERT(false);
 	}
 }
 
@@ -474,7 +475,7 @@ namespace NOSPACE {
 			result= new QComboBox(parent);
 			break;
 		default:
-			assert(false);
+			ASSERT(false);
 		}//	switch
 		return result;
 	}
@@ -482,10 +483,10 @@ namespace NOSPACE {
 void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox) {
 	if (which<0) {
 	//	no change has really happened
-		assert(which==-1);
+		ASSERT(which==-1);
 		if (myTree) {
 		//	I should create the subtree -> store this-pointer as data
-			assert( myTree->childCount() == 0 );
+			ASSERT( myTree->childCount() == 0 );
 			myTree->setData( 0, Qt::UserRole, QVariant::fromValue((void*)this) );
 			if (!settings) {
 				myTree->setFlags(0);
@@ -497,7 +498,7 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 			for (; setType->type.type!=Stop; ++setItem,++setType)
 				if ( setType->type.type == ModuleCombo ) {
 				//	it is a module -> label its subtree-root and recurse (polymorphically)
-					assert(setItem->m);
+					ASSERT(setItem->m);
 					if ( !setItem->m->info().setLength )
 						continue; // skipping modules with no settings
 					QTreeWidgetItem *childTree= new QTreeWidgetItem(myTree);
@@ -532,14 +533,14 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 		}//	filling the box
 	} else {
 	//	which>=0... a setting has changed -> get the change from the widget
-		assert( which < info().setLength );
+		ASSERT( which < info().setLength );
 		QLayoutItem *item= setBox->layout()->itemAt(2*which+1);
-		assert(item);
+		ASSERT(item);
 		widget2settings( item->widget() , which );
 	//	handle module-type settings
 		const SettingsTypeItem *setType= info().setType;
 		if ( setType[which].type.type == ModuleCombo ) {
-			assert(myTree);
+			ASSERT(myTree);
 		//	get the new module id and check whether it has really changed
 			SettingsItem &setItem= settings[which];
 			int newId= (*setType->type.data.compatIDs)[setItem.val.i];
@@ -556,7 +557,7 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 	}
 }
 void Module::widget2settings(const QWidget *widget,int which) {
-	assert( 0<=which && which<info().setLength );
+	ASSERT( 0<=which && which<info().setLength );
 	switch( info().setType[which].type.type ) {
 	case Int:
 	case IntLog2:
@@ -570,11 +571,11 @@ void Module::widget2settings(const QWidget *widget,int which) {
 		settings[which].val.i= debugCast<const QComboBox*>(widget)->currentIndex();
 		break;
 	default:
-		assert(false);
+		ASSERT(false);
 	}//	switch
 }
 void Module::settings2widget(QWidget *widget,int which) {
-	assert( 0<=which && which<info().setLength );
+	ASSERT( 0<=which && which<info().setLength );
 	switch( info().setType[which].type.type ) {
 	case Int:
 	case IntLog2:
@@ -588,7 +589,7 @@ void Module::settings2widget(QWidget *widget,int which) {
 		debugCast<QComboBox*>(widget)->setCurrentIndex( settings[which].val.i );
 		break;
 	default:
-		assert(false);
+		ASSERT(false);
 	}//	switch
 }
 namespace NOSPACE {
@@ -604,7 +605,7 @@ namespace NOSPACE {
 	};
 }
 void Module::settingsType2widget(QWidget *widget,const SettingsTypeItem &typeItem) {
-	assert( widget );
+	ASSERT( widget );
 	switch( typeItem.type.type ) {
 	case IntLog2:
 		debugCast<QSpinBox*>(widget)->setPrefix(QObject::tr("2^"));
@@ -627,7 +628,7 @@ void Module::settingsType2widget(QWidget *widget,const SettingsTypeItem &typeIte
 			addItems( QString(typeItem.type.data.text).split('\n') );
 		break;
 	default:
-		assert(false);
+		ASSERT(false);
 	}//	switch
 }
 
@@ -653,8 +654,7 @@ void ImageViewer::mousePressEvent(QMouseEvent *event) {
 
 	changePixmap(pixmap);
 }
+#endif
 
 
 EncodingProgress *EncodingProgress::instance= 0;
-
-#endif

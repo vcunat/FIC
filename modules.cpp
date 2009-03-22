@@ -73,7 +73,7 @@ const Module::SettingsTypeItem Module::SettingsTypeItem
 ::stopper= { 0, 0, {Stop,{i:-1},{text:0}} };
 
 Module::SettingsItem* Module::copySettings(CloneMethod method) const {
-	assert( method==DeepCopy || method==ShallowCopy );
+	ASSERT( method==DeepCopy || method==ShallowCopy );
 //	copy the settings array
 	int length= info().setLength;
 	if (!length)
@@ -104,7 +104,7 @@ void Module::initDefaultModuleLinks() {
 	for (int i=0; setType[i].type.type!=Stop; ++i )
 		if (setType[i].type.type==ModuleCombo) {
 		//	it is a module link -> initialize it with the right prototype
-			assert(!settings[i].m);
+			ASSERT(!settings[i].m);
 			settings[i].m= constCast(&ModuleFactory::prototype(
 				(*setType[i].type.data.compatIDs)[settings[i].val.i]
 			));
@@ -117,7 +117,7 @@ void Module::nullModuleLinks() {
 		it->m= 0;
 }
 template<class M> M* Module::concreteClone(CloneMethod method) const {
-	assert( this && info().id == ModuleFactory::getModuleID<M>() );
+	ASSERT( this && info().id == ModuleFactory::getModuleID<M>() );
 //	create a new instance of the same type and fill its settings with a copy of mine
 	M *result= new M;
 	result->settings= copySettings(method);
@@ -125,7 +125,7 @@ template<class M> M* Module::concreteClone(CloneMethod method) const {
 }
 	
 void Module::createDefaultSettings() {
-	assert(!settings);
+	ASSERT(!settings);
 	const TypeInfo &inf= info();
 	settings= new SettingsItem[inf.setLength];
 	copy( inf.setType, inf.setType+inf.setLength, settings );
@@ -133,18 +133,18 @@ void Module::createDefaultSettings() {
 
 void Module::file_saveModuleType( ostream &os, int which ) {
 //	do some assertions - we expect to have the child module, etc.
-	assert( which>=0 && which<info().setLength );
+	ASSERT( which>=0 && which<info().setLength );
 	SettingsItem &setItem= settings[which];
-	assert( info().setType[which].type.type==ModuleCombo && setItem.m );
+	ASSERT( info().setType[which].type.type==ModuleCombo && setItem.m );
 //	put the module's identifier
 	put<Uchar>( os, setItem.m->info().id );
 }
 void Module::file_loadModuleType( istream &is, int which ) {
 //	do some assertions - we expect not to have the child module, etc.
-	assert( which>=0 && which<info().setLength );
+	ASSERT( which>=0 && which<info().setLength );
 	const SettingsTypeItem &setType= info().setType[which];
 	SettingsItem &setItem= settings[which];
-	assert( setType.type.type==ModuleCombo && !setItem.m );
+	ASSERT( setType.type.type==ModuleCombo && !setItem.m );
 //	get module identifier and check its existence
 	int newId= get<Uchar>(is);
 	checkThrow( 0<=newId && newId<Loki::TL::Length<Modules>::value );
@@ -161,7 +161,7 @@ void Module::saveAllSettings(std::ostream &stream) {
 	if (!setLength)
 		return;
 	else
-		assert( settings && setLength>0 );
+		ASSERT( settings && setLength>0 );
 	
 	const SettingsTypeItem *setType= info().setType;
 	for (int i=0; i<setLength; ++i)
@@ -179,13 +179,13 @@ void Module::saveAllSettings(std::ostream &stream) {
 			settings[i].m->saveAllSettings(stream);
 			break;
 		default:
-			assert(false);
+			ASSERT(false);
 		} // switch
 }
 
 void Module::loadAllSettings(std::istream &stream) {
 	int setLength= info().setLength;
-	assert(setLength>=0);
+	ASSERT(setLength>=0);
 	if (!setLength)
 		return;
 	if (!settings)
@@ -207,7 +207,7 @@ void Module::loadAllSettings(std::istream &stream) {
 			settings[i].m->loadAllSettings(stream);
 			break;
 		default:
-			assert(false);
+			ASSERT(false);
 		} // switch
 }
 
@@ -219,7 +219,7 @@ template<class M> int ModuleFactory::getModuleID()
 
 void ModuleFactory::initialize() {
 //	create one instance of each module-type
-	assert( prototypes.empty() );
+	ASSERT( prototypes.empty() );
 	prototypes.reserve( Loki::TL::Length<Modules>::value );
 	Loki::TL::IterateTypes<Modules,Creator> gendata;
 	gendata( back_inserter(prototypes) );
@@ -234,13 +234,13 @@ void ModuleFactory::changeDefaultSettings(const Module &module) {
 	const Module::TypeInfo &mi= module.info();
 	Module::SettingsItem *protSet= prototype(mi.id).settings;
 //	replace prototype's settings
-	assert( protSet && module.settings );
+	ASSERT( protSet && module.settings );
 	copy( module.settings, module.settings+mi.setLength, protSet );
 //	convert module-links to links to the correct prototypes
 	for (const Module::SettingsTypeItem *setType= mi.setType
 	; setType->type.type!=Module::Stop; ++setType,++protSet)
 		if ( setType->type.type==Module::ModuleCombo ) {
-			assert(protSet->m);
+			ASSERT(protSet->m);
 			protSet->m= constCast(&prototype( protSet->m->info().id ));
 		}
 }

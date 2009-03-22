@@ -62,10 +62,10 @@ public:
 
 		/** Just nulls the module pointer */
 		SettingsItem(): m(0) { DEBUG_ONLY( val.f= std::numeric_limits<float>::quiet_NaN(); ) }
-			
+
 		/** Creates a default settings-item for a settings-item-type */
 		SettingsItem(const SettingsTypeItem &typeItem): m(0), val(typeItem.type.defaults) {}
-		
+
 		/** Just deletes the module pointer */
 		~SettingsItem() { delete m; }
 	};
@@ -108,7 +108,7 @@ protected:
 	virtual Module* abstractClone(CloneMethod method) const =0;
 	/** Concrete cloning method - templated by the actual type of the module */
 	template<class M> M* concreteClone(CloneMethod method) const;
-	
+
 	/** Saves all the settings, icluding child modules */
 	void saveAllSettings(std::ostream &stream);
 	void loadAllSettings(std::istream &stream);
@@ -123,9 +123,8 @@ public:
 
 	virtual const TypeInfo& info() const =0;
 
-	#ifndef NDEBUG
-		DECLARE_debugModule { return 0; }
-	#endif
+	DECLARE_debugModule_empty
+
 ///	@}
 
 
@@ -159,7 +158,7 @@ protected:
 
 
 	static SettingsType settingInt(int min,int defaults,int max,ChoiceType type=Int) {
-		assert( type==Int || type==IntLog2 );
+		ASSERT( type==Int || type==IntLog2 );
 		SettingsType result;
 		result.type= type;
 		result.defaults.i= defaults;
@@ -176,7 +175,7 @@ protected:
 		return result;
 	}
 	static SettingsType settingCombo(const char *text,int defaults) {
-		assert( defaults>=0 && defaults<1+countEOLs(text) );
+		ASSERT( defaults>=0 && defaults<1+countEOLs(text) );
 		SettingsType result;
 		result.type= Combo;
 		result.defaults.i= defaults;
@@ -185,7 +184,7 @@ protected:
 	}
 	template<class Iface> static SettingsType settingModule(int index=0) {
 		const std::vector<int> &compMods= Iface::getCompMods();
-		assert( index < (int)compMods.size() );
+		ASSERT( index < (int)compMods.size() );
 		SettingsType result;
 		result.type= ModuleCombo;
 		result.defaults.i= index;
@@ -247,14 +246,14 @@ public:
 
 	/** Method to instantiate the singleton */
 	static void init()
-		{ assert(!instance); (instance=new ModuleFactory)->initialize(); }
+		{ ASSERT(!instance); (instance=new ModuleFactory)->initialize(); }
 	/** Method to delete the singleton */
 	static void destroy()
 		{ delete instance; instance=0; }
 
 	/** Returns a reference to the prototype of the module with given id */
 	static const Module& prototype(int id) {
-		assert( instance && instance->prototypes.at(id) );
+		ASSERT( instance && instance->prototypes.at(id) );
 		return *instance->prototypes[id];
 	}
 	/** Returns the name of the module-type with given id */
@@ -273,7 +272,7 @@ public:
 private:
 //	some helper stuff
 	template<class T> struct Creator {
-		T* operator()() const 
+		T* operator()() const
 			{ return new T; }
 	};
 	template<class T> struct Instantiator {
@@ -291,7 +290,7 @@ public:
 	static const std::vector<int>& getCompMods();
 	/** Returns a reference to the index-th prototype implementing this interface */
 	static const Iface& compatiblePrototype(int index=0) {
-		assert( index>=0 && index<(int)getCompMods().size() );
+		ASSERT( index>=0 && index<(int)getCompMods().size() );
 		return *debugCast<const Iface*>(&ModuleFactory::prototype( getCompMods()[index] ));
 	}
 	/** Creates a new instance of the index-th compatible module */

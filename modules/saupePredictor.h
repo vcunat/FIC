@@ -49,7 +49,7 @@ protected:
 public:
 /**	\name IStdEncPredictor interface
  *	@{ */
-	OneRangePred* newPredictor(const NewPredictorData &data);
+	IOneRangePredictor* newPredictor(const NewPredictorData &data);
 	void cleanUp() {
 		clearContainer(levelTrees);
 		levelTrees.clear();
@@ -62,7 +62,7 @@ private:
 
 private:
 	/** Implementation of the one-range-predictor from IStdEncPredictor interface */
-	class OneRangePredictor: public OneRangePred {
+	class OneRangePredictor: public IOneRangePredictor {
 		/** Struct representing one node of the KD-tree and its distance form the range block */
 		struct HeapInfo {
 			int index;		///< The index of the node in the tree
@@ -91,29 +91,28 @@ private:
 					result= numeric_limits<Real>::max();
 				return result;
 			}
-		} normalizator;
+		} errorNorm;
 		
 		typedef Tree::PointHeap PointHeap;
 
 		std::vector<PointHeap*> heaps;	///< Pointers to the heaps for every rotation and inversion
 		std::vector<HeapInfo> infoHeap;	///< Heap built from #heaps according to their best SEs
-		KDReal *points; 	///< Normalized range rotations and inversions used by the heaps
-		int chunkSize		///  The suggested count for predicted ranges returned at once
-		, predsRemain		///  Max. remaining count of predictions to be returned
-		, heapCount;		///< The number of heaps
-		bool firstChunk 	///  True if nothing has been predicted yet, false otherwise
-		, allowRotations	///  NewPredictorData::allowRotations
-		, isRegular;
-	#ifndef NDEBUG
-	public: long *predicted;
-	#endif
+		KDReal *points; ///< Normalized range rotations and inversions used by the heaps (owned)
+		int chunkSize	///  The suggested count for predicted ranges returned at once
+		, predsRemain	///  Max. remaining count of predictions to be returned
+		, heapCount;	///< The number of heaps
+		bool firstChunk ///  True if nothing has been predicted yet, false otherwise
+		, allowRotations///  NewPredictorData::allowRotations
+		, isRegular;	///< Indicates regularity of the range block (see RangeNode::isRegular)
+	
+	DEBUG_ONLY( public: long *predicted; )
 
 	public:
 		/** Creates a new predictor for a range block (prepares tree-heaps, etc.) */
 		OneRangePredictor( const NewPredictorData &data, int chunkSize_
 		, const Tree &tree, int maxPredicts );
 
-	/**	\name OneRangePred interface
+	/**	\name IOneRangePredictor interface
 	 *	@{ */
 		Predictions& getChunk(float maxPredictedSE,Predictions &store);
 		~OneRangePredictor() {

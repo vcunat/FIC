@@ -16,15 +16,15 @@ template<typename T> inline T cube(T i)
 
 /** Returns i*2^bits */
 template<typename T> inline T lShift(T i,T bits)
-	{ assert(bits>=0); return i<<bits; }
+	{ ASSERT(bits>=0); return i<<bits; }
 	
 /** Returns i/2^bits */
 template<typename T> inline T rShift(T i,T bits)
-	{ assert(bits>=0 && i>=0); return i>>bits; }
+	{ ASSERT(bits>=0 && i>=0); return i>>bits; }
 
 /** Returns ceil(log2(i)) */
 inline int log2ceil(int i) {
-	assert(i>0);
+	ASSERT(i>0);
 	--i;
 	int result= 0;
 	while (i) {
@@ -82,6 +82,9 @@ template<class T> inline std::string toString(const T &what) {
 	stream >> result;
 	return result;
 }
+
+template<class T> struct NonConstType			{ typedef T Result; };
+template<class T> struct NonConstType<const T>	{ typedef T Result; };
 
 /** Automatic version of const_cast for pointers */
 template <class T> inline T* constCast(const T* toCast) { return const_cast<T*>(toCast); }
@@ -146,13 +149,13 @@ public:
 	BulkAllocator()
 	: nextIndex(bulkCount) {}
 	BulkAllocator(const BulkAllocator &DEBUG_ONLY(copy))
-		{ nextIndex=bulkCount; assert(copy.pools.empty()); }
+		{ nextIndex=bulkCount; ASSERT(copy.pools.empty()); }
 	~BulkAllocator()
 		{ for_each( pools.begin(), pools.end(), MultiDeleter<T>() ); }
 
 	T* make() {
 	//	check for errors
-		assert(nextIndex<=bulkCount);
+		ASSERT(nextIndex<=bulkCount);
 	//	allocate a new bulk if needed
 		if (nextIndex==bulkCount) {
 			nextIndex= 0;
@@ -162,7 +165,7 @@ public:
 	}
 	T* makeField(size_t count) {
 	//	check for errors
-		assert(nextIndex<=bulkCount);
+		ASSERT(nextIndex<=bulkCount);
 
 		if (count>bulkCount/2) {
 			T *result=new T[count];

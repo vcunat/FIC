@@ -4,7 +4,7 @@
 using namespace std;
 
 int MSquarePixels::createJobs( const PlaneList &planes, int width, int height ) {
-	assert( ownedMatrices.empty() && jobs.empty()
+	ASSERT( ownedMatrices.empty() && jobs.empty()
 	&& moduleRanges() && moduleDomains() && moduleEncoder() );
 
 //	create the joblist
@@ -59,7 +59,7 @@ int MSquarePixels::createJobs( const PlaneList &planes, int width, int height ) 
 }
 
 void MSquarePixels::writeSettings(ostream &file) {
-	assert( moduleRanges() && moduleDomains() && moduleEncoder() );
+	ASSERT( moduleRanges() && moduleDomains() && moduleEncoder() );
 //	put settings and ID's of child modules
 	put<Uchar>( file, maxPartSize() );
 	file_saveModuleType( file, ModuleRanges );
@@ -72,7 +72,7 @@ void MSquarePixels::writeSettings(ostream &file) {
 }
 
 void MSquarePixels::readSettings(istream &file) {
-	assert( !moduleRanges() && !moduleDomains() && !moduleEncoder() );
+	ASSERT( !moduleRanges() && !moduleDomains() && !moduleEncoder() );
 //	get settings and create the right child modules
 	maxPartSize()= get<Uchar>(file);
 	file_loadModuleType( file, ModuleRanges );
@@ -85,7 +85,7 @@ void MSquarePixels::readSettings(istream &file) {
 }
 
 void MSquarePixels::writeJobs(ostream &file,int phaseBegin,int phaseEnd) {
-	assert( !jobs.empty() && 0<=phaseBegin && phaseBegin<phaseEnd && phaseEnd<=phaseCount() );
+	ASSERT( !jobs.empty() && 0<=phaseBegin && phaseBegin<phaseEnd && phaseEnd<=phaseCount() );
 //	if writing phase 0, for each job: write data of domain and range modules
 	if (!phaseBegin)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) {
@@ -101,7 +101,7 @@ void MSquarePixels::writeJobs(ostream &file,int phaseBegin,int phaseEnd) {
 }
 
 void MSquarePixels::readJobs(istream &file,int phaseBegin,int phaseEnd) {
-	assert( !jobs.empty() && 0<=phaseBegin && phaseBegin<phaseEnd && phaseEnd<=phaseCount() );
+	ASSERT( !jobs.empty() && 0<=phaseBegin && phaseBegin<phaseEnd && phaseEnd<=phaseCount() );
 //	if reading phase 0, for each job: read data of domain and range modules
 	if (!phaseBegin)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) {

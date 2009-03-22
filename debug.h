@@ -1,24 +1,23 @@
 #ifndef DEBUG_HEADER_
 #define DEBUG_HEADER_
 
-/** Defining my own assert macro */
-#undef assert
+/** Defining my own ASSERT macro */
 #ifdef NDEBUG
 	#define DEBUG_ONLY(expr)
-	#define assert(expr) void(0)
+	#define ASSERT(expr) void(0)
 #else
 	inline void assert_fail_() {
  		int *i=0, j=*i;
 		*i=j;
 	}
 	#define DEBUG_ONLY(expr) expr
-	#define assert(expr) ( expr ? void(0) : assert_fail_() )
+	#define ASSERT(expr) ( (expr) ? void(0) : assert_fail_() )
 #endif
 
 #define NOSPACE /* empty */
 
 
-/** Cast that is "dynamic" (with assert) in debug mode and "static" in release mode */
+/** Cast that is "dynamic" (with ASSERT) in debug mode and "static" in release mode */
 template <class T,class U> inline T debugCast(U toCast) {
 	#ifdef NDEBUG
 		return static_cast<T>(toCast);
@@ -26,16 +25,19 @@ template <class T,class U> inline T debugCast(U toCast) {
 		if (!toCast)
 			return 0; // skip the assertion
 		T result= dynamic_cast<T>(toCast);
-		assert(result);
+		ASSERT(result);
 		return result;
 	#endif
 }
 
 #ifdef NDEBUG
 	#define DECLARE_debugModule
+	#define DECLARE_debugModule_empty
 #else
 	#define DECLARE_debugModule public: \
 		virtual QWidget* debugModule(QPixmap &pixmap,const QPoint &click)
+	#define DECLARE_debugModule_empty public: \
+		virtual QWidget* debugModule(QPixmap &,const QPoint &) { return 0; }
 #endif
 
 #ifndef NDEBUG

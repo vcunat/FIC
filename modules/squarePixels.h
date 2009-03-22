@@ -63,7 +63,8 @@ protected:
 //	Construction and destruction
 	/** Only deletes #ownedMatrices and frees #jobs */
 	~MSquarePixels() {
-		for_each( ownedMatrices.begin(), ownedMatrices.end(), delMatrix<SReal> );
+		for_each( ownedMatrices.begin(), ownedMatrices.end()
+		, mem_fun_ref(&MatrixList::value_type::free) );
 		for_each( jobs.begin(), jobs.end(), mem_fun_ref(&Job::free) );
 	}
 public:
@@ -75,18 +76,18 @@ public:
 		return jobs.size();
 	}
 	MatrixList collectJobs() {
-		assert( !ownedMatrices.empty() );
+		ASSERT( !ownedMatrices.empty() );
 		return ownedMatrices;
 	}
 
 	void jobEncode(int jobIndex) {
-		assert( jobIndex>=0 && jobIndex<jobCount() );
+		ASSERT( jobIndex>=0 && jobIndex<jobCount() );
 		Job &job= jobs[jobIndex];
 		job.encoder->initialize( IRoot::Encode, job );
 		job.ranges->encode(job);
 	}
 	void jobDecodeAct( int jobIndex, DecodeAct action, int count=1 ) {
-		assert( jobIndex>=0 && jobIndex<jobCount() );
+		ASSERT( jobIndex>=0 && jobIndex<jobCount() );
 		jobs[jobIndex].encoder->decodeAct(action,count);
 	}
 
@@ -94,7 +95,7 @@ public:
 	void readSettings(std::istream &file);
 
 	int phaseCount() {
-		assert( moduleRanges() && moduleDomains() && moduleEncoder() );
+		ASSERT( moduleRanges() && moduleDomains() && moduleEncoder() );
 		return moduleEncoder()->phaseCount();
 	}
 	void writeJobs(std::ostream &file,int phaseBegin,int phaseEnd);

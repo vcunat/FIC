@@ -21,7 +21,7 @@ struct MQuadTree::NodeExtremes {
 
 
 void MQuadTree::encode(const PlaneBlock &toEncode) {
-	assert( !root && fringe.empty() && toEncode.ranges==this && toEncode.isReady() );
+	ASSERT( !root && fringe.empty() && toEncode.ranges==this && toEncode.isReady() );
 	zoom= 0;
 //	if allowed, prepare accelerators for heuristic dividing
 	if ( heuristicAllowed() )
@@ -35,7 +35,7 @@ void MQuadTree::encode(const PlaneBlock &toEncode) {
 }
 
 void MQuadTree::writeData(ostream &file) {
-	assert( !fringe.empty() && root );
+	ASSERT( !fringe.empty() && root );
 //	put in the stream the minimal and the maximal used level
 	NodeExtremes extremes= for_each( fringe.begin(), fringe.end(), NodeExtremes() );
 	put<Uchar>(file,extremes.min-zoom);
@@ -46,7 +46,7 @@ void MQuadTree::writeData(ostream &file) {
 }
 
 void MQuadTree::readData_buildRanges(istream &file,const Block &block,int zoom_) {
-	assert( fringe.empty() && !root );
+	ASSERT( fringe.empty() && !root );
 	zoom= zoom_;
 //	get from the stream the minimal and the maximal used level
 	NodeExtremes extremes;
@@ -86,7 +86,7 @@ void MQuadTree::Node::deleteSons() {
 }
 void MQuadTree::Node::divide() {
 //	check against dividing already divided self
-	assert(!son);
+	ASSERT(!son);
 	short size= powers[level-1];
 	short xmid= min<short>( x0+size, xend );
 	short ymid= min<short>( y0+size, yend );
@@ -153,7 +153,7 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 		throw exception();
 		
 	MQuadTree *mod= debugCast<MQuadTree*>(toEncode.ranges);
-	assert( mod && level>=mod->minLevel() );
+	ASSERT( mod && level>=mod->minLevel() );
 	int pixCount= size();
 //	check for minimal level -> cannot be divided, find the best domain
 	if ( level == mod->minLevel() ) {

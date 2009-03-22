@@ -52,7 +52,7 @@ void MStdDomains::initPools(const PlaneBlock &planeBlock) {
 	width=	rShift( planeBlock.width(), zoom );
 	height=	rShift( planeBlock.height(), zoom );
 //	checks some things
-	assert( width>0 && height>0 && this && settings && pools.empty() );
+	ASSERT( width>0 && height>0 && this && settings && pools.empty() );
 	if ( min(width,height) < MinDomSize*2 )
 	//	no domains (too small)
 		return;
@@ -71,7 +71,7 @@ void MStdDomains::initPools(const PlaneBlock &planeBlock) {
 	//	generate the pool sizes
 		for (int longer=max(width,height); longer>0; longer-=shift) {
 			int side= getDiamondSize( min(longer,shorter) );
-			assert(side>=0);
+			ASSERT(side>=0);
 			if (side)
 				pools.push_back(Pool( side, side, DomPortion_Diamond, 1, 0.5f, zoom ));
 			else
@@ -102,16 +102,13 @@ namespace NOSPACE {
 			&& rShift<int>(src->height,zoom+1) == rShift<int>(dest->height,zoom);
 	}
 //	forwards, implemeted and described at the end of the file
-	static void shrinkToHalf
-	( const SReal **src, int srcYadd, SReal **dest, int width, int height );
-	static void shrinkHorizontally
-	( const SReal **src, int srcYadd, SReal **dest, int width, int height );
-	static void shrinkVertically
-	( const SReal **src, int srcYadd, SReal **dest, int width, int height );
-	static void shrinkToDiamond( const SReal **src, SReal **dest, int side, int sx0, int sy0 );
+	static void shrinkToHalf		( CSMatrix src, SMatrix dest, int width, int height );
+	static void shrinkHorizontally	( CSMatrix src, SMatrix dest, int width, int height );
+	static void shrinkVertically	( CSMatrix src, SMatrix dest, int width, int height );
+	static void shrinkToDiamond		( CSMatrix src, SMatrix dest, int side );
 }
 void MStdDomains::fillPixelsInPools(const PlaneBlock &planeBlock) {
-	assert( !pools.empty() ); // assuming initPools has already been called
+	ASSERT( !pools.empty() ); // assuming initPools has already been called
 //	iterate over pool types
 	PoolList::iterator end= pools.begin();
 	while ( end != pools.end() ) {
@@ -127,24 +124,21 @@ void MStdDomains::fillPixelsInPools(const PlaneBlock &planeBlock) {
 	//	we've got the interval, find out about the type
 		if (type!=DomPortion_Diamond) {
 		//	non-diamond domains all behave similarly
-			void (*shrinkProc)( const SReal**, int, SReal**, int, int );
-			if (type==DomPortion_Standard)
-				shrinkProc= &shrinkToHalf; else
-			if (type==DomPortion_Horiz)
-				shrinkProc= &shrinkHorizontally; else
-			if (type==DomPortion_Vert)
-				shrinkProc= &shrinkVertically;
-			else
-				assert(false), shrinkProc=0;
+			void (*shrinkProc)( CSMatrix , SMatrix , int, int );
+			switch (type) {
+				case DomPortion_Standard:	shrinkProc= &shrinkToHalf;		break;
+				case DomPortion_Horiz:		shrinkProc= &shrinkHorizontally;break;
+				case DomPortion_Vert:		shrinkProc= &shrinkVertically;	break;
+				default: ASSERT(false), shrinkProc=0;
+			}
 		//	we have the right procedure -> fill the first pool
-			assert( begin->level == 1 );
-			shrinkProc( bogoCast(planeBlock.pixels+planeBlock.x0), planeBlock.y0
-			, begin->pixels, begin->width, begin->height );
+			ASSERT( begin->level == 1 );
+			shrinkProc( planeBlock.getShiftedPixels(), begin->pixels
+			, begin->width, begin->height );
 		//	fill the rest (in the same-type interval)
 			while (++begin != end) {
-				assert( halfShrinkOK(begin-1,begin,zoom) );
-				shrinkToHalf( bogoCast((begin-1)->pixels), 0, begin->pixels
-				, begin->width, begin->height );
+				ASSERT( halfShrinkOK(begin-1,begin,zoom) );
+				shrinkToHalf( (begin-1)->pixels, begin->pixels, begin->width, begin->height );
 			}
 
 		} else { //	handle diamond-type domains
@@ -153,19 +147,20 @@ void MStdDomains::fillPixelsInPools(const PlaneBlock &planeBlock) {
 			bool horiz= width>=height;
 			int shift= lShift( getDiamondShift(min(width,height)), zoom );
 			int longerEnd= lShift( max(width,height)-minSizeNeededForDiamond(), zoom );
+			CSMatrix source= planeBlock.getShiftedPixels(); 
 			
 			for (int l=0; l<=longerEnd; ++it,l+=shift) {
-				assert( it!=end && it->level==1 && it->width==it->height );
-				shrinkToDiamond( bogoCast(planeBlock.pixels), it->pixels, it->width
-				, (horiz?l:0)+planeBlock.x0, (horiz?0:l)+planeBlock.y0 );
+				ASSERT( it!=end && it->level==1 && it->width==it->height );
+				shrinkToDiamond( planeBlock.pixels, it->pixels, it->width );
+				source.shiftMatrix( (horiz?shift:0), (horiz?0:shift) );
 			}
 		//	now fill the multiscaled diamond pools
 			while (it!=end) {
 			//	too small pools are skipped
 				while ( min(begin->width,begin->height) < 2*MinDomSize )
 					++begin;
-				assert( halfShrinkOK(begin,it,zoom) );
-				shrinkToHalf( bogoCast(begin->pixels), 0, it->pixels, it->width, it->height );
+				ASSERT( halfShrinkOK(begin,it,zoom) );
+				shrinkToHalf( begin->pixels, it->pixels, it->width, it->height );
 			//	move on
 				++it;
 				++begin;
@@ -187,7 +182,7 @@ namespace NOSPACE {
 	inline static int bestDomainDensity( PoolIt pool, int level, int maxCount, int zoom
 	, vector<short> &result) {
 		level-= zoom;
-		assert( maxCount>=0 && level>0 && zoom>=0 );
+		ASSERT( maxCount>=0 && level>0 && zoom>=0 );
 		int wms= rShift<int>(pool->width,zoom) -powers[level];
 		int hms= rShift<int>(pool->height,zoom) -powers[level];
 	//	check whether any domain can fit and whether we should generate any more
@@ -203,7 +198,7 @@ namespace NOSPACE {
 			int wdiff= wms-wdd*dens, hdiff= hms-hdd*dens;
 			dens+= 1+(int)(min( wdiff/float(wdd), hdiff/float(hdd) ));
 			count= (wms/dens+1)*(hms/dens+1);
-			assert(count<=maxCount)x;
+			ASSERT(count<=maxCount)x;
 		}
 		result.push_back(dens);
 		return count;
@@ -215,7 +210,7 @@ namespace NOSPACE {
 
 		if (count<=maxCount) {
 			dens= (short)floor(min( wms/xHighCount, hms/yHighCount ));
-			assert( wms/dens==xHighCount && hms/dens==yHighCount );
+			ASSERT( wms/dens==xHighCount && hms/dens==yHighCount );
 		} else {
 			dens= (short)floor(max( wms/xHighCount, hms/yHighCount ));
 			count= (wms/dens+1)*(hms/dens+1);
@@ -223,7 +218,7 @@ namespace NOSPACE {
 			if (count>maxCount) {
 				dens= (short)floor(min( wms/xLowCount, hms/yLowCount ));
 				count= (xLowCount+1)*(yLowCount+1);
-				assert( wms/dens==xLowCount && hms/dens==yLowCount );
+				ASSERT( wms/dens==xLowCount && hms/dens==yLowCount );
 			}
 		}
 	*/
@@ -238,9 +233,9 @@ namespace NOSPACE {
 		
 		if (!dens)
 			dens= 1;
-		assert(dens>0);
+		ASSERT(dens>0);
 		int count= (wms/dens+1)*(hms/dens+1);
-		assert(count<=maxCount);
+		ASSERT(count<=maxCount);
 
 		result.push_back(dens);
 		return count;
@@ -251,7 +246,7 @@ namespace NOSPACE {
 	 *	and returns the number of generated domains \relates MStandardDomains */
 	static int divideDomsInType( PoolIt begin, PoolIt end, int maxCount, int level
 	, char divType, int zoom, vector<short> &results ) {
-		assert( begin!=end && divType>=0 && divType<=2 );
+		ASSERT( begin!=end && divType>=0 && divType<=2 );
 		int scaleLevels= (end-1)->level - begin->level + 1;
 		int genCount= 0;
 	//	iterate over same-scaleLevel intervals
@@ -277,11 +272,11 @@ namespace NOSPACE {
 	}
 }
 vector<short> MStdDomains::getLevelDensities(int level,int stdDomCountLog2) {
-	assert(level>=2);
+	ASSERT(level>=2);
 //	compute the sum of shares, check for no-domain situations
 	int totalShares= settingsInt(DomPortion_Standard) + settingsInt(DomPortion_Horiz)
 	+ settingsInt(DomPortion_Vert) + settingsInt(DomPortion_Diamond);
-	stdDomCountLog2-= (level-2)*settingsInt(MaxDomCountLevelDivisor);
+	stdDomCountLog2-= (level-zoom-2)*settingsInt(MaxDomCountLevelDivisor);
 
 	if ( pools.empty() || !totalShares || stdDomCountLog2<0 )
 		return vector<short>( pools.size(), 0 );
@@ -305,12 +300,12 @@ vector<short> MStdDomains::getLevelDensities(int level,int stdDomCountLog2) {
 		totalShares-= share;
 	}
 //	check we created the correct number of densities
-	assert( result.size() == pools.size() );
+	ASSERT( result.size() == pools.size() );
 	return result;
 }
 
 void MStdDomains::writeSettings(ostream &file) {
-	assert( this && settings );
+	ASSERT( this && settings );
 //	all settings are small integers a need to be preserved
 	int setLength= info().setLength;
 	for (int i=0; i<setLength; ++i)
@@ -318,7 +313,7 @@ void MStdDomains::writeSettings(ostream &file) {
 }
 
 void MStdDomains::readSettings(istream &file) {
-	assert( this && settings );
+	ASSERT( this && settings );
 //	all settings are small integers a need to be preserved
 	int setLength= info().setLength;
 	for (int i=0; i<setLength; ++i)
@@ -326,74 +321,82 @@ void MStdDomains::readSettings(istream &file) {
 }
 
 
+
+
+
+namespace MatrixWalkers {
+	struct ReverseAssigner: public OperatorBase {
+		template<class R1,class R2> void operator()(R1 &dest,R2 src) const { dest= src; }
+	};
+
+	template<class T,class I=size_t> struct HalfShrinker: public RotBase<T,I> { ROTBASE_INHERIT
+		HalfShrinker(MType matrix)
+		: RotBase<T>( matrix, 0, 0 ) {}
+
+		T get() { return ldexp( elem[0] + elem[1] + elem[colSkip] + elem[colSkip+1], -2 ); }
+		void outerStep()	{ list+= 2*colSkip; }
+		void innerStep()	{ elem+= 2; }
+	};
+	
+	template<class T,class I=size_t> struct HorizShrinker: public RotBase<T,I> { ROTBASE_INHERIT
+		HorizShrinker(MType matrix)
+		: RotBase<T>( matrix, 0, 0 ) {}
+
+		T get() { return ldexp( elem[0] + elem[colSkip], -1 ); }
+		void outerStep()	{ list+= 2*colSkip; }
+		void innerStep()	{ ++elem; }
+	};
+	
+	template<class T,class I=size_t> struct VertShrinker: public RotBase<T,I> { ROTBASE_INHERIT
+		VertShrinker(MType matrix)
+		: RotBase<T>( matrix, 0, 0 ) {}
+
+		T get() { return ldexp( elem[0] + elem[1], -1 ); }
+		void outerStep()	{ list+= colSkip; }
+		void innerStep()	{ elem+= 2; }
+	};
+	
+	template<class T,class I=size_t> struct DiamShrinker: public RotBase<T,I> { ROTBASE_INHERIT
+		DiamShrinker(MType matrix,I side)
+		: RotBase<T>( matrix, side, 0 ) {}	// the diamond begins on top-middle
+
+		T get() { return ldexp( elem[0] + elem[1] + elem[colSkip] + elem[colSkip+1], -2 ); }
+		void outerStep()	{ list+= colSkip+1; }
+		void innerStep()	{ elem+= 1-colSkip; }
+	};
+}//	MatrixWalkers namespace
+
+
 /** Implementations of forward-declared functions */
 namespace NOSPACE {
+	using namespace MatrixWalkers;
+
 	/** Performs a simple 50\%^2 image shrink (dimensions belong to the destination)
 	 *	\relates MStandardDomains */
-	void shrinkToHalf( const SReal **src, int srcYadd, SReal **dest, int width, int height ) {
-	//	iterate over columns of the destination matrix
-		for (SReal **destEnd=dest+width; dest!=destEnd; ++dest ) {
-		//	get two source columns (and increment the source)
-			const SReal *srcCol1= (*src++) + srcYadd;
-			const SReal *srcCol2= (*src++) + srcYadd;
-		//	get begin and end of the destination column
-			SReal *destCol= *dest;
-			SReal *destColEnd= *dest+height;
-		//	iterate over the destination column and average the source pixels
-			for (; destCol!=destColEnd; ++destCol ) {
-				*destCol= ldexp( ( *srcCol1 + *(srcCol1+1) ) + ( *srcCol2 + *(srcCol2+1) ), -2 );
-				srcCol1+= 2;
-				srcCol2+= 2;
-			}
-		}
-	}//	shrinkToHalf
+	void shrinkToHalf( CSMatrix src, SMatrix dest, int width, int height ) {
+		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
+		, HalfShrinker<const SReal>(src), ReverseAssigner() );
+	}
+	
 	/** Performs a simple 50\% image horizontal shrink (dimensions belong to the destination)
 	 *	\relates MStandardDomains */
-	void shrinkHorizontally( const SReal **src, int srcYadd, SReal **dest, int width, int height ) {
-	//	iterate over columns of the destination matrix
-		for (SReal **destEnd=dest+width; dest!=destEnd; ++dest ) {
-		//	get two source columns (and increment the source)
-			const SReal *srcCol1= (*src++) + srcYadd;
-			const SReal *srcCol2= (*src++) + srcYadd;
-		//	get begin and end of the destination column
-			SReal *destCol= *dest;
-			SReal *destColEnd= *dest+height;
-		//	iterate over the destination column and average the source pixels
-			for (; destCol!=destColEnd; ++destCol )
-				*destCol= ldexp( (*srcCol1++)+(*srcCol2++), -1 );
-		}
-	}//	shrinkHorizontally
+	void shrinkHorizontally( CSMatrix src, SMatrix dest, int width, int height ) {
+		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
+		, HorizShrinker<const SReal>(src), ReverseAssigner() );
+	}
+	
 	/** Performs a simple 50\% image vertical shrink (dimensions belong to the destination)
 	 *	\relates MStandardDomains */
-	void shrinkVertically( const SReal **src, int srcYadd, SReal **dest, int width, int height ) {
-	//	iterate over columns of the destination matrix
-		for (SReal **destEnd=dest+width; dest!=destEnd; ++dest ) {
-		//	get one source column (and increment the source)
-			const SReal *srcCol= (*src++) + srcYadd;
-		//	get begin and end of the destination column
-			SReal *destCol= *dest;
-			SReal *destColEnd= *dest+height;
-		//	iterate over the destination column and average the source pixels
-			for (; destCol!=destColEnd; ++destCol ) {
-				*destCol= ldexp( *srcCol + *(srcCol+1), -1 );
-				srcCol+= 2;
-			}
-		}
-	}//	shrinkVertically
+	void shrinkVertically( CSMatrix src, SMatrix dest, int width, int height ) {
+		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
+		, VertShrinker<const SReal>(src), ReverseAssigner() );
+	}
+	
 	/** Performs 50\% shrink with 45-degree anticlockwise rotation (\p side - the length of
 	 *	the destination square; \p sx0, \p sy0 - the top-left of the enclosing source square)
 	 *	\relates MStandardDomains */
-	void shrinkToDiamond( const SReal **src, SReal **dest, int side, int sx0, int sy0 ) {
-	//	the diamond begins on top-middle
-		sx0+= side-1;
-	//	iterate over the columns of the destination matrix (both source coords. increment)
-		for (SReal **destEnd=dest+side; dest!=destEnd; ++dest,++sx0,++sy0) {
-			int sx= sx0, sy= sy0;
-			SReal *destCol= *dest;
-		//	in a column, the source-x decreases and source-y grows
-			for (SReal *destColEnd=destCol+side; destCol!=destColEnd; ++destCol,--sx,++sy)
-				*destCol=
-					ldexp( src[sx][sy]+src[sx][sy+1]+src[sx+1][sy]+src[sx+1][sy+1], -2 );
-		}
+	void shrinkToDiamond( CSMatrix src, SMatrix dest, int side ) {
+		walkOperate( Checked<SReal>(dest,Block(0,0,side,side))
+		, DiamShrinker<const SReal>(src,side), ReverseAssigner() );
 	}//	shrinkToDiamond
 }

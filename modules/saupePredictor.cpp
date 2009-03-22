@@ -1,7 +1,8 @@
 #include "saupePredictor.h"
 using namespace std;
 
-MSaupePredictor::OneRangePred* MSaupePredictor::newPredictor(const NewPredictorData &data) {
+IStdEncPredictor::IOneRangePredictor* MSaupePredictor
+::newPredictor(const NewPredictorData &data) {
 //	ensure the levelTrees vector is long enough
 	int level= data.rangeBlock->level;
 	if ( level >= (int)levelTrees.size() )
@@ -10,7 +11,7 @@ MSaupePredictor::OneRangePred* MSaupePredictor::newPredictor(const NewPredictorD
 	Tree *tree= levelTrees[level];
 	if (!tree)
 		tree= levelTrees[level]= createTree(data);
-	assert(tree);
+	ASSERT(tree);
 
 	int maxPredicts= (int)ceil(maxPredCoeff()*tree->count);
 	if (maxPredicts<=0)
@@ -42,7 +43,7 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 	int poolCount= data.pools->size();
 	for (int poolID=0; poolID<poolCount; ++poolID) {
 	//	check we are on the place we want to be; get the current pool, density, etc.
-		assert( domPixNow-domPix == poolInfos[poolID].indexBegin*pixelCount );
+		ASSERT( domPixNow-domPix == poolInfos[poolID].indexBegin*pixelCount );
 		const ISquareDomains::Pool &pool= (*data.pools)[poolID];
 		int density= poolInfos[poolID].density;
 		if (!density) // no domains in this pool for this level
@@ -75,7 +76,7 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 				domPixNow= linColEnd;
 			}
 	}
-	assert( domPixNow-domPix == domainCount*pixelCount ); // check we are just at the end
+	ASSERT( domPixNow-domPix == domainCount*pixelCount ); // check we are just at the end
 //	create the tree from obtained data
 	Tree *result= Tree::Builder
 		::makeTree( domPix, pixelCount, domainCount, &Tree::Builder::chooseApprox );
@@ -115,23 +116,20 @@ MSaupePredictor::OneRangePredictor::OneRangePredictor
 		fill( points, points+tree.length*heapCount, numeric_limits<KDReal>::quiet_NaN() );
 //	compute normalizing transformation and initialize a normalizator object
 	Real multiply= sqrt(data.pixCount) / data.rnDev;
-	AddMulCopyTo2nd<Real> oper( -data.rSum/data.pixCount, multiply );
+	AddMulCopyTo2nd<Real> colorNorm( -data.rSum/data.pixCount, multiply );
 //	compute SE-normalizing accelerator
-	normalizator.initialize(data);
+	errorNorm.initialize(data);
 	{
 		int sideLength= powers[data.rangeBlock->level];
-		KDReal* rotMatrices[rotationCount][sideLength]; // a fake array of matrices
 		Block localBlock(0,0,sideLength,sideLength);
 	//	create normalized rotations
 		for (int rot=0; rot<rotationCount; ++rot) {
 		//	fake the matrix for this rotation
-			KDReal *currRangeLin= points+rot*tree.length;
-			KDReal **currRangeMatrix= rotMatrices[rot];
-			initMatrixPointers( sideLength, sideLength, currRangeLin, currRangeMatrix );
+			Matrix<KDReal> currRangeMatrix( sideLength, sideLength, points+rot*tree.length );
 		//	fill it with normalized data
 			using namespace MatrixWalkers;
 			walkOperateCheckRotate( Checked<const SReal>(data.rangePixels,*data.rangeBlock)
-			, oper, currRangeMatrix, localBlock, rot );
+			, colorNorm, currRangeMatrix, localBlock, rot );
 		}
 	}
 //	create inverse of the rotations if needed
@@ -153,7 +151,7 @@ MSaupePredictor::OneRangePredictor::OneRangePredictor
 
 MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 ::getChunk(float maxPredictedSE,Predictions &store) {
-	assert( heaps.size()==(size_t)heapCount && infoHeap.size()<=(size_t)heapCount );
+	ASSERT( heaps.size()==(size_t)heapCount && infoHeap.size()<=(size_t)heapCount );
 	if ( infoHeap.empty() || predsRemain<=0 ) {
 		store.clear();
 		return store;
@@ -170,7 +168,7 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 		predCount= predsRemain;
 	predsRemain-= predCount;
 //	compute the max. normalized SE to predict
-	float maxNormalizedSE= normalizator.normSE(maxPredictedSE);
+	float maxNormalizedSE= errorNorm.normSE(maxPredictedSE);
 //	make a local working copy for the result (the prediction), adjust its size
 	Predictions result;
 	swap(result,store); // swapping is the quickest way
@@ -186,7 +184,7 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 			break;
 		}
 	//	fill the prediction and pop the heap
-		assert( 0<=bestInfo.index && bestInfo.index<heapCount );
+		ASSERT( 0<=bestInfo.index && bestInfo.index<heapCount );
 		PointHeap &bestHeap= *heaps[bestInfo.index];
 		it->domainID= isRegular
 			? bestHeap.popLeaf<false>()
