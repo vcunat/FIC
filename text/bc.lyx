@@ -562,6 +562,19 @@ ní, na druhou stranu díky tomu pro větší bloky nedává metrika výsledky
 \end_layout
 
 \begin_layout Standard
+Zlepšování kvality komprimovaných obrázků použitím přesnější metriky bylo
+ zatím věnováno jen velmi málo pozornosti.
+ Vhodností různých metrik pro fraktální kompresi se zabývá například\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "AbateNR07"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
 Při použití RMSE existuje právě jedno
 \begin_inset Foot
 status collapsed
@@ -785,7 +798,7 @@ Další výhodou je mnohem rychlejší a jistější konvergence.
 \begin_inset Formula $D_{i}$
 \end_inset
 
- hned po první iteraci dostane blízko vzorovému obrázku, což se při další
+ už po první iteraci dostane blízko vzorovému obrázku, což se při další
  iteraci promítne do cílových bloků 
 \begin_inset Formula $R_{i}$
 \end_inset
@@ -805,7 +818,8 @@ výše odkazovaných publikacích je ukázáno, že po takovéto úpravě barevn
 \begin_inset Formula $2^{b_{i}}$
 \end_inset
 
- po sobě jdoucími hodnotami a zdrojové bloky o velikosti 
+ po sobě jdoucími hodnotami a zdrojové bloky o\InsetSpace ~
+velikosti 
 \begin_inset Formula $2^{d_{i}}$
 \end_inset
 
@@ -823,13 +837,304 @@ Na rozdíl od konvergence založené na kolážové větě je důkaz proveden be
 \begin_inset Formula $\bar{c_{i}}$
 \end_inset
 
-, což umožnuje mnohem přesnější aproximaci bloků s ostrými přechody bez
- ztráty jistoty konvergence.
+, což umožnuje mnohem přesnější aproximaci bloků s\InsetSpace ~
+ostrými přechody bez ztráty
+ jistoty konvergence.
  Zde se naopak využívá kontraktivity transformací 
 \begin_inset Formula $w_{i}$
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Subsubsection
+Úprava lineárních koeficientů
+\end_layout
+
+\begin_layout Standard
+Podobným způsobem, jako byly konstantní koeficienty barevných zobrazení
+ nahrazeny průměry, lze také lineární koeficienty nahradit směrodatnými
+ odchylkami\InsetSpace ~
+-- barvy zdrojových bloků jsou vyděleny svou směrodatnou odchylkou
+ a vynásobeny cílovou směrodatnou odchylkou.
+ Stále budeme vycházet z\InsetSpace ~
+RMSE metriky.
+\end_layout
+
+\begin_layout Standard
+V\InsetSpace ~
+následujících výpočtech budeme pro zjednodušení pracovat s\InsetSpace ~
+diskrétním modelem
+ obrázku (vektorem hodnot), přestože analogická odvození lze udělat s\InsetSpace ~
+dosud
+ upřednostňovaným spojitým modelem.
+ Bude použito statistické značení, které je názornější:
+\end_layout
+
+\begin_layout Description
+zdrojové\InsetSpace ~
+a\InsetSpace ~
+cílové\InsetSpace ~
+bloky 
+\begin_inset Formula $x\mbox{ a }y$
+\end_inset
+
+, oba mají pixely indexované od 
+\begin_inset Formula $1$
+\end_inset
+
+ do 
+\begin_inset Formula $n$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+zdrojový\InsetSpace ~
+blok\InsetSpace ~
+z\InsetSpace ~
+předchozí\InsetSpace ~
+iterace 
+\begin_inset Formula $\bar{x}$
+\end_inset
+
+, používán stejně jako 
+\begin_inset Formula $x\mbox{ a }y$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+výběrová\InsetSpace ~
+směrodatná\InsetSpace ~
+odchylka 
+\begin_inset Formula ${\displaystyle s_{x}=\frac{1}{n-1}\left(\sum_{i=1}^{n}x_{i}^{2}-\frac{1}{n}\left(\sum_{i=1}^{n}x_{i}\right)^{2}\right)}$
+\end_inset
+
+
+\begin_inset Formula $ $
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+výběrová\InsetSpace ~
+kovariance 
+\begin_inset Formula ${\displaystyle q_{x,y}=\frac{1}{n-1}\left(\sum_{i=1}^{n}x_{i}y_{i}-\frac{1}{n}\sum_{i=1}^{n}x_{i}\sum_{i=1}^{n}y_{i}\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+výběrová\InsetSpace ~
+korelace 
+\begin_inset Formula ${\displaystyle r_{x,y}=\frac{q_{x,y}}{s_{x}s_{y}}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zde budeme vycházet ze vztahů odvozených v\InsetSpace ~
+<kapitola o encoderu> přepsaných
+ do výše uvedené notace.
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+Optimální lineární koeficient 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula ${\displaystyle p=\frac{q_{x,y}}{s_{x}^{2}}}$
+\end_inset
+
+ bude nahrazen koeficientem 
+\begin_inset Formula ${\displaystyle \bar{p}=\pm\frac{s_{y}}{s_{\bar{x}}}}$
+\end_inset
+
+ počítaným pro každou iteraci z\InsetSpace ~
+hodnoty 
+\begin_inset Formula $s_{y}$
+\end_inset
+
+ uložené místo 
+\begin_inset Formula $p_{i}$
+\end_inset
+
+.
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+zde je při implementaci potřeba ošetřit případ, kdy 
+\begin_inset Formula $s_{\bar{x}}=0$
+\end_inset
+
+, což nastává hlavně při první iteraci pro typický případ inicializace celého
+ obrázku šedivou barvou
+\end_layout
+
+\end_inset
+
+ Pokud povolíme zobrazení se záporným lineárním koeficientem, je třeba také
+ uložit znaménko.
+\end_layout
+
+\begin_layout Standard
+Pokud
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+ 
+\begin_inset Formula $s_{\bar{x}}\rightarrow s_{x}$
+\end_inset
+
+ (platí speciálně pokud 
+\begin_inset Formula $\bar{x}\rightarrow x$
+\end_inset
+
+), pak 
+\begin_inset Formula ${\displaystyle \frac{p}{\bar{p}}\rightarrow\pm\frac{q_{x,y}}{s_{x}^{2}}\frac{s_{x}}{s_{y}}=\pm\frac{q_{x,y}}{s_{x}s_{y}}}=\pm r_{x,y}$
+\end_inset
+
+.
+ Pokud byla chyba barevného zobrazení s\InsetSpace ~
+koeficientem 
+\begin_inset Formula $p$
+\end_inset
+
+ malá, pak korelace 
+\begin_inset Formula $r_{x,y}\rightarrow\pm1$
+\end_inset
+
+ a navíc má stejné znaménko jako 
+\begin_inset Formula $p$
+\end_inset
+
+, takže 
+\begin_inset Formula $\bar{p}\rightarrow p$
+\end_inset
+
+.
+ Z\InsetSpace ~
+toho je zřejmé, že cílový obrázek bude pevným bodem i takto pozměněného
+ operátoru.
+\end_layout
+
+\begin_layout Standard
+Nová a původní optimální čtvercová chyba: 
+\begin_inset Formula \[
+\overline{SE}=<...>=2n\, s_{y}^{2}\left(1\mp r_{x,y}\right)=2n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+SE=n\frac{s_{x}^{2}s_{y}^{2}-q_{x,y}^{2}}{s_{x}^{2}}=n\, s_{y}^{2}\left(1-r_{x,y}^{2}\right)\]
+
+\end_inset
+
+Z toho dostaneme absolutní a relativní nárůst chyby:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\overline{SE}-SE=n\,\left(1\mp r_{x,y}\right)\left(2-1\mp r_{x,y}\right)=n\, s_{y}^{2}\left(1\mp r_{x,y}\right)^{2}=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)^{2}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\overline{SE}-SE}{SE}=\frac{\left(1-\left|r_{x,y}\right|\right)^{2}}{1-r_{x,y}^{2}}=\frac{1\mp r_{x,y}}{1\pm r_{x,y}}=\frac{1-\left|r_{x,y}\right|}{1+\left|r_{x,y}\right|}\]
+
+\end_inset
+
+Tedy nárůst chyby pro podobné bloky bude velmi malý.
+\end_layout
+
+\begin_layout Standard
+Výhody a nevýhody tohoto přístupu jsou podobné jako při nahrazování konstantních
+ koeficientů zobrazení\InsetSpace ~
+-- především jednodušší reprezentace zobrazení a pravděpod
+obně také rychlejší konvergence.
+\end_layout
+
+\begin_layout Standard
+V\InsetSpace ~
+novějších publikacích o\InsetSpace ~
+fraktální kompresi a také v\InsetSpace ~
+této práci je používán
+ právě tento model barevných zobrazení, ale nikde se mi nepodařilo nalézt
+ nějaké zdůvodnění nebo odkaz na text zabývající se vlastnostmi tohoto modelu.
+ Nejsou mi tedy známy žádné výsledky týkající konvergence ani pro případné
+ omezené varianty.
+\end_layout
+
+\begin_layout Standard
+Koeficienty
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+ 
+\begin_inset Formula $\bar{p}$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+ nejsou stejně jako v předchozím modelu nijak omezeny, ale experimenty prováděné
+ v\InsetSpace ~
+rámci této práce ukazují, že může být výhodné vyhýbat se zobrazením s\InsetSpace ~
+vysokým
+ poměrem 
+\begin_inset Formula $\frac{s_{y}}{s_{\bar{x}}}$
+\end_inset
+
+.
+ Tato úprava je diskutována v\InsetSpace ~
+<kapitola o encoderu>, včetně teoretického
+ zdůvodnění.
 \end_layout
 
 \begin_layout Standard
