@@ -976,8 +976,8 @@ hodnoty
 \begin_inset Formula $s_{y}$
 \end_inset
 
- uložené místo 
-\begin_inset Formula $p_{i}$
+, která bude uložena jako parametr zobrazení místo vlastního 
+\begin_inset Formula $p$
 \end_inset
 
 .
@@ -985,7 +985,7 @@ hodnoty
 status collapsed
 
 \begin_layout Standard
-zde je při implementaci potřeba ošetřit případ, kdy 
+zde je při implementaci potřeba ošetřit situaci, kdy 
 \begin_inset Formula $s_{\bar{x}}=0$
 \end_inset
 
@@ -1013,16 +1013,17 @@ Pokud
 \begin_inset Formula $s_{\bar{x}}\rightarrow s_{x}$
 \end_inset
 
- (platí speciálně pokud 
+ (platí speciálně když 
 \begin_inset Formula $\bar{x}\rightarrow x$
 \end_inset
 
 ), pak 
-\begin_inset Formula ${\displaystyle \frac{p}{\bar{p}}\rightarrow\pm\frac{q_{x,y}}{s_{x}^{2}}\frac{s_{x}}{s_{y}}=\pm\frac{q_{x,y}}{s_{x}s_{y}}}=\pm r_{x,y}$
+\begin_inset Formula \[
+{\displaystyle \frac{p}{\bar{p}}\rightarrow\pm\frac{q_{x,y}}{s_{x}^{2}}\frac{s_{x}}{s_{y}}=\pm\frac{q_{x,y}}{s_{x}s_{y}}}=\pm r_{x,y}\]
+
 \end_inset
 
-.
- Pokud byla chyba barevného zobrazení s\InsetSpace ~
+Pokud byla chyba barevného zobrazení s\InsetSpace ~
 koeficientem 
 \begin_inset Formula $p$
 \end_inset
@@ -1031,8 +1032,17 @@ koeficientem
 \begin_inset Formula $r_{x,y}\rightarrow\pm1$
 \end_inset
 
- a navíc má stejné znaménko jako 
+.
+ Navíc znaménko 
 \begin_inset Formula $p$
+\end_inset
+
+ (zde značeno jako 
+\begin_inset Formula $\pm$
+\end_inset
+
+) je stejné jako znaménko 
+\begin_inset Formula $r_{x,y}$
 \end_inset
 
 , takže 
@@ -1057,7 +1067,7 @@ Nová a původní optimální čtvercová chyba:
 
 \begin_layout Standard
 \begin_inset Formula \[
-SE=n\frac{s_{x}^{2}s_{y}^{2}-q_{x,y}^{2}}{s_{x}^{2}}=n\, s_{y}^{2}\left(1-r_{x,y}^{2}\right)\]
+SE=n\frac{s_{x}^{2}s_{y}^{2}-q_{x,y}^{2}}{s_{x}^{2}}=n\, s_{y}^{2}\left(1-r_{x,y}^{2}\right)=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\left(1+\left|r_{x,y}\right|\right)\]
 
 \end_inset
 
@@ -1066,7 +1076,7 @@ Z toho dostaneme absolutní a relativní nárůst chyby:
 
 \begin_layout Standard
 \begin_inset Formula \[
-\overline{SE}-SE=n\,\left(1\mp r_{x,y}\right)\left(2-1\mp r_{x,y}\right)=n\, s_{y}^{2}\left(1\mp r_{x,y}\right)^{2}=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)^{2}\]
+\overline{SE}-SE=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\left[2-\left(1+\left|r_{x,y}\right|\right)\right]=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)^{2}\]
 
 \end_inset
 
@@ -1075,7 +1085,7 @@ Z toho dostaneme absolutní a relativní nárůst chyby:
 
 \begin_layout Standard
 \begin_inset Formula \[
-\frac{\overline{SE}-SE}{SE}=\frac{\left(1-\left|r_{x,y}\right|\right)^{2}}{1-r_{x,y}^{2}}=\frac{1\mp r_{x,y}}{1\pm r_{x,y}}=\frac{1-\left|r_{x,y}\right|}{1+\left|r_{x,y}\right|}\]
+\frac{\overline{SE}-SE}{SE}=\frac{\left(1-\left|r_{x,y}\right|\right)^{2}}{\left(1-\left|r_{x,y}\right|\right)\left(1+\left|r_{x,y}\right|\right)}=\frac{1-\left|r_{x,y}\right|}{1+\left|r_{x,y}\right|}\]
 
 \end_inset
 
@@ -1096,7 +1106,7 @@ fraktální kompresi a také v\InsetSpace ~
 této práci je používán
  právě tento model barevných zobrazení, ale nikde se mi nepodařilo nalézt
  nějaké zdůvodnění nebo odkaz na text zabývající se vlastnostmi tohoto modelu.
- Nejsou mi tedy známy žádné výsledky týkající konvergence ani pro případné
+ Nejsou mi tedy známy žádné výsledky týkající se konvergence ani pro případné
  omezené varianty.
 \end_layout
 
@@ -1135,6 +1145,10 @@ vysokým
  Tato úprava je diskutována v\InsetSpace ~
 <kapitola o encoderu>, včetně teoretického
  zdůvodnění.
+\end_layout
+
+\begin_layout Standard
+
 \end_layout
 
 \begin_layout Standard
