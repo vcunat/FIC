@@ -42,7 +42,7 @@
 \tocdepth 3
 \paragraph_separation indent
 \defskip medskip
-\quotes_language swedish
+\quotes_language german
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
@@ -110,7 +110,7 @@ zobrazení mějme zobrazení
 
 \end_inset
 
- 
+
 \end_layout
 
 \begin_layout Description
@@ -123,8 +123,7 @@ zobrazení
 \begin_inset Formula $X$
 \end_inset
 
- s\InsetSpace ~
-metrikou 
+ s metrikou 
 \begin_inset Formula $d$
 \end_inset
 
@@ -150,7 +149,7 @@ IFS
 \end_layout
 
 \begin_layout Standard
-Základy fraktálové komprese byly položeny v druhé polovině 80.\InsetSpace ~
+Základy fraktálové komprese byly položeny v druhé polovině 80.\InsetSpace \thinspace{}
 let, kdy Barnsley
  studoval systémy iterovaných funkcí (IFS).
  IFS je množina bodů 
@@ -313,14 +312,6 @@ status open
 
 \begin_layout Standard
 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
 
 \backslash
 end{veta}
@@ -807,7 +798,8 @@ key "Oien94"
 \end_inset
 
  a podrobněji rozebráno v\InsetSpace ~
-
+6.\InsetSpace ~
+kapitole 
 \begin_inset LatexCommand cite
 key "Fish95"
 
@@ -1312,6 +1304,305 @@ vysokým
 <kapitola o\InsetSpace ~
 encoderu>, včetně teoretického zdůvodněn
 í.
+\end_layout
+
+\begin_layout Subsection
+<Přehled výsledků>
+\end_layout
+
+\begin_layout Standard
+Především v\InsetSpace ~
+první polovině 90.\InsetSpace \thinspace{}
+let bylo věnováno fraktální kompresi velké úsilí.
+ Bylo zkoumáno (většinou oddělení) mnoho odlišných způsobů vylepšení základních
+ technik popsaných výše.
+ V této části jsou shrnuty nejvýznamnější výsledky, pro přehlednost jsou
+ rozčleněny podle toho, na které aspekty komprese se zaměřují.
+\end_layout
+
+\begin_layout Subsubsection
+Zrychlení komprese
+\end_layout
+
+\begin_layout Standard
+Za největší problém byla považována obrovská výpočetní náročnost hledání
+ vhodných zdrojových bloků.
+ Od dob nejintenzivnějšího výzkumu v\InsetSpace ~
+oblasti se sice výkon běžných počítačů
+ mnohonásobně zvýšil, ale stále je nutné se tímto problémem zabývat.
+ Jedním z\InsetSpace ~
+důvodů je, že dnes používané fotografie mají také mnohem větší
+ rozměry.
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Nejčastější technikou pro urychlení výběru vhodného zdrojového bloku byly
+ klasifikační metody.
+ Všechny cílové a potencionální zdrojové bloky jsou nějakým způsobem ohodnoceny
+ a poté je vzájemná zobrazitelnost přesně vyhodnocována pouze pro 
+\begin_inset Quotes gld
+\end_inset
+
+kompatibilní
+\begin_inset Quotes grd
+\end_inset
+
+ dvojice.
+ To typicky vede k\InsetSpace ~
+vynechání některých optimálních zobrazení, ale pokles
+ kvality bývá velmi malý a urychlení mnohonásobné (zkomprimovaná velikost
+ se nezmění).
+\end_layout
+
+\begin_layout Standard
+Většinou jde o\InsetSpace ~
+jednoduché rozdělení bloků do několika tříd a uvažování pouze
+ zobrazení v rámci jedné třídy, například klasifikace navržené Jacquinem
+ nebo Fisherem 
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+.
+ Zde je nevýhodné, že pro bloky 
+\begin_inset Quotes gld
+\end_inset
+
+na\InsetSpace ~
+okrajích
+\begin_inset Quotes grd
+\end_inset
+
+ tříd často mohou mít podobné bloky v\InsetSpace ~
+jiných 
+\begin_inset Quotes gld
+\end_inset
+
+sousedních
+\begin_inset Quotes grd
+\end_inset
+
+ třídách.
+ To vede ke složitějším metodám, které hledají i v\InsetSpace ~
+příbuzných třídách, nebo
+ používají hierarchické způsoby klasifikace, například 
+\begin_inset LatexCommand cite
+key "Han07"
+
+\end_inset
+
+.
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Za další možnost urychlení se považoval jiný způsob redukce nutných porovnání\InsetSpace ~
+---
+ přeskočení zdrojových bloků, které jsou v\InsetSpace ~
+obrázku příliš vzdálené od cílového
+ bloku (pro který hledáme zobrazení).
+ Na rozdíl od klasifikačních metod je množina uvažovaných zdrojových bloků
+ zřejmá už z\InsetSpace ~
+polohy cílového bloku, takže lze ušetřit nějaký prostor nutný
+ pro uložení jejich identifikačních čísel.
+\end_layout
+
+\begin_layout Standard
+Základem této techniky je domněnka, že ideální zdrojový blok má větší pravděpodo
+bnost výskytu blíže k\InsetSpace ~
+danému cílovému bloku.
+ V\InsetSpace ~
+kapitole 3 knihy 
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+ je ukázáno, že posun rozdělení vzdáleností optimálních dvojic oproti vzdálenost
+em náhodně vybraných dvojic je zanedbatelný.
+ Zrádné je zde především to, že rozdělení vzdálenosti dvou náhodných bodů
+ je velmi nerovnoměrný.
+ Přesto například v\InsetSpace ~
+nedávném článku 
+\begin_inset LatexCommand cite
+key "HuQK07"
+
+\end_inset
+
+ se tvrdí opak a dokonce graf rozdělení eukleidovské vzdálenosti mezi optimálním
+i dvojicemi se hodně liší od obdobného grafu v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+ naměřeného na stejném obrázku (Lenna).
+ Jsou zde i další nevýhody spojené s\InsetSpace ~
+tím, že je množina uvažovaných zdrojových
+ bloků pro každý cílový blok jiná, například obtížná kombinace s\InsetSpace ~
+jinými metodami
+ urychlení komprese.
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Další metoda snížení počtu nutných porovnání je nehledat nejlepší zdrojový
+ blok a spokojit se s\InsetSpace ~
+dostatečně dobrým už nalezeným blokem.
+ Dosažené zrychlení ale nejspíš nebude nijak veliké.
+ Nejsou mi známy žádné práce, které by se podrobněji zabývaly touto technikou.
+\end_layout
+
+\begin_layout Subsubsection
+Zlepšení vhledu
+\end_layout
+
+\begin_layout Standard
+Vetšinou nezávisle na rychlosti komprese byly zkoumány také metody zlepšující
+ kvalitu dekomprimovaných obrázků.
+ Zde jsou zařazeny i techniky zvyšující kompresní poměr, protože jde o\InsetSpace ~
+stejný
+ cíl\InsetSpace ~
+--- typicky lze pouhým nastavováním parametrů komprese zlepšovat jeden
+ z\InsetSpace ~
+těchto ukazatelů na úkor druhého.
+\end_layout
+
+\begin_layout Paragraph
+Dělení na zdrojové bloky
+\end_layout
+
+\begin_layout Standard
+Jedním ze základních faktorů ovlivňujících vzhled je způsob dělení obrázku
+ na zdrojové bloky.
+ Nejjednodušší je určit dělení napevno.
+ To je ale v\InsetSpace ~
+praxi nepoužitelné kvůli obtížné regulaci kvality a kompresního
+ poměru.
+ Navíc nalézt dobré zobrazení pro skoro konstatní bloky je velmi jednoduché,
+ zatímco pro bloky obsahující hodně detailů nejspíš žádný vhodný zdrojový
+ blok k\InsetSpace ~
+dispozici nebude.
+ Proto bylo nutné hledat adaptivní metody, které by v\InsetSpace ~
+
+\begin_inset Quotes gld
+\end_inset
+
+plochých
+\begin_inset Quotes grd
+\end_inset
+
+ místech nechávaly velké bloky a v\InsetSpace ~
+místech se složitější kresbou dělily obrázek
+ na malé a zvyšovaly u\InsetSpace ~
+nich tak pravděpodobnost nalezení dostatečně dobrého
+ zobrazení.
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Jednoznačně nejpoužívanější metodou je dělení pomocí čtyřstromu (Quadtree),
+ popsaného například v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+, kapitola 3.
+ Pro zjednodušení se uvažují jako velikosti obrázku a bloků jen čtverce
+ o\InsetSpace ~
+hranách délky mocniny 2.
+ Začne se s\InsetSpace ~
+jedním velkým zdojovým blokem pokrývajícím celý obrázek a postupuje
+ se tak, že se vždy vezme nějaký zdrojový blok a najde se pro něj nejlepší
+ zobrazení.
+ Pokud je chyba dostatečně malá, je zobrazení použito, jinak je blok rozdělen
+ na čtyři o\InsetSpace ~
+poloviční velikosti, pro které se použije stejný postup.
+\end_layout
+
+\begin_layout Standard
+Tento způsob dělení je celkem efektivní a také jednoduchý na implementaci,
+ včetně velmi úsporného uložení tvaru čtyřstromu.
+ Pro použití v\InsetSpace ~
+praxi je potřeba čtyřstrom zobecnit i pro jiné velikosti obrázku
+ a jsou vhodná i další vylepšení.
+ Podrobněji je dělení čtyřstromem rozebráno v\InsetSpace ~
+<odkaz na kapitolu o RangeEncoderu>.
+\end_layout
+
+\begin_layout Standard
+Jednou z\InsetSpace ~
+nevýhod je, že skoky mezi jednotlivými velikostmi bloků jsou relativně
+ velké, takže v\InsetSpace ~
+některých případech dochází k\InsetSpace ~
+dělení na zbytečně malé bloky.
+ Tento problém je řešen v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "OnCC01"
+
+\end_inset
+
+ pomocí přidání jednoho mezikroku, což sice vede k\InsetSpace ~
+delšímu výpočtu, ale také
+ mírně zlepšuje kvalitu komprimovaných obrázků.
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zobecněním dělení čtyřstromem je HV (horizontálně-vertikální) dělení, popsané
+ v 6.\InsetSpace \thinspace{}
+kapitole knihy 
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+.
+ Základní myšlenka je stejná jako u\InsetSpace ~
+čtyřstromů, akorát umožňuje dělit obecné
+ obdelníkové bloky na dva menší podle libovolné svislé nebo vodorovné přímky.
+\end_layout
+
+\begin_layout Standard
+To také vede k\InsetSpace ~
+menším skokům mezi velikostmi bloků, ale hlavní výhoda je
+ ve vyšší adaptivitě.
+ Ve výše uvedené knize je navržena heuristická metoda, která vybírá místo
+ dělení nejčastěji těsně u\InsetSpace ~
+silných barevných zlomů a zároveň se vyhýbá blokům
+ s\InsetSpace ~
+příliš velkým poměrem délek stran.
+ To zvyšuje pravděpodobnost nalezení vhodného zdrojového bloku a vyvažuje
+ tak větší složitost uložení struktury rozdělení obrázku.
+ Podle autorů dává metoda o\InsetSpace ~
+něco lepší výsledky než klasický čtyřstrom.
 \end_layout
 
 \begin_layout Standard
