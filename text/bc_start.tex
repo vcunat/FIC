@@ -1,20 +1,19 @@
-\frenchspacing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%                                    %%%
+%%% Šablona bakalářské práce na MFF UK %%%
+%%%                                    %%%
+%%% (c) František Štrupl, 2005         %%%
+%%%                                    %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%\newindex{default}{idx}{ind}{Rejstřík} % zavádí rejstřík v případě použití balíku index
+%%% POZOR: Úprava bakalářské práce je závislá rovněž na volbě jednostranného resp. oboustranného tisku.
+%%%        Bližši informace naleznete v dokumentu Úprava bakalářské práce, který se nalézá na adrese:
+%%%        http://www.mff.cuni.cz/studium/obecne/bplayout/pok12mo4.pdf
 
-\def\bcTitle{Moderní metody fraktální komprese obrazu}  
-\def\bcTitleEn{Contemporary Methods in Fractal Image Compression}
-\def\bcAuthor{Vladimír Čunát} 
-\def\bcAuthorEn{Vladimir Cunat} 
-\def\bcTeacher{RNDr. Tomáš Dvořák, CSc.}
-\def\bcTeacherMail{Tomas.Dvorak@mff.cuni.cz}
-\def\bcKSVI{Kabinet software a výuky informatiky}
+%\pagestyle{headings}
+\pagestyle{plain}
 
-\title{\bcTitle}
-\author{\bcAuthor}
-\date{\today}
-
-
+\frenchspacing % aktivuje použití některých českých typografických pravidel
 
 
 %\csprimeson % zapne jednoduché psaní českých uvozovek pomocí klasických znaků, ale potom pozor 
@@ -71,9 +70,11 @@ Matematicko-fyzikální fakulta\\
 \end{center}
 
 \end{titlepage} % zde končí úvodní strana
+\clearpage
 
 \normalsize % nastavení normální velikosti fontu
 \setcounter{page}{2} % nastavení číslování stránek
+\cleardoublepage
 \ \vspace{10mm} 
 
 \noindent Na tomto místě mohou být napsána případná poděkování (vedoucímu práce, konzultantovi, tomu, kdo půjčil software, literaturu, poskytl data apod.). % doplňte vlastní text
@@ -86,10 +87,10 @@ Matematicko-fyzikální fakulta\\
 
 %%%   Výtisk pak na tomto míste nezapomeňte PODEPSAT!
 %%%                                         *********
-\newpage
+\cleardoublepage
 \tableofcontents % vkládá automaticky generovaný obsah dokumentu
 
-\newpage % přechod na novou stránku
+\cleardoublepage % přechod na novou pravou stránku
 
 %%% Následuje strana s abstrakty. Doplňte vlastní údaje.
 \noindent
@@ -99,20 +100,24 @@ Katedra (ústav): \bcKSVI\\
 Vedoucí bakalářské práce: \bcTeacher\\
 e-mail vedoucího: \bcTeacherMail\\
 
-\noindent Abstrakt:  V předložené práci studujeme ... Uvede se abstrakt v rozsahu 80 až 200 slov. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut sit amet sem. Mauris nec turpis ac sem mollis pretium. Suspendisse neque massa, suscipit id, dictum in, porta at, quam. Nunc suscipit, pede vel elementum pretium, nisl urna sodales velit, sit amet auctor elit quam id tellus. Nullam sollicitudin. Donec hendrerit. Aliquam ac nibh. Vivamus mi. Sed felis. Proin pretium elit in neque. Pellentesque at turpis. Maecenas convallis. Vestibulum id lectus. Fusce dictum augue ut nibh. Etiam non urna nec mi mattis volutpat. Curabitur in tortor at magna nonummy gravida.\\
+\noindent Abstrakt:  V předložené práci studujeme. Uvede se abstrakt v rozsahu 80 až 200 slov. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut sit amet sem. Mauris nec turpis ac sem mollis pretium. Suspendisse neque massa, suscipit id, dictum in, porta at, quam. Nunc suscipit, pede vel elementum pretium, nisl urna sodales velit, sit amet auctor elit quam id tellus. Nullam sollicitudin. Donec hendrerit. Aliquam ac nibh. Vivamus mi. Sed felis. Proin pretium elit in neque. Pellentesque at turpis. Maecenas convallis. Vestibulum id lectus. Fusce dictum augue ut nibh. Etiam non urna nec mi mattis volutpat. Curabitur in tortor at magna nonummy gravida.\\
 
 \noindent Klíčová slova: klíčová slova (3 až 5)
 
-\vspace{10mm}
+%\vspace{10mm}
+\vfill % výměna - IMHO vypadá mnohem lépe
 
 \noindent
-Title: Název bakalářské práce v angličtině\\
+Title: \bcTitleEn\\
 Author: \bcAuthor\\
-Department: Název katedry či ústavu v angličtině\\
+Department: \bcKSVIen\\
 Supervisor: \bcTeacher\\
 Supervisor's e-mail address: \bcTeacherMail\\
 
-\noindent Abstract: In the present work we study ... Uvede se anglický abstrakt v rozsahu 80 až 200 slov. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut sit amet sem. Mauris nec turpis ac sem mollis pretium. Suspendisse neque massa, suscipit id, dictum in, porta at, quam. Nunc suscipit, pede vel elementum pretium, nisl urna sodales velit, sit amet auctor elit quam id tellus. Nullam sollicitudin. Donec hendrerit. Aliquam ac nibh. Vivamus mi. Sed felis. Proin pretium elit in neque. Pellentesque at turpis. Maecenas convallis. Vestibulum id lectus. Fusce dictum augue ut nibh. Etiam non urna nec mi mattis volutpat. Curabitur in tortor at magna nonummy gravida.\\
+\noindent Abstract: In the present work we study. Uvede se anglický abstrakt v rozsahu 80 až 200 slov. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Ut sit amet sem. Mauris nec turpis ac sem mollis pretium. Suspendisse neque massa, suscipit id, dictum in, porta at, quam. Nunc suscipit, pede vel elementum pretium, nisl urna sodales velit, sit amet auctor elit quam id tellus. Nullam sollicitudin. Donec hendrerit. Aliquam ac nibh. Vivamus mi. Sed felis. Proin pretium elit in neque. Pellentesque at turpis. Maecenas convallis. Vestibulum id lectus. Fusce dictum augue ut nibh. Etiam non urna nec mi mattis volutpat. Curabitur in tortor at magna nonummy gravida.\\
 
 \noindent Keywords: klíčová slova (3 až 5) v angličtině
+
+% přidáno s vfillem
+\vspace{10mm}
 

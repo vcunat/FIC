@@ -2,13 +2,47 @@
 \lyxformat 276
 \begin_document
 \begin_header
-\textclass article
+\textclass report
 \begin_preamble
-\usepackage[final]{graphicx}
+%\usepackage[utf-8]{inputenc} % nastavuje použité kódování, uživatelé Windows zamění latin2 za cp1250
+%\usepackage[czech]{babel}
+%\usepackage{a4wide} % nastavuje standardní evropský formát stránek A4
+%\usepackage{index} % nutno použít v případě tvorby rejstříku balíčkem makeindex
+%\usepackage{fancybox} % umožňuje pokročilé rámečkování :-)
+\usepackage[final]{graphicx} % nezbytné pro standardní vkládání obrázků do dokumentu
 
-\usepackage{amsmath,amsthm,amssymb}
+\usepackage[bindingoffset=1cm]{geometry} % nastavení dané velikosti okrajů
+%[outer=2.5cm,inner=4cm,top=2cm,bottom=3cm]
+
+%\newindex{default}{idx}{ind}{Rejstřík} % zavádí rejstřík v případě použití balíku index
+
+
+\def\bcTitle{Moderní metody fraktální komprese obrazu}  
+\def\bcTitleEn{Contemporary Methods in Fractal Image Compression}
+\def\bcAuthor{Vladimír Čunát} 
+\def\bcAuthorEn{Vladimir Cunat} 
+\def\bcTeacher{RNDr.~Tomáš Dvořák, CSc.}
+\def\bcTeacherMail{Tomas.Dvorak@mff.cuni.cz}
+\def\bcKSVI{Kabinet software a výuky informatiky}
+\def\bcKSVIen{Department of Software and Computer Science Education}
+
+\title{\bcTitle}
+\author{\bcAuthor}
+\date{\today}
+
+\usepackage[ 
+pdfauthor={\bcAuthorEn}, 
+pdftitle={\bcTitleEn}, 
+pdfcreator={Lyx}, 
+pdfsubject={Fractal Image Compression}, 
+pdfkeywords={image compression,fractals} 
+]{hyperref}
+
+
+\usepackage{amsthm}
 \newtheorem*{veta}{Věta}
 \end_preamble
+\options notitlepage,12pt
 \language czech
 \inputencoding utf8
 \font_roman default
@@ -21,25 +55,25 @@
 \font_tt_scale 100
 \graphics default
 \paperfontsize default
-\spacing onehalf
-\papersize default
+\spacing single
+\papersize a4paper
 \use_geometry false
-\use_amsmath 2
-\use_esint 2
+\use_amsmath 1
+\use_esint 1
 \cite_engine basic
 \use_bibtopic false
 \paperorientation portrait
 \paperwidth 0cm
 \paperheight 0cm
-\leftmargin 0cm
-\topmargin 0cm
-\rightmargin 0cm
-\bottommargin 0cm
-\headheight 0cm
-\headsep 0cm
-\footskip 0cm
-\secnumdepth 3
-\tocdepth 3
+\leftmargin 4cm
+\topmargin 2.5cm
+\rightmargin 2.5cm
+\bottommargin 2.5cm
+\headheight 1cm
+\headsep 1cm
+\footskip 1.5cm
+\secnumdepth 2
+\tocdepth 2
 \paragraph_separation indent
 \defskip medskip
 \quotes_language german
@@ -65,7 +99,7 @@ preview false
 
 \end_layout
 
-\begin_layout Section
+\begin_layout Chapter
 Úvod
 \end_layout
 
@@ -73,8 +107,8 @@ preview false
 <Představení práce, motivace a přehled obsahu kapitol.>
 \end_layout
 
-\begin_layout Section
-Vývoj a principy fraktálové komprese obrazu
+\begin_layout Chapter
+Vývoj a principy fraktální komprese obrazu
 \end_layout
 
 \begin_layout Standard
@@ -123,7 +157,8 @@ zobrazení
 \begin_inset Formula $X$
 \end_inset
 
- s metrikou 
+ s\InsetSpace ~
+metrikou 
 \begin_inset Formula $d$
 \end_inset
 
@@ -144,7 +179,7 @@ takové
 
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Section
 IFS
 \end_layout
 
@@ -365,7 +400,7 @@ tom, že na rozdíl od klasických IFS
  tuto metodu se nepodařilo zautomatizovat.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Section
 PIFS
 \end_layout
 
@@ -530,7 +565,7 @@ ci není potřeba.
  Tato kontraktivita mimo jiné způsobuje vytváření nových detailů při přiblížení.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Konvergence PIFS
 \end_layout
 
@@ -608,7 +643,7 @@ implementaci je tento odhad příliš volný,
  stejně jako použitá metrika nedává dobré vizuální výsledky.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Optimální zobrazení
 \end_layout
 
@@ -711,15 +746,10 @@ metrikou a také optimalizaci
  v\InsetSpace ~
 ní, na druhou stranu díky tomu pro větší bloky nedává metrika výsledky
  odpovídající vizuálnímu rozdílu.
-\end_layout
+ Možnosti použití alternativních metrik jsou zmíněny v\InsetSpace ~
 
-\begin_layout Standard
-Zlepšování kvality komprimovaných obrázků použitím přesnější metriky bylo
- zatím věnováno jen velmi málo pozornosti.
- Vhodností různých metrik pro fraktální kompresi se zabývá například\InsetSpace ~
-
-\begin_inset LatexCommand cite
-key "AbateNR07"
+\begin_inset LatexCommand vref
+reference "Články-Zlepšení_vzhledu-Další_metody"
 
 \end_inset
 
@@ -768,7 +798,7 @@ aproximaci konstantním blokem, volba lineárního
 encoderu>.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Rychlá konvergence
 \end_layout
 
@@ -779,8 +809,10 @@ této podobě stále trpěla jedním skrytým problémem.
 \begin_inset Formula $c_{i}$
 \end_inset
 
- kolážová věta sice zaručovala, že obrázek zkonverguje (v prostoru všech
- obrázků s libovolnou metrikou) a nebude se příliš lišit, ale nijak neomezovala
+ kolážová věta sice zaručovala, že obrázek zkonverguje (v\InsetSpace ~
+prostoru všech
+ obrázků s\InsetSpace ~
+libovolnou metrikou) a nebude se příliš lišit, ale nijak neomezovala
  počet nutných iteračních kroků.
  Ukázalo se, že tento problém není jen teoretický\InsetSpace ~
 --- i\InsetSpace ~
@@ -799,7 +831,8 @@ key "Oien94"
 
  a podrobněji rozebráno v\InsetSpace ~
 6.\InsetSpace ~
-kapitole 
+kapitole\InsetSpace ~
+
 \begin_inset LatexCommand cite
 key "Fish95"
 
@@ -1003,8 +1036,18 @@ ostrými přechody bez ztráty
 .
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Úprava lineárních koeficientů
+\begin_inset Note Note
+status open
+
+\begin_layout Standard
+značení konvergence
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1204,25 +1247,19 @@ toho je zřejmé, že cílový obrázek bude pevným bodem i takto pozměněnéh
 \end_layout
 
 \begin_layout Standard
-Nová a původní optimální čtvercová chyba: 
+Nová a původní optimální čtvercová chyba:
 \begin_inset Formula \[
-\overline{SE}=<\ldots>=2n\, s_{y}^{2}\left(1\mp r_{x,y}\right)=2n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\]
+\overline{SE}=<\cdots>=2n\, s_{y}^{2}\left(1\mp r_{x,y}\right)=2n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\]
 
 \end_inset
 
 
-\end_layout
-
-\begin_layout Standard
 \begin_inset Formula \[
 SE=n\frac{s_{x}^{2}s_{y}^{2}-q_{x,y}^{2}}{s_{x}^{2}}=n\, s_{y}^{2}\left(1-r_{x,y}^{2}\right)=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\left(1+\left|r_{x,y}\right|\right)\]
 
 \end_inset
 
 Z toho dostaneme absolutní a relativní nárůst chyby:
-\end_layout
-
-\begin_layout Standard
 \begin_inset Formula \[
 \overline{SE}-SE=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\left[2-\left(1+\left|r_{x,y}\right|\right)\right]=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)^{2}\]
 
@@ -1296,7 +1333,7 @@ Koeficienty
 rámci této práce ukazují, že může být výhodné vyhýbat se zobrazením s\InsetSpace ~
 vysokým
  poměrem 
-\begin_inset Formula $\frac{s_{y}}{s_{\bar{x}}}$
+\begin_inset Formula ${\displaystyle \frac{s_{y}}{s_{\bar{x}}}}$
 \end_inset
 
 .
@@ -1306,21 +1343,24 @@ encoderu>, včetně teoretického zdůvodněn
 í.
 \end_layout
 
-\begin_layout Subsection
-<Přehled výsledků>
+\begin_layout Section
+Nejčastější oblasti výzkumu
 \end_layout
 
 \begin_layout Standard
 Především v\InsetSpace ~
 první polovině 90.\InsetSpace \thinspace{}
 let bylo věnováno fraktální kompresi velké úsilí.
- Bylo zkoumáno (většinou oddělení) mnoho odlišných způsobů vylepšení základních
+ Bylo zkoumáno (většinou odděleně) mnoho odlišných způsobů vylepšení základních
  technik popsaných výše.
- V této části jsou shrnuty nejvýznamnější výsledky, pro přehlednost jsou
- rozčleněny podle toho, na které aspekty komprese se zaměřují.
+ V\InsetSpace ~
+této části jsou shrnuty nejvýznamnější výsledky a zajímavé návrhy pro
+ další výzkum.
+ Pro přehlednost jsou rozčleněny podle toho, na které aspekty komprese se
+ zaměřují.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Zrychlení komprese
 \end_layout
 
@@ -1331,12 +1371,14 @@ Za největší problém byla považována obrovská výpočetní náročnost hle
 oblasti se sice výkon běžných počítačů
  mnohonásobně zvýšil, ale stále je nutné se tímto problémem zabývat.
  Jedním z\InsetSpace ~
-důvodů je, že dnes používané fotografie mají také mnohem větší
- rozměry.
-\begin_inset VSpace defskip
-\end_inset
+důvodů je, že dnes je potřeba zpracovávat mnohem větší množství
+ dat.
+ Velikosti a množství fotografií roste a také je zkoumána možnost využití
+ pro kompresi videozáznamů.
+\end_layout
 
-
+\begin_layout Subsubsection
+Klasifikační metody
 \end_layout
 
 \begin_layout Standard
@@ -1362,7 +1404,8 @@ vynechání některých optimálních zobrazení, ale pokles
 Většinou jde o\InsetSpace ~
 jednoduché rozdělení bloků do několika tříd a uvažování pouze
  zobrazení v rámci jedné třídy, například klasifikace navržené Jacquinem
- nebo Fisherem 
+ nebo Fisherem\InsetSpace ~
+
 \begin_inset LatexCommand cite
 key "Fish95"
 
@@ -1390,17 +1433,22 @@ sousedních
  třídách.
  To vede ke složitějším metodám, které hledají i v\InsetSpace ~
 příbuzných třídách, nebo
- používají hierarchické způsoby klasifikace, například 
+ používají hierarchické způsoby klasifikace, například\InsetSpace ~
+
 \begin_inset LatexCommand cite
 key "Han07"
 
 \end_inset
 
 .
-\begin_inset VSpace defskip
-\end_inset
+\end_layout
 
+\begin_layout Subsubsection
+<prostorové struktury>
+\end_layout
 
+\begin_layout Subsubsection
+Lokální prohledávání
 \end_layout
 
 \begin_layout Standard
@@ -1420,7 +1468,8 @@ Základem této techniky je domněnka, že ideální zdrojový blok má větší
 bnost výskytu blíže k\InsetSpace ~
 danému cílovému bloku.
  V\InsetSpace ~
-kapitole 3 knihy 
+kapitole 3 knihy\InsetSpace ~
+
 \begin_inset LatexCommand cite
 key "Fish95"
 
@@ -1428,33 +1477,50 @@ key "Fish95"
 
  je ukázáno, že posun rozdělení vzdáleností optimálních dvojic oproti vzdálenost
 em náhodně vybraných dvojic je zanedbatelný.
- Zrádné je zde především to, že rozdělení vzdálenosti dvou náhodných bodů
- je velmi nerovnoměrný.
- Přesto například v\InsetSpace ~
-nedávném článku 
+ Zrádné je zde především to, že už jen rozdělení vzdálenosti dvou náhodných
+ bodů je velmi nerovnoměrné.
+\end_layout
+
+\begin_layout Standard
+Jsou zde i\InsetSpace ~
+další nevýhody spojené s\InsetSpace ~
+tím, že je množina uvažovaných zdrojových
+ bloků pro každý cílový blok jiná, například obtížná kombinace s\InsetSpace ~
+jinými metodami
+ urychlení komprese.
+\end_layout
+
+\begin_layout Standard
+Na druhou stranu například v\InsetSpace ~
+nedávném článku\InsetSpace ~
+
 \begin_inset LatexCommand cite
 key "HuQK07"
 
 \end_inset
 
- se tvrdí opak a dokonce graf rozdělení eukleidovské vzdálenosti mezi optimálním
-i dvojicemi se hodně liší od obdobného grafu v\InsetSpace ~
+ je zkoumána závislost podobnosti dvou cílových bloků na jejich vzdálenosti
+ s\InsetSpace ~
+opačnými výsledky na stejném obrázku (Lenna).
+ To je pravděpodobně způsobeno tím, že při hledání podobnosti mezi zdrojovým
+ a cílovým blokem vždy dochází ke zmenšování, zatímco blízké cílové bloky
+ často mívají stejnou velikost.
+\end_layout
 
-\begin_inset LatexCommand cite
-key "Fish95"
+\begin_layout Standard
+Této podobnosti je zde využito nejen pro urychlení hledání zdrojového bloku
+ tím, že jsou nejprve vyzkoušeny zdrojové bloky blízkých cílových bloků,
+ ale hlavně ke zvýšení kompresního poměru.
+ Místo ukládání identifikačního čísla zdrojového bloku stačí uložit relativní
+ pozici nejbližšího cílového bloku se stejným zdrojovým blokem.
+ Vzhledem k\InsetSpace ~
+tomu, že cílových bloků bývá mnohem méně než zdrojových a podobné
+ cílové bloky se často vyskytují blízko, lze takto ušetřit mnoho bitů ve
+ výstupu za cenu minimálního poklesu kvality.
+\end_layout
 
-\end_inset
-
- naměřeného na stejném obrázku (Lenna).
- Jsou zde i další nevýhody spojené s\InsetSpace ~
-tím, že je množina uvažovaných zdrojových
- bloků pro každý cílový blok jiná, například obtížná kombinace s\InsetSpace ~
-jinými metodami
- urychlení komprese.
-\begin_inset VSpace defskip
-\end_inset
-
-
+\begin_layout Subsubsection
+Přerušení prohledávání
 \end_layout
 
 \begin_layout Standard
@@ -1465,7 +1531,7 @@ dostatečně dobrým už nalezeným blokem.
  Nejsou mi známy žádné práce, které by se podrobněji zabývaly touto technikou.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Zlepšení vhledu
 \end_layout
 
@@ -1480,13 +1546,13 @@ stejný
 těchto ukazatelů na úkor druhého.
 \end_layout
 
-\begin_layout Paragraph
-Dělení na zdrojové bloky
+\begin_layout Subsubsection
+Dělení na cílové bloky
 \end_layout
 
 \begin_layout Standard
 Jedním ze základních faktorů ovlivňujících vzhled je způsob dělení obrázku
- na zdrojové bloky.
+ na cílové bloky.
  Nejjednodušší je určit dělení napevno.
  To je ale v\InsetSpace ~
 praxi nepoužitelné kvůli obtížné regulaci kvality a kompresního
@@ -1505,10 +1571,10 @@ plochých
 \end_inset
 
  místech nechávaly velké bloky a v\InsetSpace ~
-místech se složitější kresbou dělily obrázek
- na malé a zvyšovaly u\InsetSpace ~
-nich tak pravděpodobnost nalezení dostatečně dobrého
- zobrazení.
+místech se složitější kresbou mohly dělit
+ obrázek na menší a zvyšovat u\InsetSpace ~
+nich tak pravděpodobnost nalezení dostatečně
+ dobrého zobrazení.
 \end_layout
 
 \begin_layout Standard
@@ -1532,8 +1598,8 @@ key "Fish95"
  o\InsetSpace ~
 hranách délky mocniny 2.
  Začne se s\InsetSpace ~
-jedním velkým zdojovým blokem pokrývajícím celý obrázek a postupuje
- se tak, že se vždy vezme nějaký zdrojový blok a najde se pro něj nejlepší
+jedním velkým cílovým blokem pokrývajícím celý obrázek a postupuje
+ se tak, že se vždy vezme nějaký cílový blok a najde se pro něj nejlepší
  zobrazení.
  Pokud je chyba dostatečně malá, je zobrazení použito, jinak je blok rozdělen
  na čtyři o\InsetSpace ~
@@ -1552,10 +1618,11 @@ praxi je potřeba čtyřstrom zobecnit i pro jiné velikosti obrázku
 
 \begin_layout Standard
 Jednou z\InsetSpace ~
-nevýhod je, že skoky mezi jednotlivými velikostmi bloků jsou relativně
- velké, takže v\InsetSpace ~
+nevýhod čtyřstromu je, že skoky mezi jednotlivými velikostmi bloků
+ jsou relativně velké, takže v\InsetSpace ~
 některých případech dochází k\InsetSpace ~
-dělení na zbytečně malé bloky.
+dělení na zbytečně
+ malé bloky.
  Tento problém je řešen v\InsetSpace ~
 
 \begin_inset LatexCommand cite
@@ -1578,7 +1645,8 @@ delšímu výpočtu, ale také
 \begin_layout Standard
 Zobecněním dělení čtyřstromem je HV (horizontálně-vertikální) dělení, popsané
  v 6.\InsetSpace \thinspace{}
-kapitole knihy 
+kapitole knihy\InsetSpace ~
+
 \begin_inset LatexCommand cite
 key "Fish95"
 
@@ -1594,15 +1662,619 @@ key "Fish95"
 To také vede k\InsetSpace ~
 menším skokům mezi velikostmi bloků, ale hlavní výhoda je
  ve vyšší adaptivitě.
- Ve výše uvedené knize je navržena heuristická metoda, která vybírá místo
- dělení nejčastěji těsně u\InsetSpace ~
-silných barevných zlomů a zároveň se vyhýbá blokům
- s\InsetSpace ~
-příliš velkým poměrem délek stran.
+ V\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+ je navržena heuristická metoda, která vybírá místo dělení nejčastěji těsně
+ u\InsetSpace ~
+silných barevných zlomů a zároveň se vyhýbá blokům s\InsetSpace ~
+příliš velkým poměrem
+ délek stran.
  To zvyšuje pravděpodobnost nalezení vhodného zdrojového bloku a vyvažuje
  tak větší složitost uložení struktury rozdělení obrázku.
- Podle autorů dává metoda o\InsetSpace ~
-něco lepší výsledky než klasický čtyřstrom.
+\end_layout
+
+\begin_layout Standard
+Podle autorů dává metoda o\InsetSpace ~
+něco lepší výsledky než klasický čtyřstrom, ale
+ komplikuje ostatní fáze komprese.
+ Protože cílové bloky mohou mít libovolné obdelníkové tvary, je mnohem těžší
+ použití klasifikačních a jiných urychlujících metod.
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Další typy dělení, například trojúhelníkové, polygonální, nebo šestiúhelníkové
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+toto dělení na rozdíl od šestiúhelníkové architektury zmíněné níže pracuje
+ s\InsetSpace ~
+klasickými čtvercovými pixely, jen zdrojové bloky mají přibližně tvar
+ šestiúhelníků
+\end_layout
+
+\end_inset
+
+ jsou velmi komplikované na implementaci a pravděpodobně by nepřinesly významné
+ zlepšení kvality.
+ Mezi jejich předpokládané výhody ale patří méně 
+\begin_inset Quotes gld
+\end_inset
+
+blokovitý
+\begin_inset Quotes grd
+\end_inset
+
+ vhled způsobený dělením podle šikmých nebo různě orientovaných hran, případně
+ mírným překryvem pixelů na krajích bloků.
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dělení na nezávisle zobrazované bloky vytváří rušivou strukturu, jejíž redukcí
+ je možné výrazně zlepšit subjektivní vzhled a někdy i PSNR komprimovaného
+ obrázku.
+ Problémem je vysoká citlivost lidského na hrany, obzvláště horizontálně
+ a vertikálně orientované.
+ Pro potlačení této struktury lze dělat zásahy na dvou různých místech celého
+ kompresního procesu.
+\end_layout
+
+\begin_layout Standard
+Nejjednodušší možnost je věnovat se tomuto problému až při dekódování.
+ Hranice bloků jsou vždy známé, takže je možné vyhlazovat výsledný obrázek
+ jen na jejich okrajích.
+ Vizuálního zlepšení lze dosáhnout už použitím jednoduchých nebo vážených
+ průměrů (
+\begin_inset LatexCommand cite
+key "Aoue04"
+
+\end_inset
+
+\InsetSpace ~
+a\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+).
+ U obrázků s\InsetSpace ~
+vyšším kompresním poměrem a také u jednotlivých větších cílových
+ bloků je větší potřeba vyhlazování a obvykle dojde i ke zvýšení PSNR, ale
+ naopak při nastavení vysoké kvality po vyhlazování PSNR klesne (přestože
+ obrázek často 
+\begin_inset Quotes gld
+\end_inset
+
+vypadá lépe
+\begin_inset Quotes grd
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Další možností je snažit se redukovat tyto přechody už při kompresi.
+ Zde mi nejsou známy žádné publikované výsledky kromě návrhů způsobů řešení.
+ Lze vážit chybu na okrajích cílových bloků více než chybu uvnitř, případně
+ použít dělení na překrývající se bloky a při dekódování hodnoty na překryvu
+ kombinovat.
+\end_layout
+
+\begin_layout Subsubsection
+Zdrojové bloky
+\end_layout
+
+\begin_layout Standard
+Dalším faktorem ovlivňujícím vzhled je volba souboru zdrojových bloků.
+ Důležitý je především počet bloků v\InsetSpace ~
+souboru.
+ Zvýšení počtu sice vede k\InsetSpace ~
+potřebě většího prostoru na uložení identifikačních
+ čísel zdrojových bloků, ale také zvyšuje pravděpodobnost nalezení vhodného
+ bloku, takže lze při stejné kvalitě použít rozdělení obrázku na menší počet
+ větších cílových bloků.
+\end_layout
+
+\begin_layout Standard
+Výsledky testování (například v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Saup95,Fish95"
+
+\end_inset
+
+) ukazují, že zvyšování množství zdrojových bloků typicky vede ke zlepšení
+ kvality.
+ Nevýhodou je vyšší výpočetní náročnost.
+ Zde se ukazuje spojitost se zrychlením komprese\InsetSpace ~
+--- při vyšší rychlosti
+ by bylo únosné prohledat větší soubor bloků a zlepšit tak kvalitu (případně
+ kompresní poměr).
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Kromě množství zdrojových bloků je potřeba rozhodnout, jak zdrojové bloky
+ vybírat.
+ Základní podmínkou je, že musí být větší než příslušné cílové bloky, aby
+ byla prostorová část zobrazení kontraktivní.
+ Ekvivalentně lze uvažovat výběr zdrojových bloků stejně velkých jako příslušné
+ cílové z\InsetSpace ~
+nějaké zmenšeniny původního obrázku.
+ To je díky své obecnosti někdy výhodné i pro implementaci (využito také
+ v\InsetSpace ~
+této práci).
+\end_layout
+
+\begin_layout Standard
+Samotné zmenšování lze provádět mnoha různými způsoby.
+ Kvůli jednoduché implementaci se nejčastěji používá především zmenšování
+ v\InsetSpace ~
+obou rozměrech na polovinu (průměrováním hodnot po čtveřicích) a navíc
+ se uvažuje všech osm transformací čtverce složených ze\InsetSpace ~
+symetrií a otáčení
+ o\InsetSpace ~
+násobky 
+\begin_inset Formula $90^{\circ}$
+\end_inset
+
+.
+ V\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Aoue04"
+
+\end_inset
+
+ je navíc zkoumáno použití zmenšování s\InsetSpace ~
+kontraktivitou rozdílnou pro obě
+ osy nebo s\InsetSpace ~
+přidáním otočení o\InsetSpace ~
+
+\begin_inset Formula $45^{\circ}$
+\end_inset
+
+ s\InsetSpace ~
+nejasnými výsledky <odkaz na kapitolu o\InsetSpace ~
+doménách>.
+\end_layout
+
+\begin_layout Standard
+Podle\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Saup96"
+
+\end_inset
+
+ přidávání osmi transformací čtverce nijak nezlepšuje kvalitu, ale může
+ sloužit spíše jako způsob zvětšování počtu zdrojových bloků.
+ V\InsetSpace ~
+takto zvětšeném souboru bloků je často pak možné dosáhnout úspory paměti
+ a zrychlení oproti jiným způsobům zvětšování souboru.
+\end_layout
+
+\begin_layout Subsubsection
+Šestiúhelníková architektura
+\end_layout
+
+\begin_layout Standard
+V\InsetSpace ~
+poslední době je zkoumáno také pojetí obrázku jako bodů uspořádaných do
+ šestiúhelníkové mříže místo čtvercové.
+ Tato architektura mnohem lépe odpovídá rozložení tyčinek a čípků na sítnici
+ oka a také vede k\InsetSpace ~
+přirozené redukci horizontálních a vertikálních artefaktů.
+ Další výhodou je větší množství přirozených rotací na mříži.
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Protože běžné formáty obrázků podporují pouze obdélníkový tvar se\InsetSpace ~
+čtvercovými
+ body, je potřeba nejprve stanovit způsob převodu mezi mřížemi.
+ Objevují se dva různé přístupy.
+ První možnost je představit si čtvercovou mříž o\InsetSpace ~
+
+\begin_inset Formula $60^{\circ}$
+\end_inset
+
+ zkosenou, tím se středy pixelů dostanou právě do pravidelné šestiúhelníkové
+ mříže a je možné je převádět 
+\begin_inset Formula $1:1$
+\end_inset
+
+ (například v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "ThKa07"
+
+\end_inset
+
+).
+ Druhou možností je body přepočítat pomocí váženého průměrování, například
+ metodou ukázanou v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "HWWHH06"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Výhoda prvního přístupu oproti druhému je, že zobrazuje právě jeden čtvercový
+ pixel na jeden šestiúhelníkový, takže nedochází k žádnému rozmazávání.
+ Na druhou stranu se v\InsetSpace ~
+podstatě pracuje se zkoseným obrázkem, takže interpretace
+ vzdáleností bude v\InsetSpace ~
+různých směrech různě změněna, což může vést k\InsetSpace ~
+nerovnoměrným
+ projevům zkreslení způsobeného kompresí.
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Změna architektury také přináší mnoho otázek a implementačních problémů.
+ Po libovolném převodu obdélníkového obrázku budou v\InsetSpace ~
+šestiúhelníkové mříži
+ 
+\begin_inset Quotes gld
+\end_inset
+
+díry
+\begin_inset Quotes grd
+\end_inset
+
+ neobvyklých tvarů nebo nepravidelné okraje a už samotný způsob reprezentace
+ mříže v\InsetSpace ~
+paměti je netriviální.
+ Ve zmíněných článcích jsou tyto potíže řešeny kompresí pouze části obrázku
+ o\InsetSpace ~
+vhodném tvaru, ale ani tak zde dosažené výsledky nejsou přesvědčivé.
+\end_layout
+
+\begin_layout Subsubsection
+Zpracování barev
+\end_layout
+
+\begin_layout Standard
+Ve většině případů je fraktálová komprese zkoumána pouze na obrázcích ve
+ stupních šedi s\InsetSpace ~
+argumentem, že barevné obrázky lze snadno komprimovat jako
+ tři nezávislé jednobarevné.
+ Je ale zřejmé, že RGB není vhodný model pro kompresi obrazu, protože jsou
+ jeho složky vzájemně silně závislé.
+ <text s\InsetSpace ~
+odkazem na kapitolu o\InsetSpace ~
+ColorTransformeru>
+\end_layout
+
+\begin_layout Standard
+Nejjednodušší je použít některý z\InsetSpace ~
+barevných prostorů navržených pro tyto
+ účely, například YCbCr nebo L*a*b*.
+ Toto je standardní řešení v\InsetSpace ~
+mnoha jiných metodách komprese obrazu.
+ V\InsetSpace ~
+závislosti na použitém modelu může být vhodné navíc upravit nastavení
+ kvality komprese jednotlivých složek, protože citlivost oka na různé barvy
+ se liší.
+ Ve formátech založených na JPEGu se dokonce u\InsetSpace ~
+barevných složek snižuje rozlišení
+, ale ve fraktálové kompresi je mnohem výhodnější rozlišení ponechat a snížit
+ kvalitu, protože zde výhody oproti JPEGu rostou s\InsetSpace ~
+kompresním poměrem.
+\end_layout
+
+\begin_layout Standard
+Alternativně lze spočítat vlastní barevný prostor pro konkrétní obrázek.
+ Budeme pro jednoduchost uvažovat jen o\InsetSpace ~
+změnu báze ve vektorovém prostoru,
+ charakterizovanou maticí velikosti 
+\begin_inset Formula $3\times3$
+\end_inset
+
+.
+ Zde lze použít metodu zvanou PCA (principal component analysis), známou
+ také jako KLT (Karhunen–Loève transform).
+ Metoda nalezne nejlepší ortonormální bázi z\InsetSpace ~
+hlediska soustředění maxima
+ informace (rozptylu) do minima souřadnic.
+ Transformační matice je dána vlastními vektory kovariační matice a navíc
+ příslušná vlastní čísla charakterizují důležitost jednotlivých souřadnic.
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+PCA samotná lze použít ke kompresi obázků tak, že se obrázek rozdělí na
+ bloky a s\InsetSpace ~
+každým z\InsetSpace ~
+nich se pracuje jako s\InsetSpace ~
+vektorem.
+ Po náročném výpočtu pak vznikne transformace v\InsetSpace ~
+praxi často velmi podobná
+ diskrétní kosinové transformaci.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Je možné také volit jiné přístupy ke zpracování barev.
+ V\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "ThKa06"
+
+\end_inset
+
+ je předvedena metoda, která pomocí čtyřstromu dělí barevný obrázek na bloky
+ (podobně jako při dělení cílových bloků) dokud nejsou barvy v\InsetSpace ~
+blocích dostatečně
+ korelované.
+ Parametry korelace barev pro každý z\InsetSpace ~
+bloků jsou uloženy a do dalšího kódování
+ postupuje již jen jeden obrázek ve stupních šedi.
+ Zde je výhoda v\InsetSpace ~
+adaptivní kompresi informací o\InsetSpace ~
+barvě a také v\InsetSpace ~
+urychlení díky
+ tomu, že se složité metody fraktální komprese použijí jen na jeden jednobarevný
+ obrázek, přestože většina vnímané informace bude obsažena právě v\InsetSpace ~
+něm.
+\end_layout
+
+\begin_layout Subsubsection
+Další metody
+\begin_inset LatexCommand label
+name "Články-Zlepšení_vzhledu-Další_metody"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Zde ještě ještě stručně zmíněno několik dalších metod používaných pro zlepšení
+ vzhledu komprimovaných obrázků.
+\end_layout
+
+\begin_layout Standard
+Obzvláště při vysokých kompresních poměrech je výhodné počítat chybu zobrazení
+ ze zdrojových bloků do cílových s\InsetSpace ~
+použitím kvantizovaných parametrů zobrazení
+ místo teoretických optim (tedy z\InsetSpace ~
+hodnot dostupných při dekompresi místo
+ hodnot dostupných při kompresi).
+ Aby šlo metodu použít, je potřeba se omezit jen na některé způsoby kvantizace
+ a také výpočet této chyby bývá trochu složitější.
+\end_layout
+
+\begin_layout Standard
+Jak již bylo zmíněno, RMSE metrika pro větší bloky nepopisuje dobře vnímaný
+ rozdíl.
+ Použití přesnějších metrik bylo zatím věnováno jen velmi málo pozornosti,
+ především díky jednoduchosti práce s\InsetSpace ~
+RMSE umožnující relativně rychlou implement
+aci jejího vyhodnocení.
+ Vhodností jiných metrik pro fraktální kompresi se zabývá například\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "AbateNR07"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+PIFS uvažuje afinní zobrazení z\InsetSpace ~
+jednoho zdrojového bloku do jednoho cílového
+ bloku.
+ To lze zobecnit na hledání zobrazení z\InsetSpace ~
+dvou nebo více zdrojových bloků.
+ Víceprůchodové komprese, kde se jednoduše kóduje chyba předchozího kroku
+ nedávají lepší výsledky.
+ Přímé hledání zobrazení z\InsetSpace ~
+více zdrojových bloků ke zlepšení kvality výsledku
+ vede, ale množství kombinací zde roste ještě mnohem rychleji než v\InsetSpace ~
+klasické
+ PIFS kompresi.
+ Například v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "EuOn06"
+
+\end_inset
+
+ je navrženo snižovat složitost pomocí redukce podobných zdrojových bloků
+ a použití hladového přístupu.
+\end_layout
+
+\begin_layout Subsection
+Jiná vylepšení
+\end_layout
+
+\begin_layout Subsubsection
+Rychlost dekomprese
+\end_layout
+
+\begin_layout Standard
+Fraktální dekomprese bývá považována za velmi rychlou, což plyne především
+ z\InsetSpace ~
+velké náročnosti kompresní fáze.
+ Přesto při prvních iteracích zobrazení je obrázek složen z\InsetSpace ~
+jednolitých bloků
+ a je tedy zbytečné pracovat v\InsetSpace ~
+plném rozlišení.
+\end_layout
+
+\begin_layout Standard
+Jak je uvedeno v\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+, stačí začít dekompresi na zmenšeném obrázku, kde nejmenší cílové bloky
+ zabírají jediný pixel, a po každé iteraci zobrazení pak zvětšit obrázek
+ na dvojnásobek (efektivní především při dělení čtyřstromem).
+ V\InsetSpace ~
+plné velikosti pak stačí udělat jen okolo dvou iterací.
+\end_layout
+
+\begin_layout Subsubsection
+Progresivní dekódování
+\end_layout
+
+\begin_layout Standard
+Při praktickém využití je důležitá možnost progresivního dekódování obrázků\InsetSpace ~
+---
+ generování náhledů s\InsetSpace ~
+použitím pouze malé počáteční části souboru.
+ To je užitečné především na internetových stránkách, nebo při prohlížení
+ adresářů s\InsetSpace ~
+velkým množstvím fotografií.
+ Progresivním dekódováním pro klasický PIFS se zabývá 
+\begin_inset LatexCommand cite
+key "WWHH06"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Při použití modifikací nahrazující konstantní koeficienty barevných zobrazení
+ průměrnými barvami cílových bloků lze ale postupovat mnohem efektivněji\InsetSpace ~
+---
+ uložit nejprve způsob rozdělení na bloky (zabere velmi málo místa), potom
+ průměrné barvy všech cílových bloků a pak až ostatní parametry.
+ Tím lze generovat z\InsetSpace ~
+velmi malé části souboru náhled jen z\InsetSpace ~
+průměrných barev
+ bloků, který může vypadat relativně dobře, obzvláště pokud se pro zobrazení
+ použijí pokročilé interpolační metody.
+\end_layout
+
+\begin_layout Subsection
+Využití technik fraktální komprese pro jiné účely
+\end_layout
+
+\begin_layout Standard
+Fraktální komprese má velmi zajímavé vlastnosti, které lze využít i pro
+ další, často velmi odlišné, účely.
+ V této části budou nějdůležitějších z\InsetSpace ~
+nich zmíněny, ale jen velmi stručně
+ a bez odkazů na zdroje.
+\end_layout
+
+\begin_layout Standard
+Díky možnosti dekódování v\InsetSpace ~
+libovolném rozlišení lze použít fraktální kompresi
+ pro inteligentní zvětšování obrázků.
+ Při správném nastavení dává velmi dobré výsledky díky tomu, že zvětšenina
+ nepůsobí rozmazaným dojmem a ostré hrany jsou výborně zachovány.
+\end_layout
+
+\begin_layout Standard
+Z\InsetSpace ~
+podobných důvodů lze fraktální kompresi použít i pro čištění obrázků od
+ šumu.
+ Při kontraktivních zobrazeních mezi bloky se totiž šum velmi potlačí a
+ proto nelze typicky najít zdrojový blok, který by šum v\InsetSpace ~
+cílovém bloku napodobil.
+ Větší útvary a ostré hrany se naopak většinou podaří mezi zdrojovými bloky
+ najít, takže zůstanou zachovány.
+\end_layout
+
+\begin_layout Standard
+Je také zkoumáno přidávání 
+\begin_inset Quotes gld
+\end_inset
+
+vodoznaků
+\begin_inset Quotes grd
+\end_inset
+
+ do obrázků pomocí fraktální komprese.
+ Ty mají velmi zajímavé vlastnosti\InsetSpace ~
+--- nejsou vidět (ale lze je z\InsetSpace ~
+obrázku
+ extrahovat) a jsou velmi odolné proti ořezu, JPEG kompresi a jiným pokusům
+ o\InsetSpace ~
+odstranění.
+\end_layout
+
+\begin_layout Standard
+Je také diskutována možnost využití technik fraktální komprese pro videonahrávky.
+ Největší redundance je zde v\InsetSpace ~
+podobnosti mezi po sobě následujícími snímky.
+ V\InsetSpace ~
+klasických metodách se používají bloky některých snímků jako predikce
+ stejně umístěných (případně trochu posunutých) bloků jiných snímků a kóduje
+ se jen rozdíl.
+ Stejnou metodu lze využít i při fraktální kompresi, ale nabízí se mnohem
+ přirozenější rozšíření.
+ Stačí k\InsetSpace ~
+dvoudimenzionálnímu prostoru pixelů v\InsetSpace ~
+obrázcích přidat třetí dimenzi
+ tvořenou časem.
+ Potom videozáznam dělený na 
+\begin_inset Quotes gld
+\end_inset
+
+kvádry
+\begin_inset Quotes grd
+\end_inset
+
+ místo obdélníků lze komprimovat podobným způsobem jako obrázky pomocí zobrazení
+ mezi trojdimenzionálními bloky.
+ Zde je zajímavá například možnost dekódování ve vyšším rozlišení\InsetSpace ~
+--- lze
+ tak generovat rozumné mezisnímky, které v\InsetSpace ~
+původním videozáznamu nebyly.
 \end_layout
 
 \begin_layout Standard
