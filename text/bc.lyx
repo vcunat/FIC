@@ -11,7 +11,7 @@
 %\usepackage{fancybox} % umožňuje pokročilé rámečkování :-)
 \usepackage[final]{graphicx} % nezbytné pro standardní vkládání obrázků do dokumentu
 
-\usepackage[bindingoffset=1cm]{geometry} % nastavení dané velikosti okrajů
+\usepackage[bindingoffset=1.5cm]{geometry} % nastavení dané velikosti okrajů
 %[outer=2.5cm,inner=4cm,top=2cm,bottom=3cm]
 
 %\newindex{default}{idx}{ind}{Rejstřík} % zavádí rejstřík v případě použití balíku index
@@ -725,8 +725,18 @@ Volba optimálního zobrazení
  Ve fraktální kompresi se téměř výhradně používá RMSE metrika (zde uvedena
  v\InsetSpace ~
 nebvyklé spojité podobě):
+\begin_inset Note Note
+status open
+
+\begin_layout Standard
+existence integrálu, metoda nejmenších čtverců
+\end_layout
+
+\end_inset
+
+
 \begin_inset Formula \[
-d_{RMSE}\left(g_{1},g_{2}\right)=\sqrt{\frac{\iintop_{R_{i}}\left[g_{1}\left(x,y\right)-g_{2}\left(x,y\right)\right]^{2}\,\mathrm{d}x\mathrm{\, d}y}{\iintop_{R_{i}}\,\mathrm{d}x\mathrm{\, d}y}}\]
+d_{\mathrm{RMSE}}\left(g_{1},g_{2}\right)=\sqrt{\frac{\iintop_{R_{i}}\left[g_{1}\left(x,y\right)-g_{2}\left(x,y\right)\right]^{2}\,\mathrm{d}x\mathrm{\, d}y}{\iintop_{R_{i}}\,\mathrm{d}x\mathrm{\, d}y}}\]
 
 \end_inset
 
@@ -1444,7 +1454,71 @@ key "Han07"
 \end_layout
 
 \begin_layout Subsubsection
-<prostorové struktury>
+Převod na hledání nejbližšího bodu
+\end_layout
+
+\begin_layout Standard
+Problémem klasifikačních metod je, že přes výrazné zrychlení nejsou schopny
+ zlepšit asymptotickou složitost výpočtu.
+ Zde se nabízí zobecnění klasifikačních metod, kde by pro blok byl vygenerován
+ vektor z\InsetSpace ~
+nějakého prostoru uspořádaného tak, že vzdálenost v\InsetSpace ~
+něm odpovídá
+ míře vzájemné zobrazitelnosti.
+ Pak by pro každý bod prostoru odpovídající nějakému cílovému bloku stačilo
+ hledat nejbližší z\InsetSpace ~
+množiny bodů prostoru odpovídající zdrojovým blokům.
+ Hledání nejbližších sousedů je známá úloha, kterou už lze řešit výrazně
+ rychleji než úměrně se součinem velikostí obou množin.
+\end_layout
+
+\begin_layout Standard
+Tato možnost byla publikována mezi projekty v\InsetSpace ~
+knize\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Fish95"
+
+\end_inset
+
+ a podrobněji rozebrána v\InsetSpace ~
+samostatném článku\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Saup95"
+
+\end_inset
+
+.
+ Je zde především dokázáno, že při uvažování klasických afinních zobrazení
+ pro transformaci barvy mezi bloky je pro pevný cílový blok optimální čtvercová
+ chyba (SE) rovna monotónní transformaci eukleidovské vzdálenosti normalizovanýc
+h vektorů obou bloků (cílového a zdrojového).
+ Tedy pro nalezení zdrojového bloku 
+\begin_inset Quotes gld
+\end_inset
+
+nejpodobnějšího
+\begin_inset Quotes grd
+\end_inset
+
+ k\InsetSpace ~
+cílovému stačí jen najít nejbližší bod v\InsetSpace ~
+eukleidovském prostoru.
+\end_layout
+
+\begin_layout Standard
+Jsou zde různé komplikace\InsetSpace ~
+--- kvůli kvantizaci koeficientů nemusí nejbližší
+ bod být ten nejlepší, při uvažování i zobrazení se zápornými lineárními
+ koeficienty je nutné prohledávát strukturu dvakrát (nebo vložit každý bod
+ dvakrát).
+ Je zde také otázka spotřeby paměti, která sice není tak velkým problémem,
+ jako v\InsetSpace ~
+době publikace metody, ale stále potřeba se jí věnovat.
+ Dále se problematikou zabýváme v\InsetSpace ~
+<odkaz na část o\InsetSpace ~
+predictoru>.
 \end_layout
 
 \begin_layout Subsubsection
@@ -2242,13 +2316,13 @@ vodoznaků
  Ty mají velmi zajímavé vlastnosti\InsetSpace ~
 --- nejsou vidět (ale lze je z\InsetSpace ~
 obrázku
- extrahovat) a jsou velmi odolné proti ořezu, JPEG kompresi a jiným pokusům
- o\InsetSpace ~
+ extrahovat) a jsou velmi odolné proti ořezávání obrázku, JPEG kompresi
+ a jiným pokusům o\InsetSpace ~
 odstranění.
 \end_layout
 
 \begin_layout Standard
-Je také diskutována možnost využití technik fraktální komprese pro videonahrávky.
+Dále je diskutována možnost využití technik fraktální komprese pro videonahrávky.
  Největší redundance je zde v\InsetSpace ~
 podobnosti mezi po sobě následujícími snímky.
  V\InsetSpace ~
@@ -2274,7 +2348,7 @@ kvádry
  Zde je zajímavá například možnost dekódování ve vyšším rozlišení\InsetSpace ~
 --- lze
  tak generovat rozumné mezisnímky, které v\InsetSpace ~
-původním videozáznamu nebyly.
+původní nahrávce nebyly.
 \end_layout
 
 \begin_layout Standard
