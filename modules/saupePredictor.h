@@ -2,9 +2,7 @@
 #define SAUPEPREDICTOR_HEADER_
 
 #include "../interfaces.h"
-namespace NOSPACE {
-	#include "../kdTree.h"
-}
+#include "../kdTree.h"
 
 /** Predictor for MStandardEncoder based on a theorem proven in Saupe's work */
 class MSaupePredictor: public IStdEncPredictor {
@@ -26,7 +24,7 @@ private:
 	/** Indices for settings */
 	enum Settings { ChunkSize, MaxPredPercent };
 
-	/**  maxPredCoeff() * <the number of domains> == <max. number of predictions> */
+	/**  maxPredCoeff() * "the number of domains" == "max. number of predictions" */
 	Real maxPredCoeff()	{ return settings[MaxPredPercent].val.f / Real(100); }
 
 public:

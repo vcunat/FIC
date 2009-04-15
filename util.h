@@ -46,17 +46,15 @@ inline int getCountForDensity2D(int width,int height,int density,int sideSize) {
 
 /** General bounds-checking template routine - returns max(low,min(value,high)) */
 template<class T> inline T checkBoundsFunc(T low,T value,T high) {
-	if (value>low)
-		if (value<high)
-			return value;
-		else
-			return high;
-	else
+	if (value<low)
 		return low;
+	if (value>high)
+		return high;
+	return value;
 }
 
 /** Struct for conversion between [0..1] Real and 0..(2^power-1) integer */
-template<int power=8,class R=MTypes::Real> struct Float2int {
+template<int power,class R> struct Float2int {
 	static R convert(int i)
 		{ return std::ldexp( i+R(0.5), -power ); }	
 		
@@ -75,6 +73,7 @@ inline int countEOLs(const char *s) {
 	return result;
 }
 
+/** Converts any type to std::string via std::stringstream */
 template<class T> inline std::string toString(const T &what) {
 	std::stringstream stream;
 	stream << what;
@@ -83,6 +82,7 @@ template<class T> inline std::string toString(const T &what) {
 	return result;
 }
 
+/** Type convertor - NonConstType<T>::Result is a non-const variant of T or T itself if N/A */
 template<class T> struct NonConstType			{ typedef T Result; };
 template<class T> struct NonConstType<const T>	{ typedef T Result; };
 
@@ -91,52 +91,24 @@ template <class T> inline T* constCast(const T* toCast) { return const_cast<T*>(
 /** Automatic version of const_cast for references */
 template <class T> inline T& constCast(const T& toCast)	{ return const_cast<T&>(toCast); }
 
-/** Automatic helper cast from "T**" to "const T**" */
-template <class T> inline const T** bogoCast(T** toCast) 
-	{ return const_cast<const T**>(toCast); }
-
 /** Checking a condition - throws an exception if false */
 inline void checkThrow(bool check) { if (!check) throw std::exception(); }
 
 
-/* Auto-release pointer template altered to work more like an ordinary pointer *//*
-template<class T> class Auto_ptr: public std::auto_ptr<T> {
-public:
-	Auto_ptr(T *t=0): std::auto_ptr<T>(t) {}
-    operator T*() const
-		{ return this->get(); }
-    Auto_ptr& operator=(T *t) {
-        reset(t);
-        return *this;
-    }
-};
-*/
-
-
 /** Template object for automated deletion of pointers (useful in for_each) */
-template <class T> struct SingleDeleter {
-	void operator()(T *toDelete) { delete toDelete; }
+struct SingleDeleter {
+	template <class T> void operator()(T *toDelete) const { delete toDelete; }
 };
 /** Template object for automated deletion of field pointers (useful in for_each) */
-template <class T> struct MultiDeleter {
-	void operator()(T *toDelete) { delete[] toDelete; }
+struct MultiDeleter {
+	template <class T> void operator()(T *toDelete) const { delete[] toDelete; }
 };
 
-#ifndef __ICC
-	/** Deletes all pointers in a container (it has to support \c begin and \c end methods) */
-	template < class T, template<class> class C > inline
-	void clearContainer(const C<T*> &container)
-		{ for_each( container.begin(), container.end(), SingleDeleter<T>() ); }
-		
-#else
-	#define clearContainer(cont_) \
-		do { \
-			typedef typeof(cont_) contType_; \
-			const contType_ &c_= cont_; \
-			for (contType_::const_iterator it_=c_.begin(); it_!=c_.end(); ++it_) \
-				delete *it_; \
-		} while (false)
-#endif
+
+/** Deletes all pointers in a container (it has to support \c begin and \c end methods) */
+template<class C> void clearContainer(const C &container)
+	{ for_each( container.begin(), container.end(), SingleDeleter() ); }
+
 
 template <class T,int bulkKb=64>
 class BulkAllocator {
@@ -151,7 +123,7 @@ public:
 	BulkAllocator(const BulkAllocator &DEBUG_ONLY(copy))
 		{ nextIndex=bulkCount; ASSERT(copy.pools.empty()); }
 	~BulkAllocator()
-		{ for_each( pools.begin(), pools.end(), MultiDeleter<T>() ); }
+		{ for_each( pools.begin(), pools.end(), MultiDeleter() ); }
 
 	T* make() {
 	//	check for errors
@@ -189,17 +161,20 @@ public:
 	}
 };
 
+/** Structure providing support for progress update and interruption (used for encoding) */
 struct UpdateInfo {
-	typedef void (*IncInt)(int increment);
+	typedef void (*IncInt)(int increment); ///< Type for used functions -> more readable code
 
-	volatile const bool *terminate;
-	IncInt incMaxProgress, incProgress;
+	volatile const bool *terminate;	///< true if the action should be terminated
+	IncInt incMaxProgress			///  function for increasing the maximum progress (100%)
+	, incProgress;					///< function for increasing the current progress
 
-	static void emptyFunction(int) {}
-	static const bool noTerminate= false;	///< defined in modules.cpp
+	static void emptyFunction(int) {}		///< does nothing, default for IncInt functions
+	static const bool noTerminate= false;	///< default for #terminate, defined in modules.cpp
 
-	UpdateInfo( const bool &terminate_= noTerminate, IncInt incMaxProgress_=&emptyFunction
-	, IncInt incProgress_=&emptyFunction )
+	/** Initializes the structure from supplied parametres */
+	UpdateInfo( const bool &terminate_= noTerminate, IncInt incMaxProgress_= &emptyFunction
+	, IncInt incProgress_= &emptyFunction )
 	: terminate(&terminate_), incMaxProgress(incMaxProgress_), incProgress(incProgress_) {}
 };
 

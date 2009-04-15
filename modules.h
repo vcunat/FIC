@@ -235,7 +235,7 @@ class ModuleFactory {
 	/** Deletes the prototypes */
 	~ModuleFactory() {
 		for_each( prototypes.begin(), prototypes.end(), std::mem_fun(&Module::nullModuleLinks) );
-		for_each( prototypes.begin(), prototypes.end(), SingleDeleter<Module>() );
+		for_each( prototypes.begin(), prototypes.end(), SingleDeleter() );
 	}
 	/** The real constructing routine */
 	void initialize();

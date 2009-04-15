@@ -268,7 +268,7 @@ bool MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 
 //	compute the sum of products of pixels
 	Real rdSum= walkOperateCheckRotate
-	( Checked<const SReal>(stable.rangePixels, *stable.rangeBlock), RDSummer<Real>()
+	( Checked<const SReal>(stable.rangePixels, *stable.rangeBlock), RDSummer<Real,SReal>()
 	, pool.pixels, domBlock, prediction.rotation ) .result();
 
 	Real nRDs_RsDs= stable.pixCount*rdSum - stable.rSum*dSum;

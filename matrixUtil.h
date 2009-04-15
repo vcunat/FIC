@@ -22,7 +22,8 @@ struct Block {
 
 ////    Matrix templates
 
-/** A simple generic template for matrices of fixed size, uses shallow copying */
+/** A simple generic template for matrices of fixed size, uses shallow copying
+ *	and manual memory management */
 template<class T,class I=size_t> class Matrix {
 public:
 	friend class Matrix< typename NonConstType<T>::Result, I >; ///< because of conversion
@@ -39,15 +40,13 @@ public:
 
 	/** Allocates a matrix of given size via #allocate (see for details) */
 	Matrix( I width_, I height_, T *memory=0 )
-	: start(0) {
-		allocate(width_,height_,memory);
-	}
+	: start(0) 
+		{ allocate(width_,height_,memory); }
 
 	/** Creates a shallow copy */
 	Matrix(const Matrix &m)
-	: start(m.start), colSkip(m.colSkip) {
-		DEBUG_ONLY( width= m.width; );
-	}
+	: start(m.start), colSkip(m.colSkip) 
+		{ DEBUG_ONLY( width= m.width; ); }
 
 	/** Converts to a matrix of constant objects (shallow copy) */
 	operator ConstMatrix() const {
@@ -118,7 +117,8 @@ public:
 
 
 /** MatrixSummer objects store partial sums of a matrix, allowing quick computation
- *	of sum of any rectangle in the matrix */
+ *	of sum of any rectangle in the matrix. It's parametrized by "type of the result",
+ *	"type of the input" and "indexing type" (defaults to size_t) */
 template<class T,class U,class I=size_t> class MatrixSummer {
 public:
 	typedef T Result;
@@ -189,14 +189,15 @@ public:
 		ASSERT( sums.isValid() && xend>x0 && yend>y0 ); /*x0>=0 && y0>=0 && xend>=0 && yend>=0 &&*/
 		return sums[xend][yend] -sums[x0][yend] -sums[xend][y0] +sums[x0][y0];
 	}
+}; // MatrixSummer class template
 
-};
-
+/** Contains various iterators for matrices (see Matrix)
+ *	to be used in walkOperate() and walkOperateCheckRotate() */
 namespace MatrixWalkers {
 
-	/** Performs manipulations with rotation codes 0..7 (dihedral group of order eight) */
+	/** Performs manipulations with rotation codes 0-7 (dihedral group of order eight) */
 	struct Rotation {
-		/** Asserts the parameter is within 0..7 */
+		/** Asserts the parameter is within 0-7 */
 		static void check(int DEBUG_ONLY(r)) {
 			ASSERT( 0<=r && r<8 );
 		}
@@ -214,7 +215,7 @@ namespace MatrixWalkers {
 		}
 	};
 
-	/** Checked iterator for a rectangle in a matrix, no rotation */
+	/** Checked_ iterator for a rectangle in a matrix, no rotation */
 	template<class T,class I=size_t> class Checked {
 	public:
 		typedef Matrix<T,I> TMatrix;
@@ -227,6 +228,7 @@ namespace MatrixWalkers {
 		, *elemsEnd;		///< pointer to the end element of the current column
 
 	public:
+		/** Initializes a new iterator for a \p block of \p pixels */
 		Checked( TMatrix pixels, const Block &block )
 		: colSkip	( pixels.getColSkip() )
 		, height	( block.height() )
@@ -246,7 +248,7 @@ namespace MatrixWalkers {
 		T& get() 			{ return *elem; }
 	}; // Checked class template
 
-	/** Checked iterator for a whole QImage; no rotation, but always transposed */
+	/** Checked_ iterator for a whole QImage; no rotation, but always transposed */
 	template<class T,class U> struct CheckedImage {
 		typedef T QImage;
 		typedef U QRgb;
@@ -257,6 +259,7 @@ namespace MatrixWalkers {
 		, *lineEnd;		///< pointer to the end of the line
 
 	public:
+		/** Initializes a new iterator for an instance of QImage (Qt class) */
 		CheckedImage(QImage &image)
 		: img(image), lineIndex(0)
 			{ DEBUG_ONLY(line=lineEnd=0;) }
@@ -269,8 +272,7 @@ namespace MatrixWalkers {
 		void innerStep()	{ ++line; }
 
 		QRgb& get()			{ return *line; }
-	};
-
+	}; // CheckedImage class template
 
 	/** Base structure for walkers changing 'x' in the outer and 'y' in the inner loop */
 	template<class T,class I=size_t> struct RotBase {
@@ -306,7 +308,7 @@ namespace MatrixWalkers {
 		void innerStep() { ++elem; }
 	};
 
-	/** Rotated 90deg. cw., transposed: x<-, y-> */
+	/** Rotated 90deg\. cw\., transposed: x<-, y-> */
 	template<class T,class I> struct Rotation_1_T: public RotBase<T,I> { ROTBASE_INHERIT
 		Rotation_1_T( MType matrix, const Block &block )
 		: RotBase<T,I>( matrix, block.xend-1, block.y0 ) {}
@@ -315,7 +317,7 @@ namespace MatrixWalkers {
 		void innerStep() { ++elem; }
 	};
 
-	/** Rotated 180deg. cw.: x<-, y<- */
+	/** Rotated 180deg\. cw\.: x<-, y<- */
 	template<class T,class I> struct Rotation_2: public RotBase<T,I> { ROTBASE_INHERIT
 		Rotation_2( MType matrix, const Block &block )
 		: RotBase<T,I>( matrix, block.xend-1, block.yend-1 ) {}
@@ -324,7 +326,7 @@ namespace MatrixWalkers {
 		void innerStep() { --elem; }
 	};
 
-	/** Rotated 270deg. cw., transposed: x->, y<- */
+	/** Rotated 270deg\. cw\., transposed: x->, y<- */
 	template<class T,class I> struct Rotation_3_T: public RotBase<T,I> { ROTBASE_INHERIT
 		Rotation_3_T( MType matrix, const Block &block )
 		: RotBase<T,I>( matrix, block.x0, block.yend-1 ) {}
@@ -342,7 +344,7 @@ namespace MatrixWalkers {
 		void innerStep() { elem+= colSkip; }
 	};
 
-	/** Rotated 90deg. cw.: y->, x<- */
+	/** Rotated 90deg\. cw\.: y->, x<- */
 	template<class T,class I> struct Rotation_1: public RotBase<T,I> { ROTBASE_INHERIT
 		Rotation_1( MType matrix, const Block &block )
 		: RotBase<T,I>( matrix, block.xend-1, block.y0 ) {}
@@ -351,7 +353,7 @@ namespace MatrixWalkers {
 		void innerStep() { elem-= colSkip; }
 	};
 
-	/** Rotated 180deg. cw., transposed: y<-, x<- */
+	/** Rotated 180deg\. cw\., transposed: y<-, x<- */
 	template<class T,class I> struct Rotation_2_T: public RotBase<T,I> { ROTBASE_INHERIT
 		Rotation_2_T( MType matrix, const Block &block )
 		: RotBase<T,I>( matrix, block.xend-1, block.yend-1 ) {}
@@ -360,7 +362,7 @@ namespace MatrixWalkers {
 		void innerStep() { elem-= colSkip; }
 	};
 
-	/** Rotated 270deg. cw.: y<-, x-> */
+	/** Rotated 270deg\. cw\.: y<-, x-> */
 	template<class T,class I> struct Rotation_3: public RotBase<T,I> { ROTBASE_INHERIT
 		Rotation_3( MType matrix, const Block &block )
 		: RotBase<T,I>( matrix, block.x0, block.yend-1 ) {}
@@ -369,8 +371,9 @@ namespace MatrixWalkers {
 		void innerStep() { elem+= colSkip; }
 	};
 
-	//#undef ROTBASE_INHERIT
-
+	/** Iterates two matrix iterators and performs an action.
+	 *	The loop is controled by the first iterator (\p checked) 
+	 *	and on every corresponding pair (a,b) \p oper(a,b) is invoked. Returns \p oper. */
 	template < class Check, class Unchecked, class Operator >
 	Operator walkOperate( Check checked, Unchecked unchecked, Operator oper ) {
 	//	outer cycle start - to be always run at least once
@@ -398,10 +401,10 @@ namespace MatrixWalkers {
 		return oper;
 	}
 
-	template<class Check,class U,class Operator>// inline
-	Operator walkOperateCheckRotate( Check checked, Operator oper
-	, Matrix<U> pixels2, const Block &block2, char rotation) {
-		typedef size_t I; //XXX
+	/** A flavour of walkOperate() choosing the right Rotation_* iterator based on \p rotation */
+	template<class Check,class U,class Operator> inline Operator walkOperateCheckRotate
+	( Check checked, Operator oper, Matrix<U> pixels2, const Block &block2, char rotation) {
+		typedef size_t I;
 		switch (rotation) {
 			case 0: return walkOperate( checked, Rotation_0  <U,I>(pixels2,block2) , oper );
 			case 1: return walkOperate( checked, Rotation_0_T<U,I>(pixels2,block2) , oper );
@@ -415,25 +418,26 @@ namespace MatrixWalkers {
 		}
 	}
 
+	/** A convenience base type for operators to use with walkOperate() */
 	struct OperatorBase {
-		typedef MTypes::SReal SReal;
-
 		void innerEnd() {}
 	};
 
-	template<class CReal> struct RDSummer: public OperatorBase {
-		CReal totalSum, lineSum;
+	/** An operator computing the sum of products */
+	template<class TOut,class TIn> struct RDSummer: public OperatorBase {
+		TOut totalSum, lineSum;
 
 		RDSummer()
 		: totalSum(0), lineSum(0) {}
-		void operator()(const SReal &num1,const SReal& num2)
-			{ lineSum+= CReal(num1) * CReal(num2); }
+		void operator()(const TIn &num1,const TIn& num2)
+			{ lineSum+= TOut(num1) * TOut(num2); }
 		void innerEnd()
 			{ totalSum+= lineSum; lineSum= 0; }
-		CReal result()
+		TOut result()	///< returns the result
 			{ ASSERT(!lineSum); return totalSum; }
 	};
 
+	/** An operator performing a= (b+#toAdd)*#toMul */
 	template<class T> struct AddMulCopy: public OperatorBase {
 		const T toAdd, toMul;
 
@@ -444,6 +448,7 @@ namespace MatrixWalkers {
 			{ res= (f+toAdd)*toMul; }
 	};
 
+	/** An operator performing a= b*#toMul+#toAdd and moving the result into [#min,#max] bounds */
 	template<class T> struct MulAddCopyChecked: public OperatorBase {
 		const T toMul, toAdd, min, max;
 

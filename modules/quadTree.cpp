@@ -229,7 +229,7 @@ void MQuadTree::Node::toFile(BitWriter &file,NodeExtremes extremes) {
 }
 void MQuadTree::Node::fromFile(BitReader &file,NodeExtremes extremes) {
 //	should I be divided ?
-	bool div= level>extremes.max || level>extremes.min && file.getBits(1) ;
+	bool div= level>extremes.max || ( level>extremes.min && file.getBits(1) ) ;
 	if (div) {
 		divide();
 		Node *now= son;

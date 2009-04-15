@@ -5,7 +5,7 @@
 /* Standard C++ includes */
 #include <algorithm>
 #include <cmath>
-//#include <cstdlib>		// size_t
+//#include <cstdlib>	// size_t
 #include <cstring>		// memcpy
 #include <exception>
 #include <fstream>
@@ -13,6 +13,7 @@
 #include <limits>		// numeric_limits
 #include <memory>
 #include <sstream>		// c++ conversions through streams
+#include <typeinfo>
 #include <vector>
 
 #include "FerrisLoki/static_check.h"

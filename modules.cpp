@@ -1,3 +1,5 @@
+#include "interfaces.h"
+
 #include "modules/root.h"
 #include "modules/colorModel.h"
 #include "modules/squarePixels.h"
@@ -216,6 +218,8 @@ ModuleFactory* ModuleFactory::instance=0;
 
 template<class M> int ModuleFactory::getModuleID()
 	{ return Loki::TL::IndexOf<Modules,M>::value; }
+	
+template int ModuleFactory::getModuleID<MRoot>();
 
 void ModuleFactory::initialize() {
 //	create one instance of each module-type
@@ -247,11 +251,11 @@ void ModuleFactory::changeDefaultSettings(const Module &module) {
 
 
 template<class T> int ModuleFactory::Instantiator<T>::operator()() const {
-	T::newCompatibleModule();
-	getModuleID<T>();
-	((T*)(0))->T::abstractClone();
-	T::getCompMods().size();
-	return 0;
+	int i= getModuleID<T>();
+	Module *m= T::newCompatibleModule();
+	m= m->concreteClone<T>(Module::DeepCopy);
+	i+= T::getCompMods().size();
+	return i;
 }
 void ModuleFactory::instantiateModules() {
 	IterateTypes<Modules,Instantiator> gendata;

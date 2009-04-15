@@ -1,18 +1,10 @@
 #ifndef INTERFACES_HEADER_
 #define INTERFACES_HEADER_
 
-
-
-namespace MTypes {
-	typedef double Real; ///< The floating-point type in which most computations are made
-	typedef float SReal; ///< The floating-point type for long-term pixel-value storage
-	
-}
-
 #include "modules.h"
 #include "matrixUtil.h"
 
-/** Forwards for interfaces */
+/* Forwards for interfaces */
 struct IRoot;
 struct IColorTransformer;
 struct IShapeTransformer;
@@ -25,6 +17,9 @@ struct IIntCodec;
 
 /** Contains basic types frequently used in modules */
 namespace MTypes {
+	typedef double Real; ///< The floating-point type in which most computations are made
+	typedef float SReal; ///< The floating-point type for long-term pixel-value storage
+	
 	typedef MatrixSummer<Real,SReal,size_t> BlockSummer; ///< Summer instanciation used for pixels
 	typedef Matrix<SReal> SMatrix;
 	typedef Matrix<const SReal> CSMatrix;

@@ -52,8 +52,10 @@ namespace NOSPACE {
 		vector<int> poolCounts, levelCounts;
 		
 		RangeInfoAccumulator(const ISquareDomains::PoolList &poolList)
-		: pools( &poolList ), rotCounts( (int[9]){0,0,0,0,0,0,0,0,0} )
-		, poolCounts( pools->size(), 0 ), levelCounts( 10, 0 ) {}
+		: pools( &poolList ), poolCounts( pools->size(), 0 ), levelCounts( 10, 0 ) {
+			for (int i=0; i<9; ++i)
+				rotCounts[i]= 0;
+		}
 		
 		void operator()(const ISquareRanges::RangeNode *range) {
 			const MStandardEncoder::RangeInfo &info
