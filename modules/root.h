@@ -57,7 +57,7 @@ private:
 	IQuality2SquareError* moduleQuality() const
 		{ return debugCast<IQuality2SquareError*>(settings[ModuleQuality].m); }
 
-	typedef IColorTransformer::Plane Plane;
+	typedef IColorTransformer::PlaneSettings PlaneSettings;
 	typedef IColorTransformer::PlaneList PlaneList;
 
 private:

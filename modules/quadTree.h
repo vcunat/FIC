@@ -43,7 +43,7 @@ private:
 	Node *root;						///< Quad-tree's root node
 	std::vector<RangeNode*> fringe;	///< List of quad-tree's leaves
 	int zoom;						///< The zoom
-#ifndef NDEBUG
+#ifndef NDEBUG /* things needed for showing debugging info */
 	int badDivides, triedMerges, badTries;
 #endif
 
@@ -70,7 +70,7 @@ public:
 	void readSettings(std::istream&) {}
 
 	void writeData(std::ostream &file);
-	void readData_buildRanges(std::istream &file,const Block &block,int zoom);
+	void readData_buildRanges(std::istream &file,const PlaneBlock &block);
 ///	@}
 protected:
 	struct NodeExtremes;

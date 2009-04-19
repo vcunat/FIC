@@ -50,36 +50,26 @@ private:
 
 private:
 //	Module's data
-	std::vector<Job> jobs;		///< Encoding jobs - one part of one color plane makes one job
-	MatrixList ownedMatrices;	///< List of owned pixel matrices
+	std::vector<Job> jobs; ///< Encoding jobs - one part of one color plane makes one job
+	DEBUG_ONLY( PlaneList planeList; ) //< needed for creating debug info
 
-private:
-	/** Creates a new job on a block in a plane - the three modules are cloned from this object */
-	Job makeJob(const Plane &plane,const Block &block) {
-		return Job( plane, block, clone(moduleRanges()), clone(moduleDomains())
-		, clone(moduleEncoder()) );
-	}
 protected:
 //	Construction and destruction
-	/** Only deletes #ownedMatrices and frees #jobs */
+	/** Only frees #jobs */
 	~MSquarePixels() {
-		for_each( ownedMatrices.begin(), ownedMatrices.end()
-		, mem_fun_ref(&MatrixList::value_type::free) );
-		for_each( jobs.begin(), jobs.end(), mem_fun_ref(&Job::free) );
+	//	can't free the whole jobs, because the pixels are NOT owned (can be only a part)
+		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it)
+			it->free(false);
 	}
 public:
 /**	\name IShapeTransformer interface
  *	@{ */
-	int createJobs( const PlaneList &planes, int width, int height );
+	int createJobs(const PlaneList &planes);
 
 	int jobCount() {
 		return jobs.size();
 	}
-	MatrixList collectJobs() {
-		ASSERT( !ownedMatrices.empty() );
-		return ownedMatrices;
-	}
-
+	
 	void jobEncode(int jobIndex) {
 		ASSERT( jobIndex>=0 && jobIndex<jobCount() );
 		Job &job= jobs[jobIndex];

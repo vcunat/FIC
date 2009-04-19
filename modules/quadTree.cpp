@@ -27,7 +27,7 @@ void MQuadTree::encode(const PlaneBlock &toEncode) {
 	if ( heuristicAllowed() )
 		toEncode.summers_makeValid();
 //	create a new root, encode it via a recursive routine
-	root= new Node(toEncode);
+	root= new Node( Block(0,0,toEncode.width,toEncode.height) );
 	root->encode(toEncode);
 //	generate the fringe, let the encoder process it
 	root->getHilbertList(fringe);
@@ -45,16 +45,16 @@ void MQuadTree::writeData(ostream &file) {
 	root->toFile(bitWriter,extremes);
 }
 
-void MQuadTree::readData_buildRanges(istream &file,const Block &block,int zoom_) {
+void MQuadTree::readData_buildRanges(istream &file,const PlaneBlock &block) {
 	ASSERT( fringe.empty() && !root );
-	zoom= zoom_;
+	zoom= block.settings->zoom;
 //	get from the stream the minimal and the maximal used level
 	NodeExtremes extremes;
 	extremes.min= get<Uchar>(file)+zoom;
 	extremes.max= get<Uchar>(file)+zoom;
 //	build the range tree
 	BitReader bitReader(file);
-	root= new Node(block);
+	root= new Node( Block(0,0,block.width,block.height) );
 	root->fromFile(bitReader,extremes);
 //	generate the fringe of the range tree
 	root->getHilbertList(fringe);
@@ -149,22 +149,23 @@ int MQuadTree::Node::getSonCount() const {
 	return count;
 }
 bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
-	if (*toEncode.updateInfo.terminate)
+	if (*toEncode.settings->updateInfo.terminate)
 		throw exception();
 		
 	MQuadTree *mod= debugCast<MQuadTree*>(toEncode.ranges);
 	ASSERT( mod && level>=mod->minLevel() );
+	const IColorTransformer::PlaneSettings &plSet= *toEncode.settings;
 	int pixCount= size();
 //	check for minimal level -> cannot be divided, find the best domain
 	if ( level == mod->minLevel() ) {
 	//	try to find the best mapping, not restricting the max.\ SE and exit
 		toEncode.encoder->findBestSE(*this,true);
-		toEncode.updateInfo.incProgress(pixCount);
+		plSet.updateInfo.incProgress(pixCount);
 		return false;
 	}
 
 //	TODO: regular ranges optimization
-	float maxSE= toEncode.moduleQ2SE->rangeSE( toEncode.quality, pixCount );
+	float maxSE= plSet.moduleQ2SE->rangeSE( plSet.quality, pixCount );
 	bool tryEncode= true;
 
 	if ( level > mod->maxLevel() )
@@ -172,14 +173,14 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 	else {
 	//	if heuirstic dividing is allowed and signals dividing, don't try to encode
 		if ( mod->heuristicAllowed() ) {
-			float rSum= toEncode.getSum(*this,BlockSummer::Values);
-			float r2Sum= toEncode.getSum(*this,BlockSummer::Squares);
+			Real rSum, r2Sum;
+			toEncode.getSums(*this).unpack(rSum,r2Sum);
 			if ( ldexp( r2Sum-sqr(rSum)/pixCount, -4 ) * level > maxSE )
 				tryEncode= false;
 		}
 	//	if we decided to try to encode, do it and return if the quality is sufficient
 		if ( tryEncode && toEncode.encoder->findBestSE(*this) <= maxSE ) {
-			toEncode.updateInfo.incProgress(pixCount);
+			plSet.updateInfo.incProgress(pixCount);
 			return false;
 		}
 		#ifndef NDEBUG

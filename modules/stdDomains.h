@@ -60,14 +60,16 @@ protected:
 		MStdDomains(): width(-1), height(-1), zoom(-1) {}
 	#endif
 	/** Only frees the #pools */
-	~MStdDomains()
-		{ for_each( pools.begin(), pools.end(), mem_fun_ref(&Pool::free) ); }
+	~MStdDomains() { 
+		for (PoolList::iterator it=pools.begin(); it!=pools.end(); ++it)
+			it->free(); 
+	}
 
 public:
 /**	\name ISquareDomains interface
  *	@{ */
 	void initPools(const PlaneBlock &planeBlock);
-	void fillPixelsInPools(const PlaneBlock &planeBlock);
+	void fillPixelsInPools(PlaneBlock &planeBlock);
 
 	const PoolList& getPools() const
 		{ return pools; }

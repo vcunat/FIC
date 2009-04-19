@@ -20,19 +20,23 @@ namespace MTypes {
 	typedef double Real; ///< The floating-point type in which most computations are made
 	typedef float SReal; ///< The floating-point type for long-term pixel-value storage
 	
-	typedef MatrixSummer<Real,SReal,size_t> BlockSummer; ///< Summer instanciation used for pixels
-	typedef Matrix<SReal> SMatrix;
-	typedef Matrix<const SReal> CSMatrix;
-	typedef std::vector< Matrix<SReal> > MatrixList;
+	//typedef MatrixSummer<Real> BlockSummer; ///< Summer instanciation used for pixels
+	typedef MatrixSlice<SReal> SMatrix;
+	typedef SMatrix::Const CSMatrix;
+	typedef std::vector<SMatrix> MatrixList;
 
 	enum DecodeAct { Clear, Iterate }; ///< Possible decoding actions
 
 	struct PlaneBlock;
+	
+	typedef SummedMatrix<Real,SReal> SummedPixels;
 }
 namespace NOSPACE {
 	using namespace std;
 	using namespace MTypes;
 }
+
+
 
 /** \defgroup interfaces Interfaces for coding modules
  *	@{ */
@@ -47,8 +51,8 @@ struct IRoot: public Interface<IRoot> {
 		Decode	///< contains an image decoded from a file
 	};
 
-	static const Uint16 Magic= 65535-4063	/// magic number - integer identifying FIC files
-	, SettingsMagic= Magic^12345;			/// magic number - integer identifying settings files
+	static const Uint16 Magic= 65535-4063 /// magic number - integer identifying FIC files
+	, SettingsMagic= Magic^12345; ///< magic number - integer identifying settings files
 
 	/** A status-query method */
 	virtual Mode getMode() =0;
@@ -62,7 +66,7 @@ struct IRoot: public Interface<IRoot> {
 
 	/** Saves an encoded image into a stream, returns true on success */
 	virtual bool toStream(std::ostream &file) =0;
-	/** Loads image from a file - returns true on success (to be run on a shallow module),
+	/** Loads image from a file - returns true on success (to be run on in Clear state),
 	 *	can load in bigger size: dimension == orig_dim*2^\p zoom */
 	virtual bool fromStream(std::istream &file,int zoom=0) =0;
 
@@ -81,58 +85,64 @@ struct IRoot: public Interface<IRoot> {
 	bool allSettingsToFile(const char *fileName);
 	/** Loads all settings from a file (to be run on a shallow module), returns true on success */
 	bool allSettingsFromFile(const char *fileName);
-};
+}; // IRoot interface
+
 
 /** Interface for modules performing color transformations,
  *	following modules always work with single-color (greyscale) images */
 struct IColorTransformer: public Interface<IColorTransformer> {
-	/** Describes a rectangular single-color image, includes some compression setings */
-	struct Plane {
+	/** Contains some setings for one color plane of an image */
+	struct PlaneSettings {
 		typedef IQuality2SquareError ModuleQ2SE;
 
-		static const Plane Empty; ///< an empty instance
-
-		SMatrix pixels;			///< a Matrix of pixels with values in [0,1], not owned (shared)
-		SReal quality;			///< encoding quality for the plane, in [0,1] (higher is better)
-		int domainCountLog2		///  2-logarithm of the maximum domain count
-		, zoom;					///< the zoom
+		//static const PlaneSettings Empty; ///< an empty instance
+		
+		int width			///  the width of the image (zoomed)
+		, height			///  the height of the image (zoomed)
+		, domainCountLog2	///  2-logarithm of the maximum domain count
+		, zoom;				///< the zoom (dimensions multiplied by 2^zoom)
+		SReal quality;		///< encoding quality for the plane, in [0,1] (higher is better)
 		ModuleQ2SE *moduleQ2SE;	///< pointer to the module computing maximum SE (not owned)
 		UpdateInfo updateInfo;	///< structure for communication with user
-
+		
 		/** A simple constructor, only initializes the values from the parameters */
-		Plane( SMatrix pixels_, float quality_, int domainCountLog2_
-		, int zoom_, ModuleQ2SE *moduleQ2SE_, const UpdateInfo &updateInfo_ )
-			: pixels(pixels_), quality(quality_), domainCountLog2(domainCountLog2_)
-			, zoom(zoom_), moduleQ2SE(moduleQ2SE_), updateInfo(updateInfo_) {}
+		PlaneSettings( int width_, int height_, int domainCountLog2_, int zoom_
+		, SReal quality_=numeric_limits<SReal>::quiet_NaN()
+		, ModuleQ2SE *moduleQ2SE_=0, const UpdateInfo &updateInfo_=UpdateInfo() )
+			: width(width_), height(height_)
+			, domainCountLog2(domainCountLog2_), zoom(zoom_)
+			, quality(quality_), moduleQ2SE(moduleQ2SE_), updateInfo(updateInfo_) {}
+	}; // PlaneSettings struct
+	
+	struct Plane {
+		mutable SMatrix pixels;	///< a matrix of pixels with values in [0,1], not owned
+		const PlaneSettings *settings; ///< the settings for the plane, not owned
 	};
-	/** List of planes */
+	
+	/** List of planes, in returned vectors the pointed to memory is owned by the module */
 	typedef std::vector<Plane> PlaneList;
 
-	/** Splits an image into color-planes and adjusts their quality and max.\ domain count */
-	virtual PlaneList image2planes(const QImage &toEncode,const Plane &prototype) =0;
-	/** Merges planes back into a color image */
-	virtual QImage planes2image(const MatrixList &pixels,int width,int height) =0;
+	/** Splits an image into color-planes and adjusts their settings (from \p prototype) */
+	virtual PlaneList image2planes(const QImage &toEncode,const PlaneSettings &prototype) =0;
+	/** Merges planes back into a color image (only useful when decoding) */
+	virtual QImage planes2image() =0;
 
 	/** Writes any data needed for plane reconstruction to a stream */
 	virtual void writeData(std::ostream &file) =0;
-	/** Reads any data needed for plane reconstruction from a stream and creates the plane list
-	 *	(the dimensions are already zoomed) */
-	virtual PlaneList readData( std::istream &file, const Plane &prototype
-	, int width, int height ) =0;
-};
+	/** Reads any data needed for plane reconstruction from a stream and creates the plane list */
+	virtual PlaneList readData( std::istream &file, const PlaneSettings &prototype ) =0;
+}; // IColorTransformer interface
+
 
 /** Interface for modules handling pixel-shape changes
  *	and/or splitting the single-color planes into independently processed parts */
 struct IShapeTransformer: public Interface<IShapeTransformer> {
 	typedef IColorTransformer::PlaneList PlaneList;
 
-	/** Creates jobs from the list of color planes (the dimensions are zoomed,
-	 *	takes the ownership of pixels and returns job count) */
-	virtual int createJobs( const PlaneList &planes, int width, int height ) =0;
+	/** Creates jobs from the list of color planes, returns job count */
+	virtual int createJobs(const PlaneList &planes) =0;
 	/** Returns the number of jobs */
 	virtual int jobCount() =0;
-	/** Creates a plane list referencing current decoding state */
-	virtual MatrixList collectJobs() =0;
 
 	/** Starts encoding a job - thread-safe (for different jobs) */
 	virtual void jobEncode(int jobIndex) =0;
@@ -148,19 +158,20 @@ struct IShapeTransformer: public Interface<IShapeTransformer> {
 	/** Returns the number of phases (progressive encoding), only depends on settings */
 	virtual int phaseCount() =0;
 	/** Writes any data needed for reconstruction of every job, phase parameters
-	 *	determine the interval of saved phases */
+	 *	determine the range of saved phases */
 	virtual void writeJobs(std::ostream &file,int phaseBegin,int phaseEnd) =0;
 	/** Reads all data needed for reconstruction of every job and prepares for encoding,
 	 *	parameters like #writeJobs */
 	virtual void readJobs (std::istream &file,int phaseBegin,int phaseEnd) =0;
 	
-	/** Shortcut - default parametres "phaseBegin=0,phaseEnd=phaseCount()" */
+	/** Shortcut - default parameters "phaseBegin=0,phaseEnd=phaseCount()" */
 	void writeJobs(std::ostream &file,int phaseBegin=0)
 		{ writeJobs( file, phaseBegin, phaseCount() ); }
-	/** Shortcut - default parametres "phaseBegin=0,phaseEnd=phaseCount()" */
+	/** Shortcut - default parameters "phaseBegin=0,phaseEnd=phaseCount()" */
 	void readJobs(std::istream &file,int phaseBegin=0)
 		{ readJobs( file, phaseBegin, phaseCount() ); }
-};
+}; // IShapeTransformer interface
+
 
 /** Interface for modules deciding how the max.\ SE will depend on block size
  *	(parametrized by quality) */
@@ -172,12 +183,13 @@ struct IQuality2SquareError: public Interface<IQuality2SquareError> {
 	void completeSquareRangeErrors(float quality,int levelEnd,float *squareErrors);
 };
 
+
 /** Interface for modules that control how the image
- * will be split into (mostly) square range blocks */
+ * will be split into rectangular (mostly square) range blocks */
 struct ISquareRanges: public Interface<ISquareRanges> {
 	/** Structure representing a rectangular range block (usually square) */
 	struct RangeNode: public Block {
-		/** A common base for data stored by encoders */
+		/** A common base type for data stored by encoders */
 		struct EncoderData {
 			float bestSE;
 		};
@@ -189,7 +201,7 @@ struct ISquareRanges: public Interface<ISquareRanges> {
 
 		/** Checks whether the block has regular shape (dimensions equal to 2^level) */
 		bool isRegular() const
-			{ return width()==powers[(int)level] && height()==powers[(int)level]; }
+			{ return width()==powers[level] && height()==powers[level]; }
 	protected:
 		/** Constructor - initializes #encoderData to zero, to be used by derived classes */
 		RangeNode(const Block &block,int level_)
@@ -209,46 +221,27 @@ struct ISquareRanges: public Interface<ISquareRanges> {
 
 	/** Writes data needed for reconstruction (except for settings) */
 	virtual void writeData(std::ostream &file) =0;
-	/** Reads data from a stream and reconstructs range blocks.
+	/** Reads data from a stream and reconstructs the positions of range blocks.
 	 *	\param file	 the stream to read from
 	 *	\param block the position and size of the block in the plane to be reconstructed (with zoom) 
 	 *	\param zoom  the zoom to decode with */
-	virtual void readData_buildRanges( std::istream &file, const Block &block, int zoom ) =0;
-};
+	virtual void readData_buildRanges( std::istream &file, const PlaneBlock &block ) =0;
+}; // ISquareRanges interface
+
 
 /** Interface for modules deciding what will square domain blocks look like */
 struct ISquareDomains: public Interface<ISquareDomains> {
 	/** Describes one domain pool */
-	struct Pool {
-		short width	///		The width of the pool (zoomed)
-		, height; ///<		The height of the pool (zoomed)
-		SMatrix pixels; ///<The matrix of pixels (of the pool)
-		char type ///		The pool-type identifier (like diamond, module-specific)
-		, level; ///<		The count of down-scaling steps (1 for basic domains)
-		float contrFactor; ///< The contractive factor (0,1) - the quotient of areas
-		BlockSummer summers[2]; ///< Domain summers for quick computations
-
-	public:
-		/** Constructor allocating a matrix with correct dimensions (increased according to \p zoom) */
+	struct Pool: public SummedPixels {
+		char type			///  The pool-type identifier (like diamond, module-specific)
+		, level;			///< The count of down-scaling steps (1 for basic domains)
+		float contrFactor;	///< The contractive factor (0,1) - the quotient of areas
+		
+		/** Constructor allocating the #pixels with correct dimensions 
+		 *	(increased according to \p zoom) */
 		Pool(short width_,short height_,char type_,char level_,float cFactor,short zoom)
-		: width( lShift(width_,zoom) ), height( lShift(height_,zoom) )
-		, pixels( SMatrix(width,height) )
-		, type(type_), level(level_), contrFactor(cFactor) {}
-		/** Only deletes #pixels matrix */
-		void free()
-			{ pixels.free(); }
-
-		/** Makes both summers ready for work */
-		void summers_makeValid() {
-			for (int i=0; i<2; ++i)
-				summers[i].fill( pixels, BlockSummer::SumType(i), width, height );
-		}
-		/** A shortcut for getting both sums for a block */
-		void getSums( const Block &block
-		, BlockSummer::Result &sum, BlockSummer::Result &sum2 ) const {
-			sum=	summers[0].getSum(block.x0,block.y0,block.xend,block.yend);
-			sum2=	summers[1].getSum(block.x0,block.y0,block.xend,block.yend);
-		}
+		: type(type_), level(level_), contrFactor(cFactor)
+			{ setSize( lShift(width_,zoom), lShift(height_,zoom) ); }
 	};
 	/** List of pools */
 	typedef std::vector<Pool> PoolList;
@@ -256,7 +249,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	/** Initializes the pools for given PlaneBlock, assumes settings are OK */
 	virtual void initPools(const PlaneBlock &planeBlock) =0;
 	/** Prepares domains in already initialized pools (and fills summers, etc.) */
-	virtual void fillPixelsInPools(const PlaneBlock &planeBlock) =0;
+	virtual void fillPixelsInPools(PlaneBlock &planeBlock) =0;
 
 	/** Returns a reference to internal list of domain pools */
 	virtual const PoolList& getPools() const =0;
@@ -273,7 +266,8 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	virtual void writeData(std::ostream &file) =0;
 	/** Reads all data, assumes the settings have already been read */
 	virtual void readData(std::istream &file) =0;
-};
+}; // ISquareDomains interface
+
 
 /** Interface for square encoders - maintaining mappings from square domains to square ranges */
 struct ISquareEncoder: public Interface<ISquareEncoder> {
@@ -309,7 +303,7 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 	/** Reads one phase of data needed for recostruction,
 	 *	assumes the settings have been read previously via #readSettings */
 	virtual void readData(std::istream &file,int phase) =0;
-};
+}; // ISquareEncoder interface
 
 /** Interface for domain-range mapping predictors for MStandardEncoder */
 struct IStdEncPredictor: public Interface<IStdEncPredictor> {
@@ -367,7 +361,7 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 	virtual IOneRangePredictor* newPredictor(const NewPredictorData &data) =0;
 	/** Releases common resources (called when encoding is complete) */
 	virtual void cleanUp() =0;
-};
+}; // IStdEncPredictor interface
 
 /** Integer sequences (de)coder interface */
 struct IIntCodec: public Interface<IIntCodec> {
@@ -385,56 +379,33 @@ struct IIntCodec: public Interface<IIntCodec> {
 };
 
 ///	@} - interfaces defgroup
+
 namespace MTypes {
-	/** Represents a rectangle in a color plane (using square pixels),
-	 *	the inherited Block represents zoomed coordinates */
-	struct PlaneBlock: public ISquareEncoder::Plane, public Block {
-		BlockSummer summers[2];	///< normal and squares summers for the pixels
+	/** Represents a rectangular piece of single-color image to be encoded/decoded.
+	 *	TODO... */
+	struct PlaneBlock: public SummedPixels {
+		typedef IColorTransformer::PlaneSettings PlaneSettings;
+		
+		const PlaneSettings *settings; ///< the settings for the plane, not owned
 		ISquareRanges  *ranges; ///< module for range blocks generation
 		ISquareDomains *domains;///< module for domain blocks generation
 		ISquareEncoder *encoder;///< module for encoding (maintaining domain-range mappings)
-
-		/** Simple constructor, just initializes members with parameters and checks for zeroes */
-		PlaneBlock( const Plane &plane, const Block &range
-		, ISquareRanges *ranges_, ISquareDomains *domains_, ISquareEncoder *encoder_ )
-			: Plane(plane), Block(range), ranges(ranges_), domains(domains_), encoder(encoder_)
-				{ ASSERT( ranges && domains && encoder ); }
-		/** Just deletes the modules (the destructor is empty,
-		 *	#free has to be called explicitly if needed) */
-		void free() {
-			delete ranges;
-			delete domains;
-			delete encoder;
+	
+		/** Just deletes the modules and calls SummedPixels::free 
+		 *	(the destructor is empty, #free has to be called explicitly if needed) */
+		void free(bool freePixels=true) {
+			delete ranges;	ranges= 0;
+			delete domains;	domains= 0;
+			delete encoder;	encoder= 0;
+			settings= 0;
+			SummedPixels::free(freePixels);
+			//TODO zeroing in debug mode only??
 		}
-		
-		/** Returns #pixels shifted into the correct position */
-		CSMatrix getShiftedPixels() const {
-			CSMatrix result= pixels;
-			result.shiftMatrix(x0,y0);
-			return result;
-		}
-
 		/** A simple integrity test - needs nonzero modules and pixel-matrix */
 		bool isReady() const
-			{ return this && ranges && domains && encoder && pixels.isValid() && moduleQ2SE; }
-		/** Just validates both summers (if needed) */
-		void summers_makeValid() const {
-			for (int i=0; i<2; ++i)
-				if ( !summers[i].isValid() )
-					constCast(summers[i]).fill
-					( pixels, (BlockSummer::SumType)i, width(), height(), x0, y0 );
-		}
-		/** Justs invalidates both summers (to be called after changes in the pixel-matrix) */
-		void summers_invalidate() const {
-			constCast(summers[0]).invalidate();
-			constCast(summers[1]).invalidate();
-		}
-		/** A shortcut for getting sums from summers relative to the block's coordinates */
-		BlockSummer::Result getSum( const Block &block, BlockSummer::SumType type ) const {
-			return summers[type].getSum( block.x0-x0, block.y0-y0, block.xend-x0, block.yend-y0 );
-		}
-	};// PlaneBlock struct
+			{ return this && ranges && domains && encoder && pixels.isValid(); }
+			
+	}; // PlaneBlock struct
 }
-
 
 #endif // INTERFACES_HEADER_

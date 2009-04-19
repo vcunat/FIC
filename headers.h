@@ -31,3 +31,5 @@ class QWidget;
 typedef unsigned char	Uchar;
 typedef unsigned short	Uint16;
 typedef unsigned int	Uint32;
+typedef ptrdiff_t		PtrInt;
+typedef size_t			Uint;

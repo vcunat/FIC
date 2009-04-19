@@ -259,7 +259,7 @@ void KDTree<T>::PointHeap::makeTopLeaf() {
 //	exit if there's a leaf on the top already
 	if ( !(heap[0].nodeIndex<kd.count) )
 		return;
-	size_t oldHeapSize= heap.size();
+	PtrInt oldHeapSize= heap.size();
 	HeapNode heapRoot= heap[0]; // making a local working copy of the top of the heap
 
 	do { // while heapRoot isn't leaf ... while ( heapRoot.nodeIndex<kd.count )
@@ -332,12 +332,13 @@ protected:
 
 	KDBuilder(const T *data_,int length,int count,CoordChooser chooser_)
 	: Tree(length,count), data(data_), chooser(chooser_), chooserTmp(0) {
-		ASSERT( length>0 && count>1 && chooser && data );
+		ASSERT( length>0 && count>0 && chooser && data );
 	//	create the index-vector, coumpute the bounding box, build the tree
 		for (int i=0; i<count; ++i)
 			dataIDs[i]= i;
 		getBounds(bounds);
-		buildNode(1,dataIDs,dataIDs+count,depth);
+		if (count>1)
+			buildNode(1,dataIDs,dataIDs+count,depth);
 		delete[] chooserTmp;
 		DEBUG_ONLY( chooserTmp= 0; )
 	}

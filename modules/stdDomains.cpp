@@ -39,18 +39,18 @@ namespace NOSPACE {
 				return a.level<b.level;
 		}
 	};
-	
+	/* All unzoomed sizes */
 	inline static int minSizeNeededForDiamond() 
 		{ return 2*MinDomSize-1; }
 	inline static int getDiamondSize(int fromSize)
-		{ return fromSize<minSizeNeededForDiamond() ? 0 : (fromSize+1)/2; }
+		{ return fromSize<minSizeNeededForDiamond() ? 0 : fromSize/2; }
 	inline static int getDiamondShift(int fromSize) 
 		{ return ( getDiamondSize(fromSize) - MinRngSize + 1 )*2; }
 }
 void MStdDomains::initPools(const PlaneBlock &planeBlock) {
-	zoom=	planeBlock.zoom;
-	width=	rShift( planeBlock.width(), zoom );
-	height=	rShift( planeBlock.height(), zoom );
+	zoom=	planeBlock.settings->zoom;
+	width=	rShift( planeBlock.width, zoom );
+	height=	rShift( planeBlock.height, zoom );
 //	checks some things
 	ASSERT( width>0 && height>0 && this && settings && pools.empty() );
 	if ( min(width,height) < MinDomSize*2 )
@@ -69,7 +69,7 @@ void MStdDomains::initPools(const PlaneBlock &planeBlock) {
 		int shorter= min(width,height);
 		int shift= getDiamondShift(shorter);
 	//	generate the pool sizes
-		for (int longer=max(width,height); longer>0; longer-=shift) {
+		for (int longer=max(width,height); longer>minSizeNeededForDiamond(); longer-=shift) {
 			int side= getDiamondSize( min(longer,shorter) );
 			ASSERT(side>=0);
 			if (side)
@@ -80,7 +80,7 @@ void MStdDomains::initPools(const PlaneBlock &planeBlock) {
 	}
 //	if allowed, create more downscaled domains (at most 256 pools)
 	if ( settingsInt(MultiDownScaling) )
-		for (size_t i=0; i<pools.size() && i<256; ++i) {
+		for (Uint i=0; i<pools.size() && i<256; ++i) {
 			const Pool &pool=pools[i];
 		//	compute new dimensions and add the pool if it's big enough	
 			int w= rShift<int>(pool.width,zoom+1);
@@ -107,7 +107,7 @@ namespace NOSPACE {
 	static void shrinkVertically	( CSMatrix src, SMatrix dest, int width, int height );
 	static void shrinkToDiamond		( CSMatrix src, SMatrix dest, int side );
 }
-void MStdDomains::fillPixelsInPools(const PlaneBlock &planeBlock) {
+void MStdDomains::fillPixelsInPools(PlaneBlock &planeBlock) {
 	ASSERT( !pools.empty() ); // assuming initPools has already been called
 //	iterate over pool types
 	PoolList::iterator end= pools.begin();
@@ -116,8 +116,7 @@ void MStdDomains::fillPixelsInPools(const PlaneBlock &planeBlock) {
 		char type= begin->type;
 	//	find the end of the same-pool-type block and invalidate the summers on the way
 		while ( end!=pools.end() && end->type==type ) {
-			end->summers[0].invalidate();
-			end->summers[1].invalidate();
+			end->summers_invalidate();
 			++end;
 		}
 
@@ -133,7 +132,7 @@ void MStdDomains::fillPixelsInPools(const PlaneBlock &planeBlock) {
 			}
 		//	we have the right procedure -> fill the first pool
 			ASSERT( begin->level == 1 );
-			shrinkProc( planeBlock.getShiftedPixels(), begin->pixels
+			shrinkProc( planeBlock.pixels, begin->pixels
 			, begin->width, begin->height );
 		//	fill the rest (in the same-type interval)
 			while (++begin != end) {
@@ -147,7 +146,7 @@ void MStdDomains::fillPixelsInPools(const PlaneBlock &planeBlock) {
 			bool horiz= width>=height;
 			int shift= lShift( getDiamondShift(min(width,height)), zoom );
 			int longerEnd= lShift( max(width,height)-minSizeNeededForDiamond(), zoom );
-			CSMatrix source= planeBlock.getShiftedPixels(); 
+			CSMatrix source= planeBlock.pixels; 
 			
 			for (int l=0; l<=longerEnd; ++it,l+=shift) {
 				ASSERT( it!=end && it->level==1 && it->width==it->height );
@@ -329,40 +328,58 @@ namespace MatrixWalkers {
 		template<class R1,class R2> void operator()(R1 &dest,R2 src) const { dest= src; }
 	};
 
-	template<class T,class I=size_t> struct HalfShrinker: public RotBase<T,I> { ROTBASE_INHERIT
-		HalfShrinker(MType matrix)
-		: RotBase<T>( matrix, 0, 0 ) {}
+	template<class T,class I=PtrInt>
+	struct HalfShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
+		typedef Rotation_0<T,I> Base;
+		
+		HalfShrinker(TMatrix matrix)
+		: Base( matrix, Block(0,0,0,0) ) {}
 
-		T get() { return ldexp( elem[0] + elem[1] + elem[colSkip] + elem[colSkip+1], -2 ); }
-		void outerStep()	{ list+= 2*colSkip; }
-		void innerStep()	{ elem+= 2; }
+		T get() {
+			TMatrix &c= current;
+			T *cs= c.start;
+			return ldexp( cs[0] + cs[1] + cs[c.colSkip] + cs[c.colSkip+1], -2 ); 
+		}
+		void outerStep() { Base::outerStep(); Base::outerStep(); }
+		void innerStep() { Base::innerStep(); Base::innerStep(); }
 	};
 	
-	template<class T,class I=size_t> struct HorizShrinker: public RotBase<T,I> { ROTBASE_INHERIT
-		HorizShrinker(MType matrix)
-		: RotBase<T>( matrix, 0, 0 ) {}
+	template<class T,class I=PtrInt>
+	struct HorizShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
+		typedef Rotation_0<T,I> Base;
+		
+		HorizShrinker(TMatrix matrix)
+		: Base( matrix, Block(0,0,0,0) ) {}
 
-		T get() { return ldexp( elem[0] + elem[colSkip], -1 ); }
-		void outerStep()	{ list+= 2*colSkip; }
-		void innerStep()	{ ++elem; }
+		T get() { return ldexp( current.start[0] + current.start[current.colSkip], -1 ); }
+		void outerStep() { Base::outerStep(); Base::outerStep(); }
 	};
 	
-	template<class T,class I=size_t> struct VertShrinker: public RotBase<T,I> { ROTBASE_INHERIT
-		VertShrinker(MType matrix)
-		: RotBase<T>( matrix, 0, 0 ) {}
+	template<class T,class I=PtrInt>
+	struct VertShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
+		typedef Rotation_0<T,I> Base;
+		
+		VertShrinker(TMatrix matrix)
+		: Base( matrix, Block(0,0,0,0) ) {}
 
-		T get() { return ldexp( elem[0] + elem[1], -1 ); }
-		void outerStep()	{ list+= colSkip; }
-		void innerStep()	{ elem+= 2; }
+		T get() { return ldexp( current.start[0] + current.start[1], -1 ); }
+		void innerStep() { Base::innerStep(); Base::innerStep(); }
 	};
 	
-	template<class T,class I=size_t> struct DiamShrinker: public RotBase<T,I> { ROTBASE_INHERIT
-		DiamShrinker(MType matrix,I side)
-		: RotBase<T>( matrix, side, 0 ) {}	// the diamond begins on top-middle
+	template<class T,class I=PtrInt> 
+	struct DiamShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
+		typedef Rotation_0<T,I> Base;
+		
+		DiamShrinker(TMatrix matrix,I side)
+		: Base( matrix, Block(side-1,0,0,0) ) {} // the diamond begins on top-middle
 
-		T get() { return ldexp( elem[0] + elem[1] + elem[colSkip] + elem[colSkip+1], -2 ); }
-		void outerStep()	{ list+= colSkip+1; }
-		void innerStep()	{ elem+= 1-colSkip; }
+		T get() {
+			TMatrix &c= current;
+			T *cs= c.start;
+			return ldexp( cs[0] + cs[1] + cs[c.colSkip] + cs[c.colSkip+1], -2 ); 
+		}
+		void outerStep() { lastStart+= current.colSkip+1; }
+		void innerStep() { current.start+= 1-current.colSkip; }
 	};
 }//	MatrixWalkers namespace
 

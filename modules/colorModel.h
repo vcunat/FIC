@@ -21,30 +21,37 @@ private:
 	/** Indices for settings */
 	enum Settings { ColorModel };
 //	Settings-retrieval methods
-	int &colorModel()
-		{ return settingsInt(ColorModel); }
-	int numOfModels()
-		{ return 1+countEOLs( info().setType[ColorModel].type.data.text ); }
+	int &colorModel() { return settingsInt(ColorModel); }
+	int numOfModels() { return 1+countEOLs( info().setType[ColorModel].type.data.text ); }
+	
 protected:
+	PlaneList ownedPlanes;
+
 //	Construction and destruction
 	/* Using auto-generated */
+	~MColorModel() {
+		for (PlaneList::iterator it=ownedPlanes.begin(); it!=ownedPlanes.end(); ++it) {
+			it->pixels.free();
+			delete it->settings;
+		}
+	}
 public:
 	static const SReal RGBCoeffs[][4]	/** RGB color coefficients */
 	, YCbCrCoeffs[][4];					/**< YCbCr color coefficients */
 public:
 /** \name IColorTransformer interface
  *	@{ */
-	PlaneList image2planes(const QImage &toEncode,const Plane &prototype);
-	QImage planes2image(const MatrixList &pixels,int width,int height);
+	PlaneList image2planes(const QImage &toEncode,const PlaneSettings &prototype);
+	QImage planes2image();
 
 	void writeData(std::ostream &file)
-		{ put<Uchar>( file , colorModel() ); }
-	PlaneList readData(std::istream &file,const Plane &prototype,int width,int height);
+		{ put<Uchar>( file, colorModel() ); }
+	PlaneList readData(std::istream &file,const PlaneSettings &prototype);
 ///	@}
 private:
 	/** Creates a list of planes according to \p prototype,
-	 *	makes new matrices and adjusts encoding parameters (takes zoomed dimensions) */
-	PlaneList createPlanes(IRoot::Mode mode,const Plane &prototype,int zwidth,int zheight);
+	 *	makes new matrices and adjusts encoding parameters */
+	PlaneList createPlanes(IRoot::Mode mode,const PlaneSettings &prototype);
 };
 
 

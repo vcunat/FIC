@@ -48,4 +48,5 @@ template <class T,class U> inline T debugCast(U toCast) {
 	inline void STREAM_POS(std::ios&) {}
 #endif
 
+
 #endif // DEBUG_HEADER_

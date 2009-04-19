@@ -115,7 +115,7 @@ class BulkAllocator {
 	enum { bulkCount=(bulkKb*1024)/sizeof(T) };
 
 	std::vector<T*> pools;
-	size_t nextIndex;
+	PtrInt nextIndex;
 
 public:
 	BulkAllocator()
@@ -135,7 +135,7 @@ public:
 		}
 		return & (pools.back()[nextIndex++]);
 	}
-	T* makeField(size_t count) {
+	T* makeField(PtrInt count) {
 	//	check for errors
 		ASSERT(nextIndex<=bulkCount);
 
@@ -175,7 +175,10 @@ struct UpdateInfo {
 	/** Initializes the structure from supplied parametres */
 	UpdateInfo( const bool &terminate_= noTerminate, IncInt incMaxProgress_= &emptyFunction
 	, IncInt incProgress_= &emptyFunction )
-	: terminate(&terminate_), incMaxProgress(incMaxProgress_), incProgress(incProgress_) {}
+	: terminate(&terminate_), incMaxProgress(incMaxProgress_), incProgress(incProgress_) 
+		{ ASSERT(isValid()); }
+	
+	bool isValid() const { return terminate && incMaxProgress && incProgress; }
 };
 
 #endif // UTIL_HEADER_

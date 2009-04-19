@@ -3,56 +3,61 @@
 
 using namespace std;
 
-int MSquarePixels::createJobs( const PlaneList &planes, int width, int height ) {
-	ASSERT( ownedMatrices.empty() && jobs.empty()
-	&& moduleRanges() && moduleDomains() && moduleEncoder() );
+int MSquarePixels::createJobs(const PlaneList &planes) {
+	ASSERT( jobs.empty() && !planes.empty()
+		&& moduleRanges() && moduleDomains() && moduleEncoder() );
+	DEBUG_ONLY( planeList= planes; )
 
-//	create the joblist
-	int maxPixels= powers[maxPartSize()+2*planes.front().zoom]; // the zoom only affects maxPixels
-	if ( width*height <= maxPixels )
-	//	not dividing the planes -> pass them as they are
-		for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it)
-			jobs.push_back(makeJob( *it, Block(0,0,width,height) ));
-	else { // dividing the planes
-	//	compute the dividing pattern
-		vector<Block> pattern;
-		pattern.push_back( Block(0,0,width,height) );
-
-		size_t i= 0;
-		while ( i < pattern.size() )
-			if ( pattern[i].size() <= maxPixels )
-			//	the part is small enough, move on
-				++i;
-			else { // divide the part
-			//	splitting the longer coordinate
-				bool xdiv= ( pattern[i].width() >= pattern[i].height() );
-				int longer= ( xdiv ? pattern[i].width() : pattern[i].height() );
-			//	get the place to split (at least one of the parts will have size 2^q)
-				int bits= log2ceil(longer);
-				int divsize= ( longer >= powers[bits-1]+powers[bits-2]
-					? powers[bits-1]
-					: powers[bits-2] );
-			//	split the part in the pattern (reusing the splitted-one's space)
-				pattern.push_back(pattern[i]);
-				if (xdiv) {
-					pattern[i].xend-= divsize;
-					pattern.back().x0+= divsize;
-				} else {
-					pattern[i].yend-= divsize;
-					pattern.back().y0+= divsize;
-				}
+	for (PlaneList::const_iterator plane= planes.begin(); plane!=planes.end(); ++plane) {
+	//	convert the Plane into a PlaneBlock (containing the whole contents)
+		const IColorTransformer::PlaneSettings *plSet= plane->settings;
+		Job job;
+		job.width= plSet->width;
+		job.height= plSet->height;
+		job.pixels= plane->pixels;
+		job.sumsValid= false;
+		job.settings= plSet;
+		DEBUG_ONLY(	job.ranges= 0; job.domains= 0; job.encoder= 0; )
+	//	append the result to the jobs
+		jobs.push_back(job);
+	}
+			
+//	the zoom only affects maxPixels (zoom is assumed to be the same for all planes)
+	int maxPixels= powers[maxPartSize()+2*jobs.front().settings->zoom];
+//	split jobs until they're small enough
+	Uint i= 0;
+	while ( i < jobs.size() )
+		if ( jobs[i].width*jobs[i].height <= maxPixels ) {
+			++i; //	the part is small enough, move on
+		} else {
+			
+			// divide the job
+		//	splitting the longer coordinate
+			bool xdiv= ( jobs[i].width >= jobs[i].height );
+			int longer= ( xdiv ? jobs[i].width : jobs[i].height );
+		//	get the place to split (at least one of the parts will have size 2^q)
+			int bits= log2ceil(longer);
+			int divSize= ( longer >= powers[bits-1]+powers[bits-2]
+				? powers[bits-1]
+				: powers[bits-2] );
+		//	split the job (reusing the splitted-one's space and appending the second one)
+			jobs.push_back(jobs[i]);
+			if (xdiv) {
+				jobs[i].width= divSize;				// reducing the width of the first job
+				jobs.back().pixels.shiftMatrix(divSize,0);	// shifting the second job
+				jobs.back().width-= divSize;		// reducing the width of the second job
+			} else {
+				jobs[i].height= divSize;			// reducing the height of the first job
+				jobs.back().pixels.shiftMatrix(0,divSize);	// shifting the second job
+				jobs.back().height-= divSize;		// reducing the height of the second job
 			}
-	//	we have the pattern, apply it to every plane (jobs sharing pixel matrices)
-		vector<Block>::iterator patIt;
-		for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it)
-			for (patIt=pattern.begin(); patIt!=pattern.end(); ++patIt)
-				jobs.push_back(makeJob( *it, *patIt ));
-	} // if(!<dividing planes>)... else... 
+		}
 
-//	take the ownership of the matrices
-	for (PlaneList::const_iterator it=planes.begin(); it!=planes.end(); ++it) {
-		ownedMatrices.push_back(it->pixels);
-		it->updateInfo.incMaxProgress(width*height);
+//	create the modules in the jobs by cloning those from module's settings
+	for (JobIterator job=jobs.begin(); job!=jobs.end(); ++job) {
+		job->ranges= clone(moduleRanges());
+		job->domains= clone(moduleDomains());
+		job->encoder= clone(moduleEncoder());
 	}
 
 	return jobs.size();
@@ -106,7 +111,7 @@ void MSquarePixels::readJobs(istream &file,int phaseBegin,int phaseEnd) {
 	if (!phaseBegin)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) {
 			STREAM_POS(file);
-			it->ranges->readData_buildRanges(file,*it,it->zoom);
+			it->ranges->readData_buildRanges(file,*it);
 			STREAM_POS(file);
 			it->domains->readData(file);
 			it->encoder->initialize(IRoot::Decode,*it);
@@ -115,5 +120,4 @@ void MSquarePixels::readJobs(istream &file,int phaseBegin,int phaseEnd) {
 	for (int phase=phaseBegin; phase<phaseEnd; ++phase)
 		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) 
 			STREAM_POS(file), it->encoder->readData(file,phase);
-		
 }

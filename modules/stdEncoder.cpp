@@ -134,7 +134,7 @@ void MStandardEncoder::initialize( IRoot::Mode mode, PlaneBlock &planeBlock_ ) {
 //	prepare the domains-module
 	planeBlock->domains->initPools(*planeBlock);
 
-	int maxLevel= 1 +log2ceil(max( planeBlock->width(), planeBlock->height() ));
+	int maxLevel= 1 +log2ceil(max( planeBlock->width, planeBlock->height ));
 //	prepare levelPoolInfos
 	levelPoolInfos.resize(maxLevel);
 
@@ -147,8 +147,8 @@ void MStandardEncoder::initialize( IRoot::Mode mode, PlaneBlock &planeBlock_ ) {
 
 	//	prepare maximum SquareErrors allowed for regular range blocks
 		stdRangeSEs.resize(maxLevel+1);
-		planeBlock->moduleQ2SE->completeSquareRangeErrors
-		( planeBlock->quality, maxLevel+1, &stdRangeSEs.front() );
+		planeBlock->settings->moduleQ2SE->completeSquareRangeErrors
+		( planeBlock->settings->quality, maxLevel+1, &stdRangeSEs.front() );
 	}
 }
 
@@ -166,8 +166,8 @@ namespace NOSPACE {
 		#endif
 
 		BestInfo()
-		: error( numeric_limits<float>::max() ) {}
-		IStdEncPredictor::Prediction& prediction()
+		: Prediction(), error( numeric_limits<float>::max() ) {}
+		IStdEncPredictor::Prediction& prediction() 
 			{ return *this; }
 	};
 } // namespace NOSPACE
@@ -259,7 +259,7 @@ bool MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 		domBlock= adjustDomainForIncompleteRange
 			( *stable.rangeBlock, prediction.rotation, domBlock );
 	Real dSum, d2Sum;
-	pool.getSums(domBlock,dSum,d2Sum);
+	pool.getSums(domBlock).unpack(dSum,d2Sum);
 //	compute the denominator common to most formulas
 	Real test= stable.pixCount*d2Sum - sqr(dSum);
 	if (test<=0) // skip too flat domains
@@ -320,6 +320,7 @@ bool MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 
 float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	ASSERT( planeBlock && !stdRangeSEs.empty() && !range.encoderData );
+	const IColorTransformer::PlaneSettings *plSet= planeBlock->settings;
 
 //	initialize an encoding-info object
 	EncodingInfo info;
@@ -332,7 +333,7 @@ float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	info.stable.poolInfos=		&levelPoolInfos[range.level];
 //	check the level has been initialized
 	if ( info.stable.poolInfos->empty() ) {
-		buildPoolInfos4aLevel(range.level,planeBlock->zoom);
+		buildPoolInfos4aLevel(range.level,plSet->zoom);
 		ASSERT( !info.stable.poolInfos->empty() );
 	}
 
@@ -346,8 +347,7 @@ float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	}
 	info.stable.bigScaleCoeff=	settingsFloat(BigScaleCoeff);
 
-	info.stable.rSum=		planeBlock->getSum(range,BlockSummer::Values);
-	info.stable.r2Sum=		planeBlock->getSum(range,BlockSummer::Squares);
+	planeBlock->getSums(range).unpack( info.stable.rSum, info.stable.r2Sum );
 	info.stable.pixCount=	range.size();
 	info.stable.rnDev2=		info.stable.pixCount*info.stable.r2Sum - sqr(info.stable.rSum);
 	if (info.stable.rnDev2<0)
@@ -375,7 +375,7 @@ float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	}
 
 	info.targetSE= info.maxSE2Predict= info.stable.isRegular ? stdRangeSEs[range.level]
-		: planeBlock->moduleQ2SE->rangeSE( planeBlock->quality, range.size() );
+		: plSet->moduleQ2SE->rangeSE( plSet->quality, range.size() );
 	ASSERT(info.targetSE>=0);
 	if (allowHigherSE)
 		info.maxSE2Predict= numeric_limits<float>::max();
@@ -414,7 +414,7 @@ float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 
 void MStandardEncoder::buildPoolInfos4aLevel(int level,int zoom) {
 //	get the real maximum domain count (divide by the number of rotations)
-	int domainCountLog2= planeBlock->domainCountLog2;
+	int domainCountLog2= planeBlock->settings->domainCountLog2;
 	if ( settingsInt(AllowedRotations) )
 		domainCountLog2-= 3;
 //	get the per-domain-pool densities
@@ -648,7 +648,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 				int bits= domBits[level];
 				if (bits<0) {
 				//	yet unused level -> initialize it and get the right bits
-					buildPoolInfos4aLevel(level,planeBlock->zoom);
+					buildPoolInfos4aLevel(level,planeBlock->settings->zoom);
 					bits= domBits[level]
 					= log2ceil( levelPoolInfos[level].back().indexBegin );
 					ASSERT( bits>0 );
@@ -678,7 +678,8 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 		ASSERT(false);
 	case Clear:
 		ASSERT(count==1);
-		planeBlock->pixels.fillSubMatrix( *planeBlock, 0.5f );
+		planeBlock->pixels.fillSubMatrix
+			( Block(0,0,planeBlock->width,planeBlock->height), 0.5f );
 		planeBlock->summers_invalidate();
 		break;
 	case Iterate:
@@ -694,7 +695,7 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 				}
 			//	get domain sums and the pixel count
 				Real dSum, d2Sum;
-				info.decAccel.pool->getSums( info.decAccel.domBlock, dSum, d2Sum );
+				info.decAccel.pool->getSums(info.decAccel.domBlock).unpack(dSum,d2Sum);
 				Real pixCount= (*it)->size();
 
 				Real linCoeff= (info.inverted ? -pixCount : pixCount)
@@ -720,6 +721,7 @@ void MStandardEncoder::initRangeInfoAccelerators() {
 //	get references that are the same for all range blocks
 	const RangeList &ranges= planeBlock->ranges->getRangeList();
 	const ISquareDomains::PoolList &pools= planeBlock->domains->getPools();
+	int zoom= planeBlock->settings->zoom;
 //	iterate over the ranges (and their accelerators)
 	for ( RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it ) {
 	//	get range level, reference to the range's info and to the level's pool infos
@@ -729,10 +731,10 @@ void MStandardEncoder::initRangeInfoAccelerators() {
 			continue;
 		const PoolInfos &poolInfos= levelPoolInfos[level];
 	//	build pool infos for the level (if neccesary), fill info's accelerators
-		if ( poolInfos.empty() )
-			buildPoolInfos4aLevel(level,planeBlock->zoom), ASSERT( !poolInfos.empty() );
+		if ( poolInfos.empty() ) 
+			buildPoolInfos4aLevel(level,zoom), ASSERT( !poolInfos.empty() );
 		info.decAccel.pool= &getDomainData
-		( **it, pools, poolInfos, info.domainID, planeBlock->zoom, info.decAccel.domBlock );
+			( **it, pools, poolInfos, info.domainID, zoom, info.decAccel.domBlock );
 	//	adjust domain's block if the range isn't regular
 		if ( !(*it)->isRegular() )
 			info.decAccel.domBlock= adjustDomainForIncompleteRange

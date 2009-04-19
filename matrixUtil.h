@@ -24,42 +24,29 @@ struct Block {
 
 /** A simple generic template for matrices of fixed size, uses shallow copying
  *	and manual memory management */
-template<class T,class I=size_t> class Matrix {
-public:
-	friend class Matrix< typename NonConstType<T>::Result, I >; ///< because of conversion
-	typedef Matrix<const T,I> ConstMatrix; ///< the class is convertible to ConstMatrix
+template<class T,class I=PtrInt> struct MatrixSlice {
+	typedef MatrixSlice<const T,I> Const; ///< the class is convertible to Const type
 
-protected:
 	T *start;	///< pointer to the top-left pixel
 	I colSkip;	///< how many pixels to skip to get in the next column
-	DEBUG_ONLY(I width;);
-public:
-	/** Initializes an empty matrix */
-	Matrix()
-	: start(0) {}
 
-	/** Allocates a matrix of given size via #allocate (see for details) */
-	Matrix( I width_, I height_, T *memory=0 )
-	: start(0) 
-		{ allocate(width_,height_,memory); }
+	/** Initializes an empty slice */
+	MatrixSlice(): start(0) {}
 
-	/** Creates a shallow copy */
-	Matrix(const Matrix &m)
-	: start(m.start), colSkip(m.colSkip) 
-		{ DEBUG_ONLY( width= m.width; ); }
+	/** Creates a shallow copy (deleting one destroys all copies) */
+	MatrixSlice(const MatrixSlice &m): start(m.start), colSkip(m.colSkip) {}
 
 	/** Converts to a matrix of constant objects (shallow copy) */
-	operator ConstMatrix() const {
-		ConstMatrix result;
+	operator Const() const {
+		Const result;
 		result.start= start;
 		result.colSkip= colSkip;
-		DEBUG_ONLY( result.width= width; )
 		return result;
 	}
 
 	/** Indexing operator - returns pointer to a column */
 	T* operator[](I column) {
-		ASSERT( start && /*column>=0 &&*/ column<width );
+		ASSERT( isValid() );
 		return start+column*colSkip;
 	}
 	/** Const version of indexing operator - doesn't allow to change the elements */
@@ -69,11 +56,11 @@ public:
 
 	/** Reallocates the matrix for a new size. If \p memory parameter is given,
 	 *	it is used for storage (the user is responsible that the matrix fits in it, etc.) */
-	void allocate( I width_, I height_, T *memory=0 ) {
+	void allocate( I width, I height, T *memory=0 ) {
+		ASSERT( width>0 && height>0 );
 		free();
-		start= memory ? memory : new T[width_*height_];
-		colSkip= height_;
-		DEBUG_ONLY( width= width_; )
+		start= memory ? memory : new T[width*height];
+		colSkip= height;
 	}
 	/** Releases the memory */
 	void free() {
@@ -87,7 +74,7 @@ public:
 
 	/** Fills a submatrix of a valid matrix with a value */
 	void fillSubMatrix(const Block &block,T value) {
-		ASSERT( isValid() && T(block.xend)<=width );
+		ASSERT( isValid() );
 	//	compute begin and end column starts
 		T *begin= start+block.y0+colSkip*block.x0
 		, *end= start+block.y0+colSkip*block.xend;
@@ -95,106 +82,270 @@ public:
 	    for (T *it= begin; it!=end; it+= colSkip)
 			std::fill( it, it+block.height(), value );
 	}
-/** \name Low-level functions
- *	mainly for use by image iterators, etc.
- *	@{ */
 	/** Shifts the indexing of this matrix - dangerous.
 	 *	After calling this, only addressing or more shifts can be done (not checked).
 	 *	Also shifts out of the allocated matrix aren't detected */
-	void shiftMatrix(I x0,I y0) {
+	MatrixSlice& shiftMatrix(I x0,I y0) {
 		ASSERT( isValid() );
-		start+= x0+y0*colSkip;
-		DEBUG_ONLY( width-= x0; );
-		ASSERT(width>0);
+		start+= x0*colSkip+y0;
+		return *this;
 	}
-	/** Returns internal pointer #start */
-	T* getStart()			{ return start; }
-	/** Returns internal value #colSkip */
-	I  getColSkip()	const	{ return colSkip; }
-///	@}
-}; // Matrix class template
-
+	/** Computes relative position of a pointer in the matrix (always 0 <= \p y < #colSkip) */
+	void getPosition(const T *elem,int &x,int &y) const {
+		ASSERT( isValid() );
+		PtrInt diff= elem-start;
+		if (diff>=0) {
+			x= diff/colSkip;
+			y= diff%colSkip;
+		} else {
+			x= -((-diff-1)/colSkip) -1;
+			y= colSkip - (-diff-1)%colSkip -1;
+		}
+	}
+}; // MatrixSlice class template
 
 
 /** MatrixSummer objects store partial sums of a matrix, allowing quick computation
  *	of sum of any rectangle in the matrix. It's parametrized by "type of the result",
- *	"type of the input" and "indexing type" (defaults to size_t) */
-template<class T,class U,class I=size_t> class MatrixSummer {
-public:
+ *	"type of the input" and "indexing type" (defaults to Int) */
+template<class T,class I=PtrInt> struct MatrixSummer {
 	typedef T Result;
-	typedef Matrix<const U,I> InpMatrix;
-	/** The type of filling the summer - normal sums, sums of squares */
-	enum SumType { Values=0, Squares=1 };
 
-private:
-	Matrix<T,I> sums; ///< Internal matrix containing precomputed partial sums
+	MatrixSlice<T,I> sums; ///< Internal matrix containing precomputed partial sums
 
-public:
+#ifndef NDEBUG
 	/** Creates an empty summer */
 	MatrixSummer() {}
-	/** Creates a summer filled from a matrix */
-	MatrixSummer( InpMatrix m, SumType sumType, I width, I height )
-		{ fill(m,sumType,width,height); }
-	/** Frees the resources */
-	~MatrixSummer()
-		{ sums.free(); }
-
 	/** Only empty objects are allowed to be copied (assertion) */
-	MatrixSummer( const MatrixSummer &DEBUG_ONLY(other) )
+	MatrixSummer( const MatrixSummer &other )
 		{ ASSERT( !other.isValid() ); }
 	/** Only empty objects are allowed to be assigned (assertion) */
-	MatrixSummer& operator=( const MatrixSummer &DEBUG_ONLY(other) )
-		{ return ASSERT( !other.isValid() && !isValid() ), *this; }
+	MatrixSummer& operator=( const MatrixSummer &other )
+		{ ASSERT( !other.isValid() && !isValid() ); return *this; }
+#endif
 
 	/** Returns whether the object is filled with data */
-	bool isValid() const
-		{ return sums.isValid(); }
+	bool isValid()	const	{ return sums.isValid(); }
 	/** Clears the object */
-	void invalidate()
-		{ sums.free(); };
+	void free()				{ sums.free(); };
 
-	/** Prepares object to make sums for a matrix. If the summer has already been used before,
-	 *	the method assumes it was for a matrix of the same size */
-	void fill(InpMatrix m,SumType sumType,I width,I height,I x0=0,I y0=0) {
-		ASSERT( m.isValid() && (sumType==Values || sumType==Squares) );
+	/** Computes the sum of a rectangle (in constant time) */
+	Result getSum(I x0,I y0,I xend,I yend) const {
+		ASSERT( sums.isValid() );
+		return sums[xend][yend] -sums[x0][yend] -sums[xend][y0] +sums[x0][y0];
+	}
+	/** A shortcut to get the sum of a block */
+	Result getSum(const Block &b) const 
+		{ return getSum( b.x0, b.y0, b.xend, b.yend ); }
 
-		m.shiftMatrix(x0,y0);
-
+	/** Prepares object to make sums for a matrix. If the summer has already been
+	 *	used before, the method assumes it was for a matrix of the same size */
+	template<class Input> void fill(Input inp,I width,I height) {
 		if ( !sums.isValid() )
 			sums.allocate(width+1,height+1);
 
-		I yEnd= height+y0;
 	//	fill the edges with zeroes
 		for (I i=0; i<=width; ++i)
 			sums[i][0]= 0;
 		for (I j=1; j<=height; ++j)
 			sums[0][j]= 0;
 	//	acummulate in the y-growing direction
-		if (sumType==Values)
-			for (I i=1; i<=width; ++i)
-				for (I j=1; j<=yEnd; ++j)
-					sums[i][j]= sums[i][j-1]+m[i-1][j-1];
-		else // sumType==Squares
-			for (I i=1; i<=width; ++i)
-				for (I j=1+y0; j<=yEnd; ++j)
-					sums[i][j]= sums[i][j-1]+sqr<Result>(m[i-1][j-1]);
+		for (I i=1; i<=width; ++i)
+			for (I j=1; j<=height; ++j)
+				sums[i][j]= sums[i][j-1] + Result(inp[i-1][j-1]);
 	//	acummulate in the x-growing direction
 		for (I i=2; i<=width; ++i)
-			for (I j=1+y0; j<=yEnd; ++j)
+			for (I j=1; j<=height; ++j)
 				sums[i][j]+= sums[i-1][j];
 	}
-
-	/** Computes the sum of a rectangle (in constant time) */
-	Result getSum(I x0,I y0,I xend,I yend) const {
-		ASSERT( sums.isValid() && xend>x0 && yend>y0 ); /*x0>=0 && y0>=0 && xend>=0 && yend>=0 &&*/
-		return sums[xend][yend] -sums[x0][yend] -sums[xend][y0] +sums[x0][y0];
-	}
 }; // MatrixSummer class template
+
+/** Helper structuree for computing with value and squared sums at once */
+template<class Num> struct DoubleNum {
+	Num value, square;
+	
+	DoubleNum()	
+		{ DEBUG_ONLY( value= square= std::numeric_limits<Num>::quiet_NaN(); ) }
+	
+	DoubleNum(Num val)
+	: value(val), square(sqr(val)) {}
+	
+	DoubleNum(const DoubleNum &other)
+	: value(other.value), square(other.square) {}
+	
+	void unpack(Num &val,Num &sq) const { val= value; sq= square; }
+	
+	DoubleNum& operator+=(const DoubleNum &other) {
+		value+=	other.value;
+		square+= other.square;
+		return *this;
+	}
+	DoubleNum& operator-=(const DoubleNum &other) {
+		value-=	other.value;
+		square-= other.square;
+		return *this;
+	}
+	friend DoubleNum operator+(const DoubleNum &a,const DoubleNum &b) 
+		{ return DoubleNum(a)+= b; }
+	friend DoubleNum operator-(const DoubleNum &a,const DoubleNum &b) 
+		{ return DoubleNum(a)-= b; }
+}; // DoubleNum template struct
+
+
+template< class SumT, class PixT, class I=PtrInt >
+struct SummedMatrix {
+	typedef DoubleNum<SumT> BSumRes;
+	typedef MatrixSummer<BSumRes> BSummer;
+	
+	I width						///  The width of #pixels
+	, height;					///< The height of #pixels
+	MatrixSlice<PixT> pixels;	///< The matrix of pixels
+	BSummer summer;				///< Summer for values and squares of #pixels
+	bool sumsValid;				///< Indicates whether the summer values are valid
+	
+	/** Sets the size of #pixels, optionally allocates memory */
+	void setSize( I width_, I height_, bool allocPixels=true ) {
+		free();
+		width= width_;
+		height= height_;
+		if (allocPixels)
+			pixels.allocate(width,height);
+	}
+	/** Frees the memory */
+	void free(bool freePixels=true) {
+		if (freePixels)
+			pixels.free();
+		else
+			pixels.start= 0;
+		summer.free();
+		sumsValid= false;
+	}
+	
+	/** Just validates both summers (if needed) */
+	void summers_makeValid() const {
+		ASSERT(pixels.isValid());
+		if (!sumsValid) {
+			constCast(summer).fill(pixels,width,height);
+			constCast(sumsValid)= true;
+		}
+	}
+	/** Justs invalidates both summers (to be called after changes in the pixel-matrix) */
+	void summers_invalidate() 
+		{ sumsValid= false; }
+	/** A shortcut for getting sums of a block */
+	BSumRes getSums(const Block &block) const 
+		{ return getSums( block.x0, block.y0, block.xend, block.yend ); }	
+	/** Gets both sums of a nonempty rectangle in #pixels, the summer isn't validated */
+	BSumRes getSums( I x0, I y0, I xend, I yend ) const {
+		ASSERT( sumsValid && x0>=0 && y0>=0 && xend>x0 && yend>y0 
+			&& xend<=width && yend<=height );
+		return summer.getSum(x0,y0,xend,yend);
+	}
+}; // SummedPixels template struct
+
+
 
 /** Contains various iterators for matrices (see Matrix)
  *	to be used in walkOperate() and walkOperateCheckRotate() */
 namespace MatrixWalkers {
 
+	/** Base structure for walkers changing 'x' in the outer and 'y' in the inner loop */
+	template<class T,class I> struct RotBase {
+	public:
+		typedef MatrixSlice<T,I> TMatrix;
+	protected:
+		TMatrix current;	///< matrix starting on the current element
+		T *lastStart;		///< the place of the last enter of the inner loop
+
+	public:
+		RotBase( TMatrix matrix, int x0, int y0 )
+		: current( matrix.shiftMatrix(x0,y0) ), lastStart(current.start) { 
+			DEBUG_ONLY( current.start= 0; )
+			ASSERT( matrix.isValid() );
+		}
+
+		void innerInit()	{ current.start= lastStart; }
+		T& get()			{ return *current.start; }
+	}; // RotBase class template
+
+	#define ROTBASE_INHERIT \
+		typedef typename RotBase<T,I>::TMatrix TMatrix; \
+		using RotBase<T,I>::current; \
+		using RotBase<T,I>::lastStart;
+
+	/** No rotation: x->, y-> */
+	template<class T,class I> struct Rotation_0: public RotBase<T,I> { ROTBASE_INHERIT
+		Rotation_0( TMatrix matrix, const Block &block )
+		: RotBase<T,I>( matrix, block.x0, block.y0 ) {}
+
+		void outerStep() { lastStart+= current.colSkip; }
+		void innerStep() { ++current.start; }
+	};
+
+	/** Rotated 90deg\. cw\., transposed: x<-, y-> */
+	template<class T,class I> struct Rotation_1_T: public RotBase<T,I> { ROTBASE_INHERIT
+		Rotation_1_T( TMatrix matrix, const Block &block )
+		: RotBase<T,I>( matrix, block.xend-1, block.y0 ) {}
+
+		void outerStep() { lastStart-= current.colSkip; }
+		void innerStep() { ++current.start; }
+	};
+
+	/** Rotated 180deg\. cw\.: x<-, y<- */
+	template<class T,class I> struct Rotation_2: public RotBase<T,I> { ROTBASE_INHERIT
+		Rotation_2( TMatrix matrix, const Block &block )
+		: RotBase<T,I>( matrix, block.xend-1, block.yend-1 ) {}
+
+		void outerStep() { lastStart-= current.colSkip; }
+		void innerStep() { --current.start; }
+	};
+
+	/** Rotated 270deg\. cw\., transposed: x->, y<- */
+	template<class T,class I> struct Rotation_3_T: public RotBase<T,I> { ROTBASE_INHERIT
+		Rotation_3_T( TMatrix matrix, const Block &block )
+		: RotBase<T,I>( matrix, block.x0, block.yend-1 ) {}
+
+		void outerStep() { lastStart+= current.colSkip; }
+		void innerStep() { --current.start; }
+	};
+
+	/** No rotation, transposed: y->, x-> */
+	template<class T,class I> struct Rotation_0_T: public RotBase<T,I> { ROTBASE_INHERIT
+		Rotation_0_T( TMatrix matrix, const Block &block )
+		: RotBase<T,I>( matrix, block.x0, block.y0 ) {}
+
+		void outerStep() { ++lastStart; }
+		void innerStep() { current.start+= current.colSkip; }
+	};
+
+	/** Rotated 90deg\. cw\.: y->, x<- */
+	template<class T,class I> struct Rotation_1: public RotBase<T,I> { ROTBASE_INHERIT
+		Rotation_1( TMatrix matrix, const Block &block )
+		: RotBase<T,I>( matrix, block.xend-1, block.y0 ) {}
+
+		void outerStep() { ++lastStart; }
+		void innerStep() { current.start-= current.colSkip; }
+	};
+
+	/** Rotated 180deg\. cw\., transposed: y<-, x<- */
+	template<class T,class I> struct Rotation_2_T: public RotBase<T,I> { ROTBASE_INHERIT
+		Rotation_2_T( TMatrix matrix, const Block &block )
+		: RotBase<T,I>( matrix, block.xend-1, block.yend-1 ) {}
+
+		void outerStep() { --lastStart; }
+		void innerStep() { current.start-= current.colSkip; }
+	};
+
+	/** Rotated 270deg\. cw\.: y<-, x-> */
+	template<class T,class I> struct Rotation_3: public RotBase<T,I> { ROTBASE_INHERIT
+		Rotation_3( TMatrix matrix, const Block &block )
+		: RotBase<T,I>( matrix, block.x0, block.yend-1 ) {}
+
+		void outerStep() { --lastStart; }
+		void innerStep() { current.start+= current.colSkip; }
+	};
+	
+	
 	/** Performs manipulations with rotation codes 0-7 (dihedral group of order eight) */
 	struct Rotation {
 		/** Asserts the parameter is within 0-7 */
@@ -213,39 +364,37 @@ namespace MatrixWalkers {
 				r1= invert(r1);
 			return (r1/2 + r2/2) %4 *2+ ( (r1%2)^(r2%2) );
 		}
-	};
-
+	}; // Rotation struct
+	
 	/** Checked_ iterator for a rectangle in a matrix, no rotation */
-	template<class T,class I=size_t> class Checked {
-	public:
-		typedef Matrix<T,I> TMatrix;
-	protected:
-		I colSkip			///  offset of the "next row"
-		, height;			///< height of the iterated rectangle
-		T *col				///  pointer the current column
-		, *colEnd			///  pointer to the end column
-		, *elem				///  pointer to the current element
-		, *elemsEnd;		///< pointer to the end element of the current column
+	template<class T,class I=PtrInt> struct Checked: public Rotation_0<T,I> {
+		typedef MatrixSlice<T,I> TMatrix;
+		typedef Rotation_0<T,I> Base;
+		using Base::current;
+		using Base::lastStart;
+		
+		T *colEnd			///  the end of the current column
+		, *colsEndStart;	///< the start of the end column
 
-	public:
 		/** Initializes a new iterator for a \p block of \p pixels */
 		Checked( TMatrix pixels, const Block &block )
-		: colSkip	( pixels.getColSkip() )
-		, height	( block.height() )
-		, col		( pixels.getStart()+block.y0+colSkip*block.x0 )
-		, colEnd	( pixels.getStart()+block.y0+colSkip*block.xend ) {
-			DEBUG_ONLY( elem= elemsEnd= 0; )
+		: Base( pixels, block ), colEnd( pixels.start+pixels.colSkip*block.x0+block.yend )
+		, colsEndStart( pixels.start+pixels.colSkip*block.xend+block.y0 ) {
 			ASSERT( block.xend>block.x0 && block.yend>block.y0 );
 		}
 
-		bool outerCond()	{ return col!=colEnd; }
-		void outerStep()	{ col+= colSkip; }
-
-		void innerInit()	{ elem= col; elemsEnd= col+height; }
-		bool innerCond()	{ return elem!=elemsEnd; }
-		void innerStep()	{ ++elem; }
-
-		T& get() 			{ return *elem; }
+		bool outerCond() {
+			ASSERT(lastStart<=colsEndStart); 
+			return lastStart!=colsEndStart; 
+		}
+		void outerStep() {
+			colEnd+= current.colSkip; 
+			Base::outerStep();
+		}
+		bool innerCond() {
+			ASSERT(current.start<=colEnd);
+			return current.start!=colEnd; 
+		}
 	}; // Checked class template
 
 	/** Checked_ iterator for a whole QImage; no rotation, but always transposed */
@@ -254,122 +403,28 @@ namespace MatrixWalkers {
 		typedef U QRgb;
 	protected:
 		QImage &img;	///< reference to the image
-		int lineIndex;	///< index of the current line
+		int lineIndex	///  index of the current line
+		, width			///  the width of the image
+		, height;		///< the height of the image
 		QRgb *line		///  pointer to the current pixel
 		, *lineEnd;		///< pointer to the end of the line
 
 	public:
 		/** Initializes a new iterator for an instance of QImage (Qt class) */
 		CheckedImage(QImage &image)
-		: img(image), lineIndex(0)
+		: img(image), lineIndex(0), width(image.width()), height(image.height())
 			{ DEBUG_ONLY(line=lineEnd=0;) }
 
-		bool outerCond()	{ return lineIndex<img.height(); }
+		bool outerCond()	{ return lineIndex<height; }
 		void outerStep()	{ ++lineIndex; }
 
-		void innerInit()	{ line= (QRgb*)img.scanLine(lineIndex); lineEnd= line+img.width(); }
+		void innerInit()	{ line= (QRgb*)img.scanLine(lineIndex); lineEnd= line+width; }
 		bool innerCond()	{ return line!=lineEnd; }
 		void innerStep()	{ ++line; }
 
 		QRgb& get()			{ return *line; }
 	}; // CheckedImage class template
-
-	/** Base structure for walkers changing 'x' in the outer and 'y' in the inner loop */
-	template<class T,class I=size_t> struct RotBase {
-	public:
-		typedef Matrix<T,I> MType;
-	protected:
-		const I colSkip;	///< the number of elements to skip to get on the next column
-		T *list				///  points to the beginning of the current column/row
-		, *elem;			///< points to the current element
-
-	public:
-		RotBase( MType matrix, I x0, I y0 )
-		: colSkip( matrix.getColSkip() ), list( matrix.getStart()+y0+colSkip*x0 )
-			{ DEBUG_ONLY( elem= 0; ) }
-
-		void innerInit()	{ elem= list; }
-		T& get()			{ return *elem; }
-	}; // RotBase class template
-
-	#define ROTBASE_INHERIT \
-		using RotBase<T,I>::colSkip; \
-		using RotBase<T,I>::list; \
-		using RotBase<T,I>::elem; \
-		typedef Matrix<T,I> MType;
-
-
-	/** No rotation: x->, y-> */
-	template<class T,class I> struct Rotation_0: public RotBase<T,I> { ROTBASE_INHERIT
-		Rotation_0( MType matrix, const Block &block )
-		: RotBase<T,I>( matrix, block.x0, block.y0 ) {}
-
-		void outerStep() { list+= colSkip; }
-		void innerStep() { ++elem; }
-	};
-
-	/** Rotated 90deg\. cw\., transposed: x<-, y-> */
-	template<class T,class I> struct Rotation_1_T: public RotBase<T,I> { ROTBASE_INHERIT
-		Rotation_1_T( MType matrix, const Block &block )
-		: RotBase<T,I>( matrix, block.xend-1, block.y0 ) {}
-
-		void outerStep() { list-= colSkip; }
-		void innerStep() { ++elem; }
-	};
-
-	/** Rotated 180deg\. cw\.: x<-, y<- */
-	template<class T,class I> struct Rotation_2: public RotBase<T,I> { ROTBASE_INHERIT
-		Rotation_2( MType matrix, const Block &block )
-		: RotBase<T,I>( matrix, block.xend-1, block.yend-1 ) {}
-
-		void outerStep() { list-= colSkip; }
-		void innerStep() { --elem; }
-	};
-
-	/** Rotated 270deg\. cw\., transposed: x->, y<- */
-	template<class T,class I> struct Rotation_3_T: public RotBase<T,I> { ROTBASE_INHERIT
-		Rotation_3_T( MType matrix, const Block &block )
-		: RotBase<T,I>( matrix, block.x0, block.yend-1 ) {}
-
-		void outerStep() { list+= colSkip; }
-		void innerStep() { --elem; }
-	};
-
-	/** No rotation, transposed: y->, x-> */
-	template<class T,class I> struct Rotation_0_T: public RotBase<T,I> { ROTBASE_INHERIT
-		Rotation_0_T( MType matrix, const Block &block )
-		: RotBase<T,I>( matrix, block.x0, block.y0 ) {}
-
-		void outerStep() { ++list; }
-		void innerStep() { elem+= colSkip; }
-	};
-
-	/** Rotated 90deg\. cw\.: y->, x<- */
-	template<class T,class I> struct Rotation_1: public RotBase<T,I> { ROTBASE_INHERIT
-		Rotation_1( MType matrix, const Block &block )
-		: RotBase<T,I>( matrix, block.xend-1, block.y0 ) {}
-
-		void outerStep() { ++list; }
-		void innerStep() { elem-= colSkip; }
-	};
-
-	/** Rotated 180deg\. cw\., transposed: y<-, x<- */
-	template<class T,class I> struct Rotation_2_T: public RotBase<T,I> { ROTBASE_INHERIT
-		Rotation_2_T( MType matrix, const Block &block )
-		: RotBase<T,I>( matrix, block.xend-1, block.yend-1 ) {}
-
-		void outerStep() { --list; }
-		void innerStep() { elem-= colSkip; }
-	};
-
-	/** Rotated 270deg\. cw\.: y<-, x-> */
-	template<class T,class I> struct Rotation_3: public RotBase<T,I> { ROTBASE_INHERIT
-		Rotation_3( MType matrix, const Block &block )
-		: RotBase<T,I>( matrix, block.x0, block.yend-1 ) {}
-
-		void outerStep() { --list; }
-		void innerStep() { elem+= colSkip; }
-	};
+	
 
 	/** Iterates two matrix iterators and performs an action.
 	 *	The loop is controled by the first iterator (\p checked) 
@@ -402,19 +457,20 @@ namespace MatrixWalkers {
 	}
 
 	/** A flavour of walkOperate() choosing the right Rotation_* iterator based on \p rotation */
-	template<class Check,class U,class Operator> inline Operator walkOperateCheckRotate
-	( Check checked, Operator oper, Matrix<U> pixels2, const Block &block2, char rotation) {
-		typedef size_t I;
+	template<class Check,class U,class Operator> 
+	inline Operator walkOperateCheckRotate( Check checked, Operator oper
+	, MatrixSlice<U> pixels2, const Block &block2, char rotation) {
+		typedef PtrInt I;
 		switch (rotation) {
-			case 0: return walkOperate( checked, Rotation_0  <U,I>(pixels2,block2) , oper );
-			case 1: return walkOperate( checked, Rotation_0_T<U,I>(pixels2,block2) , oper );
-			case 2: return walkOperate( checked, Rotation_1  <U,I>(pixels2,block2) , oper );
-			case 3: return walkOperate( checked, Rotation_1_T<U,I>(pixels2,block2) , oper );
-			case 4: return walkOperate( checked, Rotation_2  <U,I>(pixels2,block2) , oper );
-			case 5: return walkOperate( checked, Rotation_2_T<U,I>(pixels2,block2) , oper );
-			case 6: return walkOperate( checked, Rotation_3  <U,I>(pixels2,block2) , oper );
-			case 7: return walkOperate( checked, Rotation_3_T<U,I>(pixels2,block2) , oper );
-			default: ASSERT(false); return oper;
+		case 0: return walkOperate( checked, Rotation_0  <U,I>(pixels2,block2) , oper );
+		case 1: return walkOperate( checked, Rotation_0_T<U,I>(pixels2,block2) , oper );
+		case 2: return walkOperate( checked, Rotation_1  <U,I>(pixels2,block2) , oper );
+		case 3: return walkOperate( checked, Rotation_1_T<U,I>(pixels2,block2) , oper );
+		case 4: return walkOperate( checked, Rotation_2  <U,I>(pixels2,block2) , oper );
+		case 5: return walkOperate( checked, Rotation_2_T<U,I>(pixels2,block2) , oper );
+		case 6: return walkOperate( checked, Rotation_3  <U,I>(pixels2,block2) , oper );
+		case 7: return walkOperate( checked, Rotation_3_T<U,I>(pixels2,block2) , oper );
+		default: ASSERT(false); return oper;
 		}
 	}
 

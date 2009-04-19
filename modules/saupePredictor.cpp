@@ -55,8 +55,7 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 			for (int y0=0; y0<poolYend; y0+=density) {
 			//	compute the average and standard deviation (data needed for normalization)
 				Real sum, sum2;
-				sum= pool.summers[0].getSum(x0,y0,x0+sideLength,y0+sideLength);
-				sum2= pool.summers[1].getSum(x0,y0,x0+sideLength,y0+sideLength);
+				pool.getSums(x0,y0,x0+sideLength,y0+sideLength).unpack(sum,sum2);
 			//	the same as  = 1 / sqrt( sum2 - sqr(sum)/pixelCount  ) );
 				Real multiply= 1 / sqrt( sum2 - sqr(ldexp(sum,-level)) );
 				if ( !finite(multiply) )  
@@ -105,8 +104,8 @@ namespace NOSPACE {
 MSaupePredictor::OneRangePredictor::OneRangePredictor
 ( const NewPredictorData &data, int chunkSize_, const Tree &tree, int maxPredicts )
 : chunkSize(chunkSize_), predsRemain(maxPredicts)
-, firstChunk(true), allowRotations(data.allowRotations), isRegular(data.isRegular) {
-
+, firstChunk(true), allowRotations(data.allowRotations), isRegular(data.isRegular) 
+{
 //	compute some accelerators, allocate space for normalized range (+rotations,inversion)
 	int rotationCount= allowRotations ? 8 : 1;
 	heapCount= rotationCount * (data.allowInversion ? 2 : 1);
@@ -125,7 +124,8 @@ MSaupePredictor::OneRangePredictor::OneRangePredictor
 	//	create normalized rotations
 		for (int rot=0; rot<rotationCount; ++rot) {
 		//	fake the matrix for this rotation
-			Matrix<KDReal> currRangeMatrix( sideLength, sideLength, points+rot*tree.length );
+			MatrixSlice<KDReal> currRangeMatrix;
+			currRangeMatrix.allocate( sideLength, sideLength, points+rot*tree.length );
 		//	fill it with normalized data
 			using namespace MatrixWalkers;
 			walkOperateCheckRotate( Checked<const SReal>(data.rangePixels,*data.rangeBlock)
@@ -151,7 +151,7 @@ MSaupePredictor::OneRangePredictor::OneRangePredictor
 
 MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 ::getChunk(float maxPredictedSE,Predictions &store) {
-	ASSERT( heaps.size()==(size_t)heapCount && infoHeap.size()<=(size_t)heapCount );
+	ASSERT( PtrInt(heaps.size())==heapCount && PtrInt(infoHeap.size())<=heapCount );
 	if ( infoHeap.empty() || predsRemain<=0 ) {
 		store.clear();
 		return store;

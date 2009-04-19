@@ -9,19 +9,20 @@ using namespace std;
 
 QImage MRoot::toImage() {
 	ASSERT( getMode()!=Clear && settings && moduleColor() && moduleShape() );
-	return moduleColor()->planes2image( moduleShape()->collectJobs() , width, height );
+	return moduleColor()->planes2image();
 }
 
 bool MRoot::encode(const QImage &toEncode,const UpdateInfo &updateInfo) {
 	ASSERT( getMode()==Clear && settings && moduleColor() && moduleShape() );
 	zoom= 0;
-//	get the plane list, create the jobs from it
-	Plane planeProto( SMatrix(), quality(), settingsInt(DomainCountLog2)
-	, 0/*zoom*/, moduleQuality(), updateInfo );
-	PlaneList planes= moduleColor()->image2planes( toEncode, planeProto );
 	this->width= toEncode.width();
 	this->height= toEncode.height();
-	int jobCount= moduleShape()->createJobs( planes, width, height );
+//	get the plane list, create the jobs from it
+	PlaneSettings planeProto( width, height, settingsInt(DomainCountLog2), 0/*zoom*/
+		, quality(), moduleQuality(), updateInfo );
+	PlaneList planes= moduleColor()->image2planes( toEncode, planeProto );
+
+	int jobCount= moduleShape()->createJobs(planes);
 //	process the jobs
 	if ( maxThreads() == 1 )
 		try {
@@ -55,7 +56,7 @@ bool MRoot::toStream(std::ostream &file) {
 		file.exceptions( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
 		
 		STREAM_POS(file);
-	//	put the magic, the dimensions and child-module IDs
+	//	put the magic, the dimensions (not zoomed) and child-module IDs
 		put<Uint16>(file,Magic);
 		put<Uint16>( file, rShift(width,zoom) );
 		put<Uint16>( file, rShift(height,zoom) );
@@ -101,19 +102,18 @@ bool MRoot::fromStream(istream &file,int newZoom) {
 		
 		STREAM_POS(file);
 	//	create the planes and get settings common for all the jobs
-		Plane planeProto(Plane::Empty);
-		planeProto.zoom= zoom;
-		planeProto.domainCountLog2= settingsInt(DomainCountLog2)= get<Uchar>(file);
+		settingsInt(DomainCountLog2)= get<Uchar>(file);
+		PlaneSettings planeProto( width, height, settingsInt(DomainCountLog2), zoom );
 		
 		STREAM_POS(file);
-		PlaneList planes= moduleColor()->readData(file,planeProto,width,height);
+		PlaneList planes= moduleColor()->readData(file,planeProto);
 		
 		STREAM_POS(file);
 		moduleShape()->readSettings(file);
 		
 		STREAM_POS(file);
 	//	create the jobs (from the plane list) and get their data
-		moduleShape()->createJobs(planes,width,height);
+		moduleShape()->createJobs(planes);
 		moduleShape()->readJobs(file);
 		
 		STREAM_POS(file);

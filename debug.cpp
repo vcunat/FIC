@@ -27,17 +27,43 @@ QWidget* MRoot::debugModule(QPixmap &pixmap,const QPoint &click) {
 	return dlg;
 }
 
+namespace NOSPACE {
+	struct PlaneFinder {
+		typedef const IColorTransformer::PlaneSettings CPlSet;
+		
+		CPlSet* const plSet;
+		
+		PlaneFinder(CPlSet *plSet2find): plSet(plSet2find) {}
+		bool operator()(const IColorTransformer::Plane &plane) 
+			{ return plane.settings==plSet; }
+	};
+}
 QWidget* MSquarePixels::debugModule(QPixmap &pixmap,const QPoint &click) {
+	ASSERT( !planeList.empty() );
 //	create a tab widget
 	QTabWidget *tabs= new QTabWidget;
 //	fill one tab for every job by three sub-tabs with the three modules
 	for (int i=0; i<(int)jobs.size(); ++i) {
-		if ( jobs[i].ranges->getRangeList().size() == 1 )
+		Job &job= jobs[i];
+		if ( job.ranges->getRangeList().size() == 1 )
 			continue;
+	//	find the plane which is the job from
+		PlaneList::const_iterator plane=
+			find_if( planeList.begin(), planeList.end(), PlaneFinder(job.settings) );
+		ASSERT( plane != planeList.end() );
+	//	find out the position of the job in the plane
+		int xShift=-1, yShift;
+		plane->pixels.getPosition(job.pixels.start,xShift,yShift);
+		ASSERT(xShift>=0);
+		QPoint jobClick= click-QPoint(xShift,yShift);
+		if ( jobClick.x()<0 || jobClick.y()<0 
+		|| jobClick.x()>=job.width || jobClick.y()>=job.height )
+			continue;
+	//	make children do the work	
 		QTabWidget *tabs2= new QTabWidget;
-		tabs2->addTab( jobs[i].encoder->debugModule(pixmap,click) , "Encoder" );
-		tabs2->addTab( jobs[i].ranges->debugModule(pixmap,click), "Ranges" );
-		tabs2->addTab( jobs[i].domains->debugModule(pixmap,click), "Domains" );
+		tabs2->addTab( job.encoder->debugModule(pixmap,jobClick) , "Encoder" );
+		tabs2->addTab( job.ranges->debugModule(pixmap,jobClick), "Ranges" );
+		tabs2->addTab( job.domains->debugModule(pixmap,jobClick), "Domains" );
 		
 		tabs->addTab( tabs2, QString("Job %1").arg(i+1) );
 	}
@@ -192,7 +218,7 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 			layout->addWidget( new QLabel(msg) );
 		}
 		
-		int maxLevel= 1 +log2ceil(max( planeBlock->width(), planeBlock->height() ));
+		int maxLevel= 1 +log2ceil( max(planeBlock->width,planeBlock->height) );
 		
 		QTableWidget *table= new QTableWidget( maxLevel-2, 3 );
 		table->setHorizontalHeaderLabels
