@@ -245,7 +245,7 @@ private:
 	: QProgressDialog( tr("Encoding..."), tr("Cancel"), 0, 100, parent, Qt::Dialog )
 	, terminate(false), needUpdate(false)
 	, progress(0), maxProgress(0)
-	, modules_encoding(clone(parent->modules_settings))
+	, modules_encoding(parent->modules_settings->clone())
 	, updateInfo( terminate, &incMaxProgress, &incProgress ), updateTimer(this)
 	, encThread( modules_encoding, parent->imageLabel->pixmap()->toImage(), updateInfo ) {
 		ASSERT(!instance);

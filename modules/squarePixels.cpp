@@ -27,11 +27,9 @@ int MSquarePixels::createJobs(const PlaneList &planes) {
 //	split jobs until they're small enough
 	Uint i= 0;
 	while ( i < jobs.size() )
-		if ( jobs[i].width*jobs[i].height <= maxPixels ) {
+		if ( jobs[i].width*jobs[i].height <= maxPixels )
 			++i; //	the part is small enough, move on
-		} else {
-			
-			// divide the job
+		else { // divide the job
 		//	splitting the longer coordinate
 			bool xdiv= ( jobs[i].width >= jobs[i].height );
 			int longer= ( xdiv ? jobs[i].width : jobs[i].height );
@@ -55,9 +53,9 @@ int MSquarePixels::createJobs(const PlaneList &planes) {
 
 //	create the modules in the jobs by cloning those from module's settings
 	for (JobIterator job=jobs.begin(); job!=jobs.end(); ++job) {
-		job->ranges= clone(moduleRanges());
-		job->domains= clone(moduleDomains());
-		job->encoder= clone(moduleEncoder());
+		job->ranges=  moduleRanges() ->clone();
+		job->domains= moduleDomains()->clone();
+		job->encoder= moduleEncoder()->clone();
 	}
 
 	return jobs.size();

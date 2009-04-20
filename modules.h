@@ -12,7 +12,6 @@ template <class Iface> class Interface;
 /** A common base class for all modules */
 class Module {
 	friend class ModuleFactory; ///< Permission for the ModuleFactory to manipulate Modules
-
 //	Type definitions
 public:
 	/** Two types of cloning, used in #clone */
@@ -31,63 +30,63 @@ public:
 		int i;		///< Setting value for integer/module types (see Module::ChoiceType)
 		float f;	///< Setting value for real-number type (see Module::ChoiceType)
 	};
-	/** Represent the type of one module's setting - without label and description */
-	struct SettingsType {
+	/** Represents the type of one module's setting - without label and description */
+	struct SettingType {
 		ChoiceType type;		///< The type of the item
 		SettingValue defaults;	///< The default setting
 
 		union {
-			int i[2];			///< Lower and upper bound (type==Int,IntLog2)
-			float f[2];			///< Lower and upper bound (type==Float)
-			const char *text;	///< Lines of the combo-box (type==Combo)
-			/** Pointer to the vector of IDs of compatible modules (type==ModuleCombo),
+			int i[2];			///< Lower and upper bound (#type==Int,IntLog2)
+			float f[2];			///< Lower and upper bound (#type==Float)
+			const char *text;	///< Lines of the combo-box (#type==Combo)
+			/** Pointer to the vector of IDs of compatible modules (#type==ModuleCombo),
 			 *	meant to be one of Interface::getCompMods() */
 			const std::vector<int> *compatIDs;
 		} data;				///< Additional data, differs for different #type
 	};
 
 	/** Represents the type of one setting - including label, description, etc.\ */
-	struct SettingsTypeItem {
-		static const SettingsTypeItem stopper; ///< Predefined list terminator
+	struct SettingTypeItem {
+		static const SettingTypeItem stopper; ///< Predefined list terminator
 
 		const char *label	///  The text label of the setting
 		, *desc;			///< Description text
-		SettingsType type;	///< The type of this setting
+		SettingType type;	///< The type of this setting
 	};
 
 	/** Represents one setting value in a module */
-	struct SettingsItem {
+	struct SettingItem {
 		Module *m;	///< Pointer to the connected module (if type is Module::ModuleCombo)
 		SettingValue val;	///< The setting value
 
 		/** Just nulls the module pointer */
-		SettingsItem(): m(0) { DEBUG_ONLY( val.f= std::numeric_limits<float>::quiet_NaN(); ) }
+		SettingItem(): m(0) { DEBUG_ONLY( val.f= std::numeric_limits<float>::quiet_NaN(); ) }
 
 		/** Creates a default settings-item for a settings-item-type */
-		SettingsItem(const SettingsTypeItem &typeItem): m(0), val(typeItem.type.defaults) {}
+		SettingItem(const SettingTypeItem &typeItem): m(0), val(typeItem.type.defaults) {}
 
 		/** Just deletes the module pointer */
-		~SettingsItem() { delete m; }
+		~SettingItem() { delete m; }
 	};
 
 	/** Information about one module-type */
 	struct TypeInfo {
-		int id;								///< The module-type's ID
-		const char *name					///  The module-type's name
-		, *desc;							///< The module-type's description
-		int setLength;						///< The number of setting items
-		const SettingsTypeItem *setType;	///< The types of module's settings
+		int id;							///< The module-type's ID
+		const char *name				///  The module-type's name
+		, *desc;						///< The module-type's description
+		int setLength;					///< The number of setting items
+		const SettingTypeItem *setType;	///< The types of module's settings
 	};
 
 //	Data definitions
 protected:
-	SettingsItem *settings; ///< The current setting values of this Module
+	SettingItem *settings; ///< The current setting values of this Module
 
 /** \name Construction, destruction and related methods
- *	@{	- all private, only to be used by ModuleFactory */
+ *	@{	- all private, only to be used by ModuleFactory on module prototypes */
 private:
 	/**	Creates a copy of module's settings (includes the whole module subtree) */
-	SettingsItem* copySettings(CloneMethod method) const;
+	SettingItem* copySettings(CloneMethod method) const;
 	/** Called for prototypes to initialize the default links to other modules */
 	void initDefaultModuleLinks();
 	/** Called for prototypes to null links to other modules */
@@ -99,6 +98,7 @@ private:
 	Module& operator=(const Module&);
 	/** Denial of copying */
 	Module(const Module&);
+///	@}
 protected:
 	/**	Initializes an empty module */
 	Module(): settings(0) {}
@@ -111,27 +111,23 @@ protected:
 
 	/** Saves all the settings, icluding child modules */
 	void saveAllSettings(std::ostream &stream);
+	/** Loads all the settings, icluding child modules (and their settings) */
 	void loadAllSettings(std::istream &stream);
 public:
-	/** Friend non-member cloning function (returns the type it gets) */
-	template<class M> friend M* clone( const M *module, CloneMethod method=Module::DeepCopy )
-		{ return debugCast<M*>( module->abstractClone(method) ); }
-
 	/** Deletes the settings, destroying child modules as well */
 	virtual ~Module()
 		{ delete[] settings; }
 
+	/** Returns reference to module-type's information,
+	 *	like count and types of settings, etc.\ Implemented in all modules via macros */
 	virtual const TypeInfo& info() const =0;
 
 	DECLARE_debugModule_empty
 
-///	@}
-
-
 /**	\name Settings visualization and related methods
- *	@{	- all implemented in gui.cpp */
+ *	@{	- common code for all modules, implemented in gui.cpp */
 public:
-	/** Creates or updates settings-box and/or settings-tree,
+	/** Creates or updates settings-box and/or settings-tree.\ 
 	 *	if overridden in derived modules, it is recommended to call this one at first */
 	virtual void adjustSettings( int which, QTreeWidgetItem *myTree, QGroupBox *setBox );
 protected:
@@ -140,12 +136,12 @@ protected:
 	/** Writes a setting value into a widget */
 	void settings2widget( QWidget *widget, int which );
 	/** Initializes a widget according to a setting-item type */
-	void settingsType2widget( QWidget *widget, const SettingsTypeItem &typeItem );
+	void settingsType2widget( QWidget *widget, const SettingTypeItem &typeItem );
 ///	@}
 
 //	Other methods
 protected:
-	/** Puts a module-identifier in a stream (which = the index in settings) */
+	/** Puts a module-identifier in a stream (\p which is the index in settings) */
 	void file_saveModuleType( std::ostream &os, int which );
 	/** Gets an module-identifier from the stream, initializes the pointer in settings
 	 *	with a new empty instance and does some checking (bounds,Iface) */
@@ -156,54 +152,67 @@ protected:
 	int settingsInt(int index) const
 		{ return settings[index].val.i; }
 
-
-	static SettingsType settingInt(int min,int defaults,int max,ChoiceType type=Int) {
+/**	\name SettingType construction methods
+ *	@{	- to be used within DECLARE_TypeInfo macros when declaring modules */
+ 	/** Creates a bounded integer setting, optionally shown as a power of two */
+	static SettingType settingInt(int min,int defaults,int max,ChoiceType type=Int) {
 		ASSERT( type==Int || type==IntLog2 );
-		SettingsType result;
+		SettingType result;
 		result.type= type;
 		result.defaults.i= defaults;
 		result.data.i[0]= min;
 		result.data.i[1]= max;
 		return result;
 	}
-	static SettingsType settingFloat(float min,float defaults,float max) {
-		SettingsType result;
+	/** Creates a bounded real-number setting */
+	static SettingType settingFloat(float min,float defaults,float max) {
+		SettingType result;
 		result.type= Float;
 		result.defaults.f= defaults;
 		result.data.f[0]= min;
 		result.data.f[1]= max;
 		return result;
 	}
-	static SettingsType settingCombo(const char *text,int defaults) {
+	/** Creates a choose-one-of setting shown as a combo-box */
+	static SettingType settingCombo(const char *text,int defaults) {
 		ASSERT( defaults>=0 && defaults<1+countEOLs(text) );
-		SettingsType result;
+		SettingType result;
 		result.type= Combo;
 		result.defaults.i= defaults;
 		result.data.text= text;
 		return result;
 	}
-	template<class Iface> static SettingsType settingModule(int index=0) {
+	/** Creates a connection to another module (type specified as a template parameter). 
+	 *	It will be shown as a combo-box and automatically filled by compatible modules.
+	 *	The default possibility can be specified */
+	template<class Iface> static SettingType settingModule(int defaultID) {
 		const std::vector<int> &compMods= Iface::getCompMods();
+		int index=  find( compMods.begin(), compMods.end(), defaultID ) - compMods.begin();
 		ASSERT( index < (int)compMods.size() );
-		SettingsType result;
+		SettingType result;
 		result.type= ModuleCombo;
 		result.defaults.i= index;
 		result.data.compatIDs= &compMods;
 		return result;
 	}
-};	//	Module class
+	/** A shortcut to set the first compatible module as the default one */
+	template<class Iface> static SettingType settingModule() {
+		return settingModule<Iface>( Iface::getCompMods().front() );
+	}
+///	@}
+}; // Module class
 
 
 #define DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_...) \
-	friend class Module;  \
-	friend class ModuleFactory; \
+	friend class Module; /* Needed for concreteClone */ \
+	/*friend class ModuleFactory;*/ \
 	friend struct ModuleFactory::Creator<CNAME_>; /* Needed for GCC-3 */ \
 public: \
 	CNAME_* abstractClone(CloneMethod method=DeepCopy) const \
 		{ return concreteClone<CNAME_>(method); } \
  \
 	const TypeInfo& info() const { \
-		static SettingsTypeItem setType_[]= {SETTYPE_}; \
+		static SettingTypeItem setType_[]= {SETTYPE_}; \
 		static TypeInfo info_= { \
 			id: ModuleFactory::getModuleID<CNAME_>(), \
 			name: NAME_, \
@@ -216,17 +225,16 @@ public: \
 
 /** Macros for easier Module-writing */
 #define DECLARE_TypeInfo(CNAME_,NAME_,DESC_,SETTYPE_...) \
-	DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_,SettingsTypeItem::stopper)
+	DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_,SettingTypeItem::stopper)
 
 #define DECLARE_TypeInfo_noSettings(CNAME_,NAME_,DESC_) \
-	DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SettingsTypeItem::stopper)
+	DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SettingTypeItem::stopper)
 
 
 /** A singleton factory class for creating modules */
 class ModuleFactory {
 	/** Static pointer to the only instance of the ModuleFactory */
 	static ModuleFactory *instance;
-
 	/** Pointers to the prototypes for every module type (indexed by their ID's) */
 	std::vector<Module*> prototypes;
 
@@ -251,17 +259,11 @@ public:
 	static void destroy()
 		{ delete instance; instance=0; }
 
-	/** Returns a reference to the prototype of the module with given id */
+	/** Returns a reference to the module prototype with given id */
 	static const Module& prototype(int id) {
 		ASSERT( instance && instance->prototypes.at(id) );
 		return *instance->prototypes[id];
 	}
-	/** Returns the name of the module-type with given id */
-	static const char* moduleName(int id)
-		{ return prototype(id).info().name; }
-	/** Returns the description of the module-type with given id */
-	static const char* moduleDescription(int id)
-		{ return prototype(id).info().desc; }
 	/** Returns a new instance of the module-type with given id */
 	static Module* newModule( int id, Module::CloneMethod method=Module::DeepCopy )
 		{ return prototype(id).abstractClone(method); }
@@ -272,15 +274,15 @@ public:
 private:
 //	some helper stuff
 	template<class T> struct Creator {
-		T* operator()() const
-			{ return new T; }
+		T* operator()() const { return new T; }
 	};
 	template<class T> struct Instantiator {
 		int operator()() const;
 	};
 	/** Never called, only exists for certain templates to be instantiated in modules.cpp */
 	static void instantiateModules();
-};
+}; // ModuleFactory class
+
 
 /**	A base class for all interfaces, parametrized by the interface's type */
 template<class Iface> class Interface: public Module {
@@ -293,9 +295,13 @@ public:
 		ASSERT( index>=0 && index<(int)getCompMods().size() );
 		return *debugCast<const Iface*>(&ModuleFactory::prototype( getCompMods()[index] ));
 	}
-	/** Creates a new instance of the index-th compatible module */
+	/** Creates a new instance of the index-th compatible module (deep copy of the prototype) */
 	static Iface* newCompatibleModule(int index=0)
-		{ return clone( &compatiblePrototype(index) ); }
+		{ return compatiblePrototype(index).clone(); }
+		
+	/** Works like abstractClone(), but is public and returns the correct type */
+	Iface* clone(CloneMethod method=DeepCopy) const
+		{ return debugCast<Iface*>( abstractClone(method) ); }
 };
 
 #endif // MODULES_HEADER_

@@ -229,7 +229,7 @@ void ImageViewer::compare() {
 	QMessageBox::information( this, tr("Comparison"), message );
 }
 void ImageViewer::settings() {
-	IRoot *newSettings= clone(modules_settings);
+	IRoot *newSettings= modules_settings->clone();
 	SettingsDialog dialog(this,newSettings);
 	newSettings= dialog.getSettings();
 	if ( dialog.exec() )
@@ -288,7 +288,7 @@ void ImageViewer::load() {
 	lastPath.setPath(fname);
 //	IRoot needs to be loaded from cleared state
 	IRoot *modules_old= modules_encoding;
-	modules_encoding= clone(modules_settings,Module::ShallowCopy);
+	modules_encoding= modules_settings->clone(Module::ShallowCopy);
 
 	string decData;
 	bool error= !file2string( fname.toStdString().c_str(), decData );
@@ -343,7 +343,7 @@ bool ImageViewer::rezoom() {
 	} else						// reusing the cache
 		stream.str(encData);
 //	reload the image from the stream
-	IRoot *newRoot= clone(modules_settings,Module::ShallowCopy);
+	IRoot *newRoot= modules_settings->clone(Module::ShallowCopy);
 	if ( newRoot->fromStream(stream,zoom) ) {
 		delete modules_encoding;
 		modules_encoding= newRoot;
@@ -431,7 +431,7 @@ void SettingsDialog::loadSaveClick(QAbstractButton *button) {
 		if (fname.isEmpty())
 			return;
 	//	try to load the settings
-		IRoot *newSettings= clone(settings,Module::ShallowCopy);
+		IRoot *newSettings= settings->clone(Module::ShallowCopy);
 		if ( newSettings->allSettingsFromFile(fname.toStdString().c_str()) ) {
 			delete settings;
 			settings= newSettings;
@@ -493,8 +493,8 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 				return;
 			}
 		//	find child modules and make them create their subtrees
-			const SettingsTypeItem *setType= info().setType;
-			const SettingsItem *setItem= settings;
+			const SettingTypeItem *setType= info().setType;
+			const SettingItem *setItem= settings;
 			for (; setType->type.type!=Stop; ++setItem,++setType)
 				if ( setType->type.type == ModuleCombo ) {
 				//	it is a module -> label its subtree-root and recurse (polymorphically)
@@ -511,7 +511,7 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 		//	fill the group-box
 			QGridLayout *layout= new QGridLayout(setBox);
 			setBox->setLayout(layout);
-			const SettingsTypeItem *typeItem= info().setType;
+			const SettingTypeItem *typeItem= info().setType;
 			for (int i=0; i<setLength; ++i,++typeItem) {
 			//	add a line - one option
 				QString desc(typeItem->desc);
@@ -538,11 +538,11 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 		ASSERT(item);
 		widget2settings( item->widget() , which );
 	//	handle module-type settings
-		const SettingsTypeItem *setType= info().setType;
+		const SettingTypeItem *setType= info().setType;
 		if ( setType[which].type.type == ModuleCombo ) {
 			ASSERT(myTree);
 		//	get the new module id and check whether it has really changed
-			SettingsItem &setItem= settings[which];
+			SettingItem &setItem= settings[which];
 			int newId= (*setType->type.data.compatIDs)[setItem.val.i];
 			if ( newId == setItem.m->info().id )
 				return;
@@ -598,13 +598,13 @@ namespace NOSPACE {
 	public:
 		ItemAdder(QWidget *widget): box( debugCast<QComboBox*>(widget) ) {}
 		void operator()(int i) {
-			box->addItem( ModuleFactory::moduleName(i) );
-			box->setItemData( box->count()-1
-			, QObject::tr(ModuleFactory::moduleDescription(i)), Qt::ToolTipRole );
+			const Module::TypeInfo &info= ModuleFactory::prototype(i).info();
+			box->addItem(info.name);
+			box->setItemData( box->count()-1, QObject::tr(info.desc), Qt::ToolTipRole );
 		}
 	};
 }
-void Module::settingsType2widget(QWidget *widget,const SettingsTypeItem &typeItem) {
+void Module::settingsType2widget(QWidget *widget,const SettingTypeItem &typeItem) {
 	ASSERT( widget );
 	switch( typeItem.type.type ) {
 	case IntLog2:
