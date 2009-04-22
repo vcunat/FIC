@@ -38,6 +38,8 @@ pdfsubject={Fractal Image Compression},
 pdfkeywords={image compression,fractals} 
 ]{hyperref}
 
+% url formátování, použito v referencích
+\usepackage{url}
 
 \usepackage{amsthm}
 \newtheorem*{veta}{Věta}
@@ -61,7 +63,7 @@ pdfkeywords={image compression,fractals}
 \use_amsmath 1
 \use_esint 1
 \cite_engine basic
-\use_bibtopic false
+\use_bibtopic true
 \paperorientation portrait
 \paperwidth 0cm
 \paperheight 0cm
@@ -94,8 +96,6 @@ preview false
 
 \end_inset
 
-
-\newpage
 
 \end_layout
 
@@ -2250,7 +2250,8 @@ použitím pouze malé počáteční části souboru.
  To je užitečné především na internetových stránkách, nebo při prohlížení
  adresářů s\InsetSpace ~
 velkým množstvím fotografií.
- Progresivním dekódováním pro klasický PIFS se zabývá 
+ Progresivním dekódováním pro klasický PIFS se zabývá\InsetSpace ~
+
 \begin_inset LatexCommand cite
 key "WWHH06"
 
@@ -2351,13 +2352,279 @@ kvádry
 původní nahrávce nebyly.
 \end_layout
 
+\begin_layout Chapter
+Implementace
+\end_layout
+
+\begin_layout Subsubsection
+Cíle a zásady
+\end_layout
+
 \begin_layout Standard
+Cílem implementace bylo vytvořit framework pro studium fraktální komprese,
+ kde by byly jednotlivé části algoritmů oddělené do modulů, aby bylo možné
+ kompatibilní algoritmy snadno vzájemně vyměnovat a aby implementace jednotlivýc
+h technik byla tvořena převážně algoritmickým kódem, odděleně od správy
+ závislostí mezi moduly, interakce s\InsetSpace ~
+uživatelem a nezávisle na způsobu implementa
+ce ostatních modulů.
+\end_layout
 
-\newpage
+\begin_layout Standard
+Aby bylo možné jednotlivé techniky objektivně porovnávat, je kladen důraz
+ na efektivitu implementace.
+ Proto je v\InsetSpace ~
+některých algoritmech, kde by dělení do více modulů významným
+ způsobem snížilo efektivitu, upřednostněna konfigurace modulu pomocí jiných
+ parametrů.
+\end_layout
 
+\begin_layout Subsubsection
+Zvolené vývojové nástroje
+\end_layout
+
+\begin_layout Standard
+Jako programovací jazyk pro implementaci bylo zvoleno C++, především kvůli
+ kombinaci vysoké efektivity a mnoha pokročilých vlastností (například generické
+ programování).
+ Pro překlad byl používán překladač z\InsetSpace ~
+rodiny GNU překladačů (GCC,
+\begin_inset LatexCommand cite
+key "GCC"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Grafické uživatelské rozhraní (GUI) je realizováno pomocí knihoven Qt
+\begin_inset LatexCommand cite
+key "Qt"
+
+\end_inset
+
+, které také zajišťují čtení a zápis obrázků ve standardních formátech (BMP,
+ PNG, JFIF).
+\end_layout
+
+\begin_layout Standard
+Díky použitým prostředkům by měl celý program být přenositelný na mnoho
+ systémů.
+ Vývoj a ladění probíhaly na GNU/Linux, s\InsetSpace ~
+testováním také na MS\InsetSpace ~
+Windows\InsetSpace ~
+XP.
+\end_layout
+
+\begin_layout Section
+Modularizace
+\end_layout
+
+\begin_layout Standard
+Oddělení modulů do jednotlivých dynamických knihoven by zde nepřineslo významný
+ užitek, takže byla zvolena kompilace celého programu do jednoho spustitelného
+ souboru.
+ Přes to jsou zde minimalizovány vzájemné závislosti mezi moduly.
+\end_layout
+
+\begin_layout Standard
+Deklarace související s\InsetSpace ~
+modularizací jsou v\InsetSpace ~
+souboru 
+\family sans
+modules.h
+\family default
+, většina implementace je pro přehlednost v\InsetSpace ~
+
+\family sans
+modules.cpp.
+\end_layout
+
+\begin_layout Subsubsection
+Základní vlastnosti modulů
+\end_layout
+
+\begin_layout Standard
+Všechny moduly jsou potomky třídy 
+\family typewriter
+Module
+\family default
+, která definuje základní společné vlastnosti, především způsob reprezentace
+ nastavení.
+ Je zde virtuální metoda 
+\family typewriter
+info
+\family default
+, která vrací referenci na strukturu obsahující informace o\InsetSpace ~
+typu modulu\InsetSpace ~
+---
+ jeho identifikační číslo, jméno, text popisující funkci, počet parametrů
+ nastavení a ukazatel na pole obsahující vlastnosti jednotlivých parametrů
+ nastavení (typ, rozsah hodnot, název a popis).
+ Dále třída 
+\family typewriter
+Module
+\family default
+ obsahuje ukazatel na pole skutečných hodnot nastavení pro daný modul a
+ také spoustu dalších pomocných typů a metod.
+\end_layout
+
+\begin_layout Standard
+Tento způsob práce s\InsetSpace ~
+nastaveními umožňuje jejich automatické měnění, ukládání
+ a zobrazování libovolným uživatelským rozhraním.
+ Vše pomocí společného kódu odděleného od všech modulů.
+\end_layout
+
+\begin_layout Standard
+Obsah zmíněné informační struktury je potřeba pro každý typ modulu nadefinovat,
+ což by znamenalo mnoho opakujícího se technického kódu, a proto jsou pro
+ tento účel vytvořeny funkce a makra, kterým stačí předat pouze jednotlivé
+ vlastnosti (název, typy parametrů, \SpecialChar \ldots{}
+), takže implementace jednotlivých modulů
+ je jednodušší a přehlednější.
+\end_layout
+
+\begin_layout Subsubsection
+Správa modulů
+\end_layout
+
+\begin_layout Standard
+Aby framework mohl s\InsetSpace ~
+modulem pracovat, je potřeba upravit soubor 
+\family sans
+modules.cpp
+\family default
+ vložením hlavičkového souboru (pomocí 
+\family typewriter
+#include
+\family default
+) a přidáním typu modulu do seznamu 
+\family typewriter
+Modules
+\family default
+.
+ Společný kód v\InsetSpace ~
+souboru se postará o\InsetSpace ~
+možnost volby modulu, závislosti a další
+ technické záležitosti.
+ Zde je nejsložitější generování některých metod z\InsetSpace ~
+tohoto seznamu typů, pro
+ které je využita část z\InsetSpace ~
+knihovny, kterou napsal Andei Alexandrescu jako
+ přílohu ke knize 
+\emph on
+Modern C++ Design
+\emph default
+\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Loki"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Pro\InsetSpace ~
+správu modulů a vytváření nových slouží třída 
+\family typewriter
+ModuleFactory
+\family default
+.
+ Ta má jedinou instanci, která při startu vytvoří prototyp pro každý typ
+ modulu.
+ Prototypy uchovávají výchozí nastavení jednotlivých typů modulů a je možné
+ je použít pro získání obecných informací o\InsetSpace ~
+typech modulů (metoda 
+\family typewriter
+info
+\family default
+) nebo pro vytváření dalších instancí.
+\end_layout
+
+\begin_layout Standard
+Nové moduly jsou vytvářeny zásadně klonováním, mělkým nebo hlubokým.
+ Oba způsoby vytvoří novou instanci pomocí kopírovacího konstruktoru a zkopírují
+ nastavení modulu.
+ Mělké klonování navíc vynuluje odkazy na podřízené moduly, zatímco hluboké
+ klonování je naklonuje stejným způsobem.
+ Hluboké klonování se hodí například pro vytvoření nového výchozího stromu
+ modulů (například před kompresí) a mělké se používá při načítání ze souborů,
+ kde není ve chvíli vytváření modulů zřejmé, jakých typů budou podřízené
+ moduly.
+\end_layout
+
+\begin_layout Subsubsection
+Závislosti mezi moduly
+\end_layout
+
+\begin_layout Standard
+Jsou definována rozhraní, každé popisující jednu požadovanou funkcionalitu.
+ Všechna použitá rozhraní se nacházejí v\InsetSpace ~
+souborech 
+\family sans
+interfaces.h
+\family default
+ a 
+\family sans
+interfaces.cpp
+\family default
+.
+ Každé z\InsetSpace ~
+nich je potomkem šablonované třídy 
+\family typewriter
+Interface
+\family default
+, která zpřístupňuje seznam identifikátorů všech typů modulů implementujících
+ toto rozhraní (kód je vygenerován ze seznamu 
+\family typewriter
+Modules
+\family default
+).
+\end_layout
+
+\begin_layout Standard
+Každý modul implementuje právě jedno rozhraní a může využívat libovolné
+ množství dalších rozhraní\InsetSpace ~
+--- jedním z\InsetSpace ~
+typů parametrů modulů je podřízený
+ modul implementující zvolené rozhraní.
+ Uživatel pak na tato místa může zapojit libovolný typ modulu (jsou zobrazeny
+ pouze kompatibilní typy).
+ Konfigurace komprese je tedy dána tímto stromem typů modulů spolu s\InsetSpace ~
+jejich
+ dalším nastavením.
+\cleardoublepage
+
+\end_layout
+
+\begin_layout Chapter*
+Reference
+\end_layout
+
+\begin_layout Standard
 \begin_inset LatexCommand bibtex
-options "bibtotoc,plain"
+options "plain"
+btprint "btPrintCited"
 bibfiles "fractals"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Internetové zdroje
+\end_layout
+
+\begin_layout Standard
+\begin_inset LatexCommand bibtex
+options "plain"
+btprint "btPrintCited"
+bibfiles "internet"
 
 \end_inset
 
