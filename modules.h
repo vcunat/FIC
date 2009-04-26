@@ -206,7 +206,7 @@ protected:
 #define DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_...) \
 	friend class Module; /* Needed for concreteClone */ \
 	/*friend class ModuleFactory;*/ \
-	friend struct ModuleFactory::Creator<CNAME_>; /* Needed for GCC-3 */ \
+	friend struct ModuleFactory::Creator<CNAME_>; /* Needed for GCC-3 and ICC */ \
 public: \
 	CNAME_* abstractClone(CloneMethod method=DeepCopy) const \
 		{ return concreteClone<CNAME_>(method); } \
@@ -271,11 +271,14 @@ public:
 	/** Sets appropriate prototype settings according to given module's settings */
 	static void changeDefaultSettings(const Module &module);
 
+#ifndef __ICC
 private:
+#endif
 //	some helper stuff
 	template<class T> struct Creator {
 		T* operator()() const { return new T; }
 	};
+private:
 	template<class T> struct Instantiator {
 		int operator()() const;
 	};

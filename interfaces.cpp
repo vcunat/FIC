@@ -3,9 +3,6 @@
 
 using namespace std;
 
-//const IColorTransformer::PlaneSettings IColorTransformer::PlaneSettings
-//::Empty(0,0,-1,-1,-1,0,UpdateInfo());
-
 bool IRoot::allSettingsToFile(const char *fileName) {
 	try {
 		ofstream file( fileName, ios_base::binary|ios_base::trunc|ios_base::out );
@@ -33,13 +30,12 @@ bool IRoot::allSettingsFromFile(const char *fileName) {
 }
 
 
-
 void IQuality2SquareError
 ::completeSquareRangeErrors( float quality, int levelEnd, float *errors ) {
 	ASSERT( checkBoundsFunc<float>(0,quality,1)==quality && levelEnd>2 && errors );
 
 	float (IQuality2SquareError::*func)(float,int)= &IQuality2SquareError::rangeSE;
 
-	for (int level=2; level<levelEnd; ++level)
+	for (int level=0; level<levelEnd; ++level)
 		errors[level]= (this->*func)( quality, powers[level*2] );
 }

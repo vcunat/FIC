@@ -17,8 +17,8 @@ struct IIntCodec;
 
 /** Contains basic types frequently used in modules */
 namespace MTypes {
-	typedef double Real; ///< The floating-point type in which most computations are made
-	typedef float SReal; ///< The floating-point type for long-term pixel-value storage
+	typedef double Real;	///< The floating-point type in which most computations are made
+	typedef float SReal;	///< The floating-point type for long-term pixel-value storage
 	
 	//typedef MatrixSummer<Real> BlockSummer; ///< Summer instanciation used for pixels
 	typedef MatrixSlice<SReal> SMatrix;

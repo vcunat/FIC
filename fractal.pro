@@ -1,4 +1,3 @@
-
 TEMPLATE = app
 DEPENDPATH += .
 INCLUDEPATH += .
@@ -23,7 +22,14 @@ CONFIG(debug,debug|release) {
 QMAKE_CXXFLAGS_DEBUG *= -ggdb 
 #QMAKE_CXXFLAGS_RELEASE -= -ggdb
 
-QMAKE_CXXFLAGS_RELEASE *= -frepo -ffunction-sections -msse2
+QMAKE_CXXFLAGS_RELEASE *= -ffunction-sections -msse2
+contains(QMAKE_CC,gcc) {
+	QMAKE_CXXFLAGS_RELEASE *= -frepo
+}
+contains(QMAKE_CC,icc) {
+	QMAKE_CXXFLAGS_RELEASE -= -O2
+	QMAKE_CXXFLAGS_RELEASE *= -O3 -march=pentium4
+}
 
 # profiling support
 #QMAKE_CXXFLAGS_RELEASE *= -ggdb -pg

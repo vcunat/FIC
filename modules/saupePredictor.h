@@ -85,7 +85,7 @@ private:
 			/** Computes normalized-tree-error from real SE (#initialize has been called) */
 			Real normSE(Real error) const {
 				Real result= std::ldexp( 1-sqrt(1-error*errorAccel), 1 );
-				if ( isnan(result) )
+				if ( isNaN(result) )
 					result= numeric_limits<Real>::max();
 				return result;
 			}

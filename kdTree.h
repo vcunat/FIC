@@ -48,7 +48,7 @@ namespace FieldMath {
 			: sqrError(0) {}
 
 			void operator()(const T &point,const T bounds[2],T &result) {
-				if ( CheckNaNs && isnan(point) )
+				if ( CheckNaNs && isNaN(point) )
 					return;
 				if ( point < bounds[0] ) {
 					sqrError+= sqr(bounds[0]-point);
@@ -276,7 +276,7 @@ void KDTree<T>::PointHeap::makeTopLeaf() {
 	//	the nearest point of the new heap-node only differs in one coordinate
 		FieldMath::assign( heapRoot.getNearest(), kd.length, newHNode.getNearest() );
 
-		if ( !CheckNaNs || !isnan(point[node.coord]) ) { // valid coordinate -> normal processing
+		if ( !CheckNaNs || !isNaN(point[node.coord]) ) { // valid coordinate -> normal processing
 			newHNode.getNearest()[node.coord]= node.threshold;
 
 		//	the SE of the child heap-nodes can be computed from the parent heap-node

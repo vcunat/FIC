@@ -36,7 +36,7 @@ protected:
 		}
 	}
 public:
-	static const SReal RGBCoeffs[][4]	/** RGB color coefficients */
+	static const Real RGBCoeffs[][4]	/** RGB color coefficients */
 	, YCbCrCoeffs[][4];					/**< YCbCr color coefficients */
 public:
 /** \name IColorTransformer interface
@@ -56,22 +56,21 @@ private:
 
 
 /** Computes the amount of a color (coefficients as a parameter) in RGB \relates MColorModel */
-inline SReal getColor( QRgb color, const SReal *koefs ) {
+inline Real getColor( QRgb color, const Real *koefs ) {
     return koefs[3] + std::ldexp( Real(0.5) + qRed(color)*Real(koefs[0])
     	+ qGreen(color)*Real(koefs[1]) + qBlue(color)*Real(koefs[2]), -8 );
 }
 /** Converts color from a model (coefficients as a parameter) to RGB \relates MColorModel */
-inline QRgb getColor( const SReal (*coeffs)[4], const SReal *planes ) {
-	SReal rgb[3]= {0,0,0};
+inline QRgb getColor( const Real (*coeffs)[4], const Real *planes ) {
+	Real rgb[3]= {0,0,0};
 	for (int i=0; i<3; ++i) {
-		const SReal *cLine= coeffs[i];
-		SReal col= planes[i]+cLine[3];
+		const Real *cLine= coeffs[i];
+		Real col= planes[i]+cLine[3];
 		for (int c=0; c<3; ++c)
 			rgb[c]+= col*cLine[c];
 	}
 	typedef Float2int<8,Real> Conv;
-	return qRgb
-		( Conv::convertCheck(rgb[0]), Conv::convertCheck(rgb[1]), Conv::convertCheck(rgb[2]) );
+	return qRgb( Conv::convertCheck(rgb[0]), Conv::convertCheck(rgb[1]), Conv::convertCheck(rgb[2]) );
 }
 inline int getGray(QRgb color) {
 	return Float2int<8,Real>::convert( getColor( color, MColorModel::YCbCrCoeffs[0] ) );

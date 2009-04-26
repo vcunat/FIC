@@ -34,6 +34,15 @@ inline int log2ceil(int i) {
 	return result;
 }
 
+/** A wrapper around isnan() because of compiler support */
+template<class T> inline bool isNaN(T num) {
+#ifndef __ICC
+	return isnan(num);
+#else
+	return num!=num;
+#endif
+}
+
 /** How many short intervals (shifted by density) can fit into a long interval (discrete) */
 inline int getCountForDensity(int longLength,int density,int shortLength)
 	{ return (longLength-shortLength)/density +1; }

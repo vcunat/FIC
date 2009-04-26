@@ -29,12 +29,12 @@ const int powers[31]= { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2*1024			/*
 
 const bool UpdateInfo::noTerminate;
 
-////	Compatible<TypeList,Iface> struct template - leaves in the TypeList only derivates
-////	of Iface class parameter - used by Inteface<Iface>, hidden for others
 namespace NOSPACE {
 	using namespace Loki;
 	using namespace Loki::TL;
 
+	/** Compatible<TypeList,Iface> struct template - leaves in the TypeList only derivates
+	 *	of Iface class parameter - used by Inteface<Iface>, hidden for others */
 	template <class Typelist,class Interface>
 	struct Compatible;
 
@@ -255,7 +255,7 @@ template<class T> int ModuleFactory::Instantiator<T>::operator()() const {
 	int i= getModuleID<T>();
 	Module *m= T::newCompatibleModule();
 	m= m->concreteClone<T>(Module::DeepCopy);
-	i+= T::getCompMods().size();
+	i+= T::getCompMods().front();
 	return i;
 }
 void ModuleFactory::instantiateModules() {

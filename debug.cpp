@@ -159,7 +159,7 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 		const RangeInfo &info= static_cast<RangeInfo&>(*range.encoderData);
 		
 		QString msg= QString("Quantized average: %1\nQuantized deviation: %2\n\n")
-			.arg(info.qrAvg) .arg(sqrt(info.qrDev2));
+			.arg((double)info.qrAvg) .arg((double)sqrt(info.qrDev2));
 		
 		msg+= QString("Encoding SE: %1\n") .arg(info.bestSE);
 		
