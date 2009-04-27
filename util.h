@@ -173,20 +173,20 @@ public:
 /** Structure providing support for progress update and interruption (used for encoding) */
 struct UpdateInfo {
 	typedef void (*IncInt)(int increment); ///< Type for used functions -> more readable code
+	
+	static void emptyFunction(int) {}		///< does nothing, default for IncInt functions
+	static const bool noTerminate= false;	///< default for #terminate, defined in modules.cpp
+	static const UpdateInfo none;			///< empty UpdateInfo instance, in modules.cpp
 
 	volatile const bool *terminate;	///< true if the action should be terminated
 	IncInt incMaxProgress			///  function for increasing the maximum progress (100%)
 	, incProgress;					///< function for increasing the current progress
 
-	static void emptyFunction(int) {}		///< does nothing, default for IncInt functions
-	static const bool noTerminate= false;	///< default for #terminate, defined in modules.cpp
-
 	/** Initializes the structure from supplied parametres */
-	UpdateInfo( const bool &terminate_= noTerminate, IncInt incMaxProgress_= &emptyFunction
-	, IncInt incProgress_= &emptyFunction )
+	UpdateInfo( const bool &terminate_, IncInt incMaxProgress_, IncInt incProgress_ )
 	: terminate(&terminate_), incMaxProgress(incMaxProgress_), incProgress(incProgress_) 
 		{ ASSERT(isValid()); }
-	
+		
 	bool isValid() const { return terminate && incMaxProgress && incProgress; }
 };
 

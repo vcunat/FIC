@@ -8,7 +8,7 @@ bool IRoot::allSettingsToFile(const char *fileName) {
 		ofstream file( fileName, ios_base::binary|ios_base::trunc|ios_base::out );
 		file.exceptions( ifstream::eofbit | ifstream::failbit | ifstream::badbit );
 		put( file, SettingsMagic );
-		saveAllSettings(file);
+		file_saveAllSettings(file);
 		return true;
 	} catch(exception &e) {
 		return false;
@@ -22,7 +22,7 @@ bool IRoot::allSettingsFromFile(const char *fileName) {
 		file.exceptions( ifstream::eofbit | ifstream::failbit | ifstream::badbit );
 		if (get<Uint16>(file)!=SettingsMagic)
 			return false;
-		loadAllSettings(file);
+		file_loadAllSettings(file);
 		return true;
 	} catch(exception &e) {
 		return false;

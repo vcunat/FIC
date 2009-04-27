@@ -294,7 +294,6 @@ void ImageViewer::load() {
 	bool error= !file2string( fname.toStdString().c_str(), decData );
 	if (!error) {
 		stringstream stream(decData);
-
 		error= !modules_encoding->fromStream( stream, zoom );
 	}
 

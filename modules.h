@@ -108,11 +108,7 @@ protected:
 	virtual Module* abstractClone(CloneMethod method) const =0;
 	/** Concrete cloning method - templated by the actual type of the module */
 	template<class M> M* concreteClone(CloneMethod method) const;
-
-	/** Saves all the settings, icluding child modules */
-	void saveAllSettings(std::ostream &stream);
-	/** Loads all the settings, icluding child modules (and their settings) */
-	void loadAllSettings(std::istream &stream);
+	
 public:
 	/** Deletes the settings, destroying child modules as well */
 	virtual ~Module()
@@ -141,6 +137,10 @@ protected:
 
 //	Other methods
 protected:
+	/** Saves all the settings, icluding child modules */
+	void file_saveAllSettings(std::ostream &stream);
+	/** Loads all the settings, icluding child modules (and their settings) */
+	void file_loadAllSettings(std::istream &stream);
 	/** Puts a module-identifier in a stream (\p which is the index in settings) */
 	void file_saveModuleType( std::ostream &os, int which );
 	/** Gets an module-identifier from the stream, initializes the pointer in settings
@@ -203,6 +203,8 @@ protected:
 }; // Module class
 
 
+////	Macros for easier Module-writing
+
 #define DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_...) \
 	friend class Module; /* Needed for concreteClone */ \
 	/*friend class ModuleFactory;*/ \
@@ -221,14 +223,19 @@ public: \
 			setType: setType_ \
 		}; \
 		return info_; \
-	} \
+	}
 
-/** Macros for easier Module-writing */
+/** Declares technical stuff within a Module descendant that contains no settings 
+ *	- parameters: the name of the class (Token),
+ *	the name of the module ("Name"), some description ("Desc...") */
+#define DECLARE_TypeInfo_noSettings(CNAME_,NAME_,DESC_) \
+	DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SettingTypeItem::stopper)
+
+/** Like DECLARE_TypeInfo_noSettings, but for a module containing settings
+ *	- additional parameter: an array of SettingTypeItem */
 #define DECLARE_TypeInfo(CNAME_,NAME_,DESC_,SETTYPE_...) \
 	DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_,SettingTypeItem::stopper)
 
-#define DECLARE_TypeInfo_noSettings(CNAME_,NAME_,DESC_) \
-	DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SettingTypeItem::stopper)
 
 
 /** A singleton factory class for creating modules */

@@ -27,7 +27,11 @@ const int powers[31]= { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2*1024			/*
     , 1024*1024, 2*1024*1024, 4*1024*1024, 8*1024*1024, 16*1024*1024, 32*1024*1024	/* 2^25 */
     , 64*1024*1024, 128*1024*1024, 256*1024*1024, 512*1024*1024, 1024*1024*1024 };	/* 2^30 */
 
+
 const bool UpdateInfo::noTerminate;
+const UpdateInfo UpdateInfo::none= UpdateInfo
+	( UpdateInfo::noTerminate, &UpdateInfo::emptyFunction, &UpdateInfo::emptyFunction );
+
 
 namespace NOSPACE {
 	using namespace Loki;
@@ -159,7 +163,7 @@ void Module::file_loadModuleType( istream &is, int which ) {
 	setItem.m= ModuleFactory::newModule(newId,ShallowCopy);
 }
 
-void Module::saveAllSettings(std::ostream &stream) {
+void Module::file_saveAllSettings(std::ostream &stream) {
 	int setLength= info().setLength;
 	if (!setLength)
 		return;
@@ -179,14 +183,14 @@ void Module::saveAllSettings(std::ostream &stream) {
 			break;
 		case ModuleCombo:
 			file_saveModuleType( stream, i );
-			settings[i].m->saveAllSettings(stream);
+			settings[i].m->file_saveAllSettings(stream);
 			break;
 		default:
 			ASSERT(false);
 		} // switch
 }
 
-void Module::loadAllSettings(std::istream &stream) {
+void Module::file_loadAllSettings(std::istream &stream) {
 	int setLength= info().setLength;
 	ASSERT(setLength>=0);
 	if (!setLength)
@@ -207,7 +211,7 @@ void Module::loadAllSettings(std::istream &stream) {
 			break;
 		case ModuleCombo:
 			file_loadModuleType( stream, i );
-			settings[i].m->loadAllSettings(stream);
+			settings[i].m->file_loadAllSettings(stream);
 			break;
 		default:
 			ASSERT(false);
@@ -220,7 +224,6 @@ ModuleFactory* ModuleFactory::instance=0;
 template<class M> int ModuleFactory::getModuleID()
 	{ return Loki::TL::IndexOf<Modules,M>::value; }
 	
-template int ModuleFactory::getModuleID<MRoot>();
 
 void ModuleFactory::initialize() {
 //	create one instance of each module-type

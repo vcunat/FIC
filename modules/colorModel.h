@@ -21,7 +21,6 @@ private:
 	/** Indices for settings */
 	enum Settings { ColorModel };
 //	Settings-retrieval methods
-	int &colorModel() { return settingsInt(ColorModel); }
 	int numOfModels() { return 1+countEOLs( info().setType[ColorModel].type.data.text ); }
 	
 protected:
@@ -45,7 +44,7 @@ public:
 	QImage planes2image();
 
 	void writeData(std::ostream &file)
-		{ put<Uchar>( file, colorModel() ); }
+		{ put<Uchar>( file, settingsInt(ColorModel) ); }
 	PlaneList readData(std::istream &file,const PlaneSettings &prototype);
 ///	@}
 private:

@@ -201,7 +201,8 @@ class EncodingProgress: public QProgressDialog { Q_OBJECT
 	static EncodingProgress *instance; ///< Pointer to the single instance of the class
 
 	bool terminate	///  Value indicating whether the encoding should be interrupted
-	, needUpdate;
+	, updateMaxProgress
+	, updateProgress;
 	int progress	///  The progress of the encoding - "the number of pixels encoded"
 	, maxProgress;	///< The maximum value of progress
 	
@@ -216,12 +217,12 @@ private:
 	/** Sets the maximum progress (the value corresponding to 100%) */
 	static void incMaxProgress(int increment) { 
 		instance->maxProgress+= increment;
-		instance->needUpdate= true;
+		instance->updateMaxProgress= true;
 	}
 	/** Increase the progress by a value */
 	static void incProgress(int increment) { 
 		instance->progress+= increment;
-		instance->needUpdate= true;
+		instance->updateProgress= true;
 	}
 	//	TODO: Should we provide a thread-safe version?
 	//	q_atomic_fetch_and_add_acquire_int(&instance->progress,increment);
@@ -233,17 +234,20 @@ private slots:
 		{ terminate= true; }
 	/** Updating slot - called regularly by a timer */
 	void update() {
-		if (!needUpdate)
-			return;
-		needUpdate= false;
-		setMaximum(maxProgress);
-		setValue(progress);
+		if (updateMaxProgress) {
+			setMaximum(maxProgress);
+			updateMaxProgress= false;
+		}
+		if (updateProgress) {
+			setValue(progress);
+			updateProgress= false;
+		}
 	}
 private:
 	/** Creates and initializes the dialog */
 	EncodingProgress(ImageViewer *parent)
 	: QProgressDialog( tr("Encoding..."), tr("Cancel"), 0, 100, parent, Qt::Dialog )
-	, terminate(false), needUpdate(false)
+	, terminate(false), updateMaxProgress(false), updateProgress(false)
 	, progress(0), maxProgress(0)
 	, modules_encoding(parent->modules_settings->clone())
 	, updateInfo( terminate, &incMaxProgress, &incProgress ), updateTimer(this)
@@ -258,7 +262,7 @@ private:
 		aConnect( this, SIGNAL(canceled()), this, SLOT(setTerminate()) );
 	//	start the updating timer
 		aConnect( &updateTimer, SIGNAL(timeout()), this, SLOT(update()) );
-     	updateTimer.start(500);
+     	updateTimer.start(1000);
 		encTime.start(); //	start measuring the time
 	//	start the encoding thread, set it to call ImageViewer::encDone when finished	
 		aConnect( &encThread, SIGNAL(finished()), parent, SLOT(encDone()) );

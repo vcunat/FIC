@@ -17,10 +17,9 @@ struct IIntCodec;
 
 /** Contains basic types frequently used in modules */
 namespace MTypes {
-	typedef double Real;	///< The floating-point type in which most computations are made
-	typedef float SReal;	///< The floating-point type for long-term pixel-value storage
+	typedef double Real; ///< The floating-point type in which most computations are made
+	typedef float SReal; ///< The floating-point type for long-term pixel-value storage
 	
-	//typedef MatrixSummer<Real> BlockSummer; ///< Summer instanciation used for pixels
 	typedef MatrixSlice<SReal> SMatrix;
 	typedef SMatrix::Const CSMatrix;
 	typedef std::vector<SMatrix> MatrixList;
@@ -59,8 +58,9 @@ struct IRoot: public Interface<IRoot> {
 	/** Saves current decoding state into a QImage */
 	virtual QImage toImage() =0;
 
-	/** Encodes an image - returns false on exception */
-	virtual bool encode(const QImage &toEncode,const UpdateInfo &updateInfo=UpdateInfo()) =0;
+	/** Encodes an image - returns false on exception, getMode() have to be to be Clear */
+	virtual bool encode
+		( const QImage &toEncode, const UpdateInfo &updateInfo=UpdateInfo::none ) =0;
 	/** Performs a decoding action (e.g.\ clearing, multiple iteration) */
 	virtual void decodeAct( DecodeAct action, int count=1 ) =0;
 
@@ -94,8 +94,6 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 	/** Contains some setings for one color plane of an image */
 	struct PlaneSettings {
 		typedef IQuality2SquareError ModuleQ2SE;
-
-		//static const PlaneSettings Empty; ///< an empty instance
 		
 		int width			///  the width of the image (zoomed)
 		, height			///  the height of the image (zoomed)
@@ -103,12 +101,12 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 		, zoom;				///< the zoom (dimensions multiplied by 2^zoom)
 		SReal quality;		///< encoding quality for the plane, in [0,1] (higher is better)
 		ModuleQ2SE *moduleQ2SE;	///< pointer to the module computing maximum SE (not owned)
-		UpdateInfo updateInfo;	///< structure for communication with user
+		const UpdateInfo &updateInfo; ///< structure for communication with user
 		
 		/** A simple constructor, only initializes the values from the parameters */
 		PlaneSettings( int width_, int height_, int domainCountLog2_, int zoom_
 		, SReal quality_=numeric_limits<SReal>::quiet_NaN()
-		, ModuleQ2SE *moduleQ2SE_=0, const UpdateInfo &updateInfo_=UpdateInfo() )
+		, ModuleQ2SE *moduleQ2SE_=0, const UpdateInfo &updateInfo_=UpdateInfo::none )
 			: width(width_), height(height_)
 			, domainCountLog2(domainCountLog2_), zoom(zoom_)
 			, quality(quality_), moduleQ2SE(moduleQ2SE_), updateInfo(updateInfo_) {}
@@ -122,7 +120,8 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 	/** List of planes, in returned vectors the pointed to memory is owned by the module */
 	typedef std::vector<Plane> PlaneList;
 
-	/** Splits an image into color-planes and adjusts their settings (from \p prototype) */
+	/** Splits an image into color-planes and adjusts their settings (from \p prototype).
+	 *	It should call UpdateInfo::incMaxProgress with the total pixel count. */
 	virtual PlaneList image2planes(const QImage &toEncode,const PlaneSettings &prototype) =0;
 	/** Merges planes back into a color image (only useful when decoding) */
 	virtual QImage planes2image() =0;
@@ -191,7 +190,7 @@ struct ISquareRanges: public Interface<ISquareRanges> {
 	struct RangeNode: public Block {
 		/** A common base type for data stored by encoders */
 		struct EncoderData {
-			float bestSE;
+			float bestSE; ///< the best square error found until now
 		};
 
 		/** Encoders can store their data here, !not deleted! (use BulkAllocator) */
@@ -209,7 +208,8 @@ struct ISquareRanges: public Interface<ISquareRanges> {
 	}; // RangeNode struct
 	typedef std::vector<RangeNode*> RangeList;
 
-	/** Starts encoding, calls modules in the passed structure */
+	/** Starts encoding, calls modules in the passed structure.
+	 *	It should update UpdateInfo continually by the count of encoded pixels. */
 	virtual void encode(const PlaneBlock &toEncode) =0;
 	/** Returns a reference to the current range-block list */
 	virtual const RangeList& getRangeList() const =0;
