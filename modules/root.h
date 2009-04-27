@@ -3,9 +3,11 @@
 
 #include "../interfaces.h"
 
-//#include <QThread>
+#include <QThread>
 
-/** The root module */
+/** The root module implementation. Controls the number of encoding threads,
+ *	the color-transforming module, the pixel-shape-transforming module, quality 0-100%,
+ *	the module for quality conversion and the maximum domain count. */
 class MRoot: public IRoot {
 	DECLARE_debugModule;
 
@@ -15,7 +17,7 @@ class MRoot: public IRoot {
 		label:	"Maximal number of threads",
 		desc:	"Note: the actual number of threads is bound by\n"
 				"(the number of parts)*(the number of color planes)",
-		type:	settingInt(1,1,1) // abs(QThread::idealThreadCount())
+		type:	settingInt(1,QThread::idealThreadCount(),16)
 	}, {
 		label:	"Color transformer",
 		desc:	"The module that will be used to transform colors",

@@ -3,6 +3,7 @@
 #include "../fileUtil.h"
 
 #include <QImage>
+#include <QThreadPool>
 
 using namespace std;
 
@@ -12,8 +13,31 @@ QImage MRoot::toImage() {
 	return moduleColor()->planes2image();
 }
 
+namespace NOSPACE {
+	/** Represents a scheduled encoding job for use in QThreadPool */
+	class ScheduledJob: public QRunnable {
+		IShapeTransformer *worker;	///< the worker to perform the job
+		int job;					///< the job's identifier
+		volatile bool &errorFlag;	///< the flag to set in case of failure
+	public:
+		/** Creates a new scheduled job, failure reported in \p errorFlag_ */
+		ScheduledJob( IShapeTransformer *worker_, int job_, volatile bool &errorFlag_ )
+		: worker(worker_), job(job_), errorFlag(errorFlag_) {}
+		
+		/** Just makes #worker do the #job and sets #errorFlag in case of error (virtual method) */
+		void run() {
+			try {
+				worker->jobEncode(job);
+			} catch (exception &e) {
+				errorFlag= true;
+			}
+		}
+	}; // ScheduledJob class
+}
 bool MRoot::encode(const QImage &toEncode,const UpdateInfo &updateInfo) {
-	ASSERT( getMode()==Clear && settings && moduleColor() && moduleShape() );
+	ASSERT( getMode()==Clear && settings && moduleColor() && moduleShape() 
+		&& maxThreads()>=1 );
+//	set my zoom and dimensions
 	zoom= 0;
 	this->width= toEncode.width();
 	this->height= toEncode.height();
@@ -21,21 +45,28 @@ bool MRoot::encode(const QImage &toEncode,const UpdateInfo &updateInfo) {
 	PlaneSettings planeProto( width, height, settingsInt(DomainCountLog2), 0/*zoom*/
 		, quality(), moduleQuality(), updateInfo );
 	PlaneList planes= moduleColor()->image2planes( toEncode, planeProto );
-
 	int jobCount= moduleShape()->createJobs(planes);
 //	process the jobs
-	if ( maxThreads() == 1 )
+	if (maxThreads()==1)
+	//	simple one-thread mode: pocesses jobs sequentially, returns false on failure
 		try {
 			for (int i=0; i<jobCount; ++i)
 				moduleShape()->jobEncode(i);
 		} catch (exception &e) {
 			return false;
 		}
-	else
-	//	multithreaded
-	// TODO (admin#7#): Multi-threaded encoding
-		return ASSERT(false),false;
-
+	else {
+	//	multi-threaded mode: create ScheduleJob instances and push them into a QThreadPool
+		volatile bool errorFlag= false;
+		QThreadPool jobPool;
+		jobPool.setMaxThreadCount( maxThreads() );
+		for (int job=0; job<jobCount; ++job)
+			jobPool.start( new ScheduledJob(moduleShape(),job,errorFlag) );
+		jobPool.waitForDone();
+		if (errorFlag)
+			return false;
+	}
+//	encoding successful - change the mode and return true
 	myMode= Encode;
 	return true;
 }
