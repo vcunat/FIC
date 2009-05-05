@@ -28,13 +28,13 @@ class MColorModel: public IColorTransformer {
 		label:	"Quality multiplier for G/Cb channel",
 		desc:	"The real encoding quality for Green/Cb channel\n"
 				"will be multiplied by this number",
-		type:	settingFloat(0,0.75,1)
+		type:	settingFloat(0,0.5,1)
 	} 
 	, {
 		label:	"Quality multiplier for B/Cr channel",
 		desc:	"The real encoding quality for Blue/Cr channel\n"
 				"will be multiplied by this number",
-		type:	settingFloat(0,0.75,1)
+		type:	settingFloat(0,0.5,1)
 	} 
 	);
 

@@ -14,7 +14,9 @@ public:
  *	@{ */
 	float rangeSE(float quality,int /*pixelCount*/) {
 		ASSERT( quality>=0 && quality<=1 );
-		return 1-cbrt(quality);
+		float maxSE= 4	///  approximate SE for quality=0
+		, doubles= 6;	///< how many times the SE doubles
+		return maxSE/exp2(doubles) * ( exp2((1-quality)*doubles) - 1 );
 	}
 ///	@}
 };
