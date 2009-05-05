@@ -604,27 +604,37 @@ namespace NOSPACE {
 	};
 }
 void Module::settingsType2widget(QWidget *widget,const SettingTypeItem &typeItem) {
-	ASSERT( widget );
-	switch( typeItem.type.type ) {
+	ASSERT(widget);
+	const SettingType &type= typeItem.type;
+	
+	switch(type.type) {
 	case IntLog2:
 		debugCast<QSpinBox*>(widget)->setPrefix(QObject::tr("2^"));
 	//	fall through
-	case Int:
-		debugCast<QSpinBox*>(widget)->
-			setRange( typeItem.type.data.i[0], typeItem.type.data.i[1] );
+	case Int: {
+		debugCast<QSpinBox*>(widget)->setRange( type.data.i[0], type.data.i[1] );
+	//	try to guess a reasonable step for the spin-box
+		int range= type.data.i[1]-type.data.i[0];
+		int step= (int)exp10(floor(log10(range/5)));
+		if (!(step>0))
+			step= 1;
+		debugCast<QSpinBox*>(widget)->setSingleStep(step);
 		break;
-	case Float:
-		debugCast<QDoubleSpinBox*>(widget)->
-			setRange( typeItem.type.data.f[0], typeItem.type.data.f[1] );
+		}
+	case Float: {
+		debugCast<QDoubleSpinBox*>(widget)->setRange( type.data.f[0], type.data.f[1] );
+	//	try to guess a reasonable step for the spin-box
+		float range= type.data.f[1]-type.data.f[0];
+		debugCast<QDoubleSpinBox*>(widget)->setSingleStep( exp10(floor(log10(range/5))) );
 		break;
+		}
 	case ModuleCombo: {
 		const vector<int> &modules= *typeItem.type.data.compatIDs;
 		for_each( modules.begin(), modules.end(), ItemAdder(widget) );
 		break;
 		}
 	case Combo:
-		debugCast<QComboBox*>(widget)->
-			addItems( QString(typeItem.type.data.text).split('\n') );
+		debugCast<QComboBox*>(widget)->addItems( QString(type.data.text).split('\n') );
 		break;
 	default:
 		ASSERT(false);

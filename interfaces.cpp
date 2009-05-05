@@ -30,11 +30,10 @@ bool IRoot::allSettingsFromFile(const char *fileName) {
 }
 
 
-void IQuality2SquareError
-::completeSquareRangeErrors( float quality, int levelEnd, float *errors ) {
+void IQuality2SE::regularRangeErrors( float quality, int levelEnd, float *errors ) {
 	ASSERT( checkBoundsFunc<float>(0,quality,1)==quality && levelEnd>2 && errors );
 
-	float (IQuality2SquareError::*func)(float,int)= &IQuality2SquareError::rangeSE;
+	float (IQuality2SE::*func)(float,int)= &IQuality2SE::rangeSE;
 
 	for (int level=0; level<levelEnd; ++level)
 		errors[level]= (this->*func)( quality, powers[level*2] );

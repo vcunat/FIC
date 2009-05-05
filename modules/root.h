@@ -3,11 +3,12 @@
 
 #include "../interfaces.h"
 
-#include <QThread>
+#include <QThread> // ::idealThreadCount
 
 /** The root module implementation. Controls the number of encoding threads,
- *	the color-transforming module, the pixel-shape-transforming module, quality 0-100%,
- *	the module for quality conversion and the maximum domain count. */
+ *	the color-transforming module (IColorTransformer)
+ *	the pixel-shape-transforming module (IShapeTransformer), quality 0-100%,
+ *	the module for quality conversion (IQuality2SE) and the maximum domain count. */
 class MRoot: public IRoot {
 	DECLARE_debugModule;
 
@@ -28,13 +29,13 @@ class MRoot: public IRoot {
 				"of the pixels and for further (de)compression",
 		type:	settingModule<IShapeTransformer>()
 	}, {
-		label:	"Encoding quality",
+		label:	"Encoding quality (%)",
 		desc:	"Quality - how much accurate the mappings have to be",
 		type:	settingInt(0,90,100)
 	}, {
 		label:	"Quality converter",
 		desc:	"For given quality and size computes maximum square error allowed",
-		type:	settingModule<IQuality2SquareError>()
+		type:	settingModule<IQuality2SE>()
 	}, {
 		label:	"Maximum domain count",
 		desc:	"Maximum domain count for level 2 range blocks\n"
@@ -56,16 +57,18 @@ private:
 		{ return debugCast<IShapeTransformer*>(settings[ModuleShape].m); }
 	float quality()
 		{ return settingsInt(Quality)/100.0; }
-	IQuality2SquareError* moduleQuality() const
-		{ return debugCast<IQuality2SquareError*>(settings[ModuleQuality].m); }
+	IQuality2SE* moduleQuality() const
+		{ return debugCast<IQuality2SE*>(settings[ModuleQuality].m); }
 
 	typedef IColorTransformer::PlaneSettings PlaneSettings;
 	typedef IColorTransformer::PlaneList PlaneList;
 
 private:
 //	Module's data
-	Mode myMode;
-	int width, height, zoom;
+	Mode myMode;///< the mode of the tree, returned by ::getMode
+	int width	///  zoomed width of the image
+	, height	///  zoomed height of the image
+	, zoom;		///< the zoom used (dimensions multiplied by 2^\p zoom)
 
 protected:
 //	Construction and destruction

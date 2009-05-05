@@ -58,8 +58,12 @@ protected:
 	/** Only frees #jobs */
 	~MSquarePixels() {
 	//	can't free the whole jobs, because the pixels are NOT owned (can be only a part)
-		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it)
+		for (JobIterator it=jobs.begin(); it!=jobs.end(); ++it) {
 			it->free(false);
+			delete it->ranges;
+			delete it->domains;
+			delete it->encoder;
+		}
 	}
 public:
 /**	\name IShapeTransformer interface

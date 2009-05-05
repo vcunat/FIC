@@ -147,8 +147,8 @@ void MStandardEncoder::initialize( IRoot::Mode mode, PlaneBlock &planeBlock_ ) {
 
 	//	prepare maximum SquareErrors allowed for regular range blocks
 		stdRangeSEs.resize(maxLevel+1);
-		planeBlock->settings->moduleQ2SE->completeSquareRangeErrors
-		( planeBlock->settings->quality, maxLevel+1, &stdRangeSEs.front() );
+		planeBlock->settings->moduleQ2SE->regularRangeErrors
+			( planeBlock->settings->quality, maxLevel+1, &stdRangeSEs.front() );
 	}
 }
 

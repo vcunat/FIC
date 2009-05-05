@@ -111,7 +111,7 @@ public:
 private:
 //	Module's data
 	PlaneBlock *planeBlock;			///< Pointer to the block to encode/decode
-	std::vector<float> stdRangeSEs;	///< Caches the result of IQuality2SquareError::completeSquareRangeErrors
+	std::vector<float> stdRangeSEs;	///< Caches the result of IQuality2SE::regularRangeErrors
 	LevelPoolInfos levelPoolInfos;	///< [level][pool] -> LevelPoolInfo (the levels are zoomed)
 
 	BulkAllocator<RangeInfo> rangeInfoAlloc; ///< Allocator for RangeNode::encoderData

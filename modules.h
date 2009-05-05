@@ -14,7 +14,7 @@ class Module {
 	friend class ModuleFactory; ///< Permission for the ModuleFactory to manipulate Modules
 //	Type definitions
 public:
-	/** Two types of cloning, used in #clone */
+	/** Two types of cloning, used in ::clone */
 	enum CloneMethod { ShallowCopy, DeepCopy };
 	/** Types of a setting */
 	enum ChoiceType {

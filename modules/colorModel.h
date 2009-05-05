@@ -6,7 +6,9 @@
 
 #include <QColor>
 
-/** Simple color transformer, can use several color models linear to the basic RGB */
+/// \file colorModel.h
+
+/** Simple color transformer, currently supporting RGB and YCbCr color models */
 class MColorModel: public IColorTransformer {
 
 	DECLARE_TypeInfo( MColorModel, "Color models"
@@ -15,29 +17,54 @@ class MColorModel: public IColorTransformer {
 		label:	"Color model",
 		desc:	"The color model that will be used to encode the images",
 		type:	settingCombo("RGB\nYCbCr",1)
-	} );
+	} 
+	, {
+		label:	"Quality multiplier for R/Y channel",
+		desc:	"The real encoding quality for Red/Y channel\n"
+				"will be multiplied by this number",
+		type:	settingFloat(0,1,1)
+	} 
+	, {
+		label:	"Quality multiplier for G/Cb channel",
+		desc:	"The real encoding quality for Green/Cb channel\n"
+				"will be multiplied by this number",
+		type:	settingFloat(0,0.75,1)
+	} 
+	, {
+		label:	"Quality multiplier for B/Cr channel",
+		desc:	"The real encoding quality for Blue/Cr channel\n"
+				"will be multiplied by this number",
+		type:	settingFloat(0,0.75,1)
+	} 
+	);
 
-private:
+protected:
 	/** Indices for settings */
-	enum Settings { ColorModel };
+	enum Settings { ColorModel, QualityMul1, QualityMul2, QualityMul3 };
 //	Settings-retrieval methods
 	int numOfModels() { return 1+countEOLs( info().setType[ColorModel].type.data.text ); }
+	float qualityMul(int channel) {
+		ASSERT(channel>=0 && channel<3);
+		return settings[QualityMul1+channel].val.f;
+	}
 	
 protected:
-	PlaneList ownedPlanes;
+	PlaneList ownedPlanes; ///< the list of color planes, owned by the module
 
+protected:
 //	Construction and destruction
-	/* Using auto-generated */
+	/** Just frees ::ownedPlanes */
 	~MColorModel() {
 		for (PlaneList::iterator it=ownedPlanes.begin(); it!=ownedPlanes.end(); ++it) {
 			it->pixels.free();
 			delete it->settings;
 		}
 	}
+	
 public:
-	static const Real RGBCoeffs[][4]	/** RGB color coefficients */
-	, YCbCrCoeffs[][4];					/**< YCbCr color coefficients */
-public:
+	static const Real RGBCoeffs[][4]	///  RGB color coefficients
+	, YCbCrCoeffs[][4];					///< YCbCr color coefficients
+
 /** \name IColorTransformer interface
  *	@{ */
 	PlaneList image2planes(const QImage &toEncode,const PlaneSettings &prototype);
@@ -47,7 +74,7 @@ public:
 		{ put<Uchar>( file, settingsInt(ColorModel) ); }
 	PlaneList readData(std::istream &file,const PlaneSettings &prototype);
 ///	@}
-private:
+protected:
 	/** Creates a list of planes according to \p prototype,
 	 *	makes new matrices and adjusts encoding parameters */
 	PlaneList createPlanes(IRoot::Mode mode,const PlaneSettings &prototype);
@@ -71,6 +98,7 @@ inline QRgb getColor( const Real (*coeffs)[4], const Real *planes ) {
 	typedef Float2int<8,Real> Conv;
 	return qRgb( Conv::convertCheck(rgb[0]), Conv::convertCheck(rgb[1]), Conv::convertCheck(rgb[2]) );
 }
+/** Computes the gray level of a QRgb color in [0..255] interval */
 inline int getGray(QRgb color) {
 	return Float2int<8,Real>::convert( getColor( color, MColorModel::YCbCrCoeffs[0] ) );
 }

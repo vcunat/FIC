@@ -43,18 +43,18 @@ class MStdDomains: public ISquareDomains {
 		type:	settingInt(0,0,8)
 	} )
 
-private:
+protected:
 	/** Indices for settings */
 	enum Settings { MaxDomCountLevelDivisor, MultiDownScaling
 	, DomPortion_Standard, DomPortion_Diamond, DomPortion_Horiz, DomPortion_Vert  };
-private:
+
 //	Module's data
 	/** The list of domain pools, pool IDs are the indices, the Pool::pixels are owned */
 	PoolList pools;
 	int width	///  Width of the original image (not zoomed)
 	, height	///  Height of the original image (not zoomed)
 	, zoom;		///< the zoom
-protected:
+
 //	Construction and destruction
 	#ifndef NDEBUG
 		MStdDomains(): width(-1), height(-1), zoom(-1) {}

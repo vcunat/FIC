@@ -85,8 +85,9 @@ MColorModel::PlaneList MColorModel
 	PlaneList result(planeCount);
 	for (int i=0; i<planeCount; ++i) {
 		result[i].pixels.allocate( prototype.width, prototype.height );
-		result[i].settings= new PlaneSettings(prototype);
+		PlaneSettings *newSet= new PlaneSettings(prototype);
+		newSet->quality*= qualityMul(i);
+		result[i].settings= newSet;
 	}
-	//	TODO (admin#4#): We don't adjust max. domain count and quality in encoding mode
 	return result;
 }

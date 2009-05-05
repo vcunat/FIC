@@ -4,13 +4,13 @@
 #include "../interfaces.h"
 
 /** Standard quality-to-SE module - uses fixed SE for all block sizes */
-class MQuality2SE_std: public IQuality2SquareError {
+class MQuality2SE_std: public IQuality2SE {
 
 	DECLARE_TypeInfo_noSettings( MQuality2SE_std, "Constant square error"
 	, "Holds the same <b>square error</b> (SE) for all block sizes" )
 
 public:
-/**	\name IQuality2SquareError interface
+/**	\name IQuality2SE interface
  *	@{ */
 	float rangeSE(float quality,int /*pixelCount*/) {
 		ASSERT( quality>=0 && quality<=1 );
