@@ -9,6 +9,7 @@ class ModuleFactory;
 template <class Iface> class Interface;
 
 
+/// \defgroup modules Module implementations
 /** A common base class for all modules */
 class Module {
 	friend class ModuleFactory; ///< Permission for the ModuleFactory to manipulate Modules
@@ -206,6 +207,7 @@ protected:
 ////	Macros for easier Module-writing
 
 #define DECLARE_TypeInfo_helper(CNAME_,NAME_,DESC_,SETTYPE_...) \
+/** \cond */ \
 	friend class Module; /* Needed for concreteClone */ \
 	/*friend class ModuleFactory;*/ \
 	friend struct ModuleFactory::Creator<CNAME_>; /* Needed for GCC-3 and ICC */ \
@@ -223,7 +225,8 @@ public: \
 			setType: setType_ \
 		}; \
 		return info_; \
-	}
+	} \
+/** \endcond */ \
 
 /** Declares technical stuff within a Module descendant that contains no settings 
  *	- parameters: the name of the class (Token),

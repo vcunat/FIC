@@ -4,7 +4,10 @@
 #include "../interfaces.h"
 #include "../fileUtil.h"
 
-/** A simple shape transformer - using square pixels, only splits the planes into rectangles */
+/// \ingroup modules
+/** A simple shape transformer using square pixels. It allows to choose modules of types
+ *	ISquareRanges, ISquareDomains and ISquareEncoder for subsequent coding.
+ *	It can split the planes	into rectangles - max.\ size is a parameter. */
 class MSquarePixels: public IShapeTransformer {
 	DECLARE_debugModule;
 
@@ -30,7 +33,7 @@ class MSquarePixels: public IShapeTransformer {
 		type:	settingModule<ISquareEncoder>()
 	} )
 
-private:
+protected:
 	/** Indices for settings */
 	enum Settings { MaxPartSize, ModuleRanges, ModuleDomains, ModuleEncoder };
 //	Settings-retrieval methods
@@ -44,13 +47,13 @@ private:
 		{ return debugCast<ISquareEncoder*>(settings[ModuleEncoder].m); }
 
 	typedef IColorTransformer::Plane Plane;
-	typedef MTypes::PlaneBlock Job;
+	typedef MTypes::PlaneBlock PlaneBlock;
 
-	typedef std::vector<Job>::iterator JobIterator;
+	typedef std::vector<PlaneBlock>::iterator JobIterator;
 
-private:
+protected:
 //	Module's data
-	std::vector<Job> jobs; ///< Encoding jobs - one part of one color plane makes one job
+	std::vector<PlaneBlock> jobs; ///< Encoding jobs - one part of one color plane makes one job
 	DEBUG_ONLY( PlaneList planeList; ) //< needed for creating debug info
 
 protected:
@@ -76,7 +79,7 @@ public:
 	
 	void jobEncode(int jobIndex) {
 		ASSERT( jobIndex>=0 && jobIndex<jobCount() );
-		Job &job= jobs[jobIndex];
+		PlaneBlock &job= jobs[jobIndex];
 		job.encoder->initialize( IRoot::Encode, job );
 		job.ranges->encode(job);
 	}

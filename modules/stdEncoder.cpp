@@ -13,7 +13,7 @@ namespace Quantizer {
 		ASSERT( result>=0 && result<=possib );
 		return result<possib ? result : --result;
 	}
-	/** Performs the opposite to #quantizeByPower */
+	/** Performs the opposite to ::quantizeByPower */
 	inline Real dequantizeByPower(int i,int scale,int DEBUG_ONLY(possib)) {
 		ASSERT( i>=0 && i<possib );
 		Real result= ldexp(i+Real(0.5),-scale);

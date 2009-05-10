@@ -537,12 +537,12 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 		ASSERT(item);
 		widget2settings( item->widget() , which );
 	//	handle module-type settings
-		const SettingTypeItem *setType= info().setType;
-		if ( setType[which].type.type == ModuleCombo ) {
+		const SettingTypeItem &setType= info().setType[which];
+		if ( setType.type.type == ModuleCombo ) {
 			ASSERT(myTree);
 		//	get the new module id and check whether it has really changed
 			SettingItem &setItem= settings[which];
-			int newId= (*setType->type.data.compatIDs)[setItem.val.i];
+			int newId= (*setType.type.data.compatIDs)[setItem.val.i];
 			if ( newId == setItem.m->info().id )
 				return;
 		//	replace the child module

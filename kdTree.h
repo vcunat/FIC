@@ -42,7 +42,7 @@ namespace FieldMath {
 
 	namespace NOSPACE {
 		template<class T,bool CheckNaNs> struct MoveToBounds {
-			T sqrError; // TODO: double?
+			T sqrError;
 
 			MoveToBounds()
 			: sqrError(0) {}

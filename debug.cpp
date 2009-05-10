@@ -44,7 +44,7 @@ QWidget* MSquarePixels::debugModule(QPixmap &pixmap,const QPoint &click) {
 	QTabWidget *tabs= new QTabWidget;
 //	fill one tab for every job by three sub-tabs with the three modules
 	for (int i=0; i<(int)jobs.size(); ++i) {
-		Job &job= jobs[i];
+		PlaneBlock &job= jobs[i];
 		if ( job.ranges->getRangeList().size() == 1 )
 			continue;
 	//	find the plane which is the job from

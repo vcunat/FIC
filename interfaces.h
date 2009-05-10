@@ -6,9 +6,9 @@
 
 /* Forwards for interfaces */
 struct IRoot;
+struct IQuality2SE;
 struct IColorTransformer;
 struct IShapeTransformer;
-struct IQuality2SE;
 struct ISquareEncoder;
 struct ISquareRanges;
 struct ISquareDomains;
@@ -26,7 +26,7 @@ namespace MTypes {
 
 	enum DecodeAct { Clear, Iterate };			///< Possible decoding actions
 
-	struct PlaneBlock; // declared and described at the end of the file
+	struct PlaneBlock; // declared and described later in the file
 	
 	typedef SummedMatrix<Real,SReal> SummedPixels;
 }
@@ -86,6 +86,20 @@ struct IRoot: public Interface<IRoot> {
 	/** Loads all settings from a file (to be run on a shallow module), returns true on success */
 	bool allSettingsFromFile(const char *fileName);
 }; // IRoot interface
+
+
+
+
+/** Interface for modules deciding how the max.\ SE will depend on block size
+ *	(parametrized by quality) */
+struct IQuality2SE: public Interface<IQuality2SE> {
+	/** Returns maximum SE for a [0,1] quality and range blocks with pixelCount pixels */
+	virtual float rangeSE(float quality,int pixelCount) =0;
+	/** Fills an array (until levelEnd) with SE's according to [0,1] quality
+	 *	: on i-th index for "complete square range blocks" of level i.
+	 *	Common implementation - uses ::rangeSE method */
+	void regularRangeErrors(float quality,int levelEnd,float *squareErrors);
+};
 
 
 
@@ -156,8 +170,8 @@ struct IShapeTransformer: public Interface<IShapeTransformer> {
 
 	/** Writes all settings (shared by all jobs) needed for later reconstruction */
 	virtual void writeSettings(std::ostream &file) =0;
-	/** Reads settings (shared by all jobs) needed for reconstruction from a stream
-	 *	- needs to be done before the job creation */
+	/** Reads settings (shared by all jobs) needed for reconstruction from a stream -
+	 *	needs to be done before the job creation */
 	virtual void readSettings(std::istream &file) =0;
 
 	/** Returns the number of phases (progressive encoding), only depends on settings */
@@ -167,7 +181,7 @@ struct IShapeTransformer: public Interface<IShapeTransformer> {
 	virtual void writeJobs(std::ostream &file,int phaseBegin,int phaseEnd) =0;
 	/** Reads all data needed for reconstruction of every job and prepares for encoding,
 	 *	parameters like ::writeJobs */
-	virtual void readJobs (std::istream &file,int phaseBegin,int phaseEnd) =0;
+	virtual void readJobs(std::istream &file,int phaseBegin,int phaseEnd) =0;
 	
 	/** Shortcut - default parameters "phaseBegin=0,phaseEnd=phaseCount()" */
 	void writeJobs(std::ostream &file,int phaseBegin=0)
@@ -178,20 +192,7 @@ struct IShapeTransformer: public Interface<IShapeTransformer> {
 }; // IShapeTransformer interface
 
 
-
-
-/** Interface for modules deciding how the max.\ SE will depend on block size
- *	(parametrized by quality) */
-struct IQuality2SE: public Interface<IQuality2SE> {
-	/** Returns maximum SE for a [0,1] quality and range blocks with pixelCount pixels */
-	virtual float rangeSE(float quality,int pixelCount) =0;
-	/** Fills an array (until levelEnd) with SE's according to [0,1] quality
-	 *	: on i-th index for "complete square range blocks" of level i.
-	 *	Common implementation - uses ::rangeSE method */
-	void regularRangeErrors(float quality,int levelEnd,float *squareErrors);
-};
-
-
+/// @}
 
 
 namespace MTypes {
@@ -214,6 +215,8 @@ namespace MTypes {
 }
 
 
+/** \addtogroup interfaces
+ *	@{ */
 
 
 /** Interface for modules that control how the image
@@ -251,17 +254,17 @@ struct ISquareRanges::RangeNode: public Block {
 
 	/// Encoders can store their data here, !not deleted! (use BulkAllocator)
 	mutable EncoderData *encoderData;
-	/// The level of the block, dimensions of the block are usually equal to 2^level
+	/// The smallest integer such that the block fits into square with side of length 2^level
 	int level;
 
 	/** Checks whether the block has regular shape (dimensions equal to 2^level) */
-	bool isRegular() const
+	bool isRegular() const 
 		{ return width()==powers[level] && height()==powers[level]; }
 protected:
 	/** Constructor - initializes ::encoderData to zero, to be used by derived classes */
 	RangeNode(const Block &block,int level_)
 	: Block(block), encoderData(0), level(level_) {}
-}; // RangeNode struct
+}; // ISquareRanges::RangeNode struct
 
 
 

@@ -6,9 +6,9 @@
 
 #include <QColor>
 
-/// \file colorModel.h
-
-/** Simple color transformer, currently supporting RGB and YCbCr color models */
+/// \ingroup modules
+/** Simple color transformer for affine models. It currently supports RGB and YCbCr
+ *	color models and allows to se quality multipliers for individual color channels. */
 class MColorModel: public IColorTransformer {
 
 	DECLARE_TypeInfo( MColorModel, "Color models"
@@ -98,7 +98,7 @@ inline QRgb getColor( const Real (*coeffs)[4], const Real *planes ) {
 	typedef Float2int<8,Real> Conv;
 	return qRgb( Conv::convertCheck(rgb[0]), Conv::convertCheck(rgb[1]), Conv::convertCheck(rgb[2]) );
 }
-/** Computes the gray level of a QRgb color in [0..255] interval */
+/** Computes the gray level of a QRgb color in 0-255 interval \relates MColorModel */
 inline int getGray(QRgb color) {
 	return Float2int<8,Real>::convert( getColor( color, MColorModel::YCbCrCoeffs[0] ) );
 }

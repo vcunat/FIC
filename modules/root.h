@@ -5,6 +5,7 @@
 
 #include <QThread> // ::idealThreadCount
 
+/// \ingroup modules
 /** The root module implementation. Controls the number of encoding threads,
  *	the color-transforming module (IColorTransformer)
  *	the pixel-shape-transforming module (IShapeTransformer), quality 0-100%,
@@ -44,7 +45,7 @@ class MRoot: public IRoot {
 		type:	settingInt(0,15,24,IntLog2)
 	} )
 
-private:
+protected:
 	/** Indices for settings */
 	enum Settings { MaxThreads, ModuleColor, ModuleShape, Quality, ModuleQuality
 	, DomainCountLog2 };
@@ -63,7 +64,7 @@ private:
 	typedef IColorTransformer::PlaneSettings PlaneSettings;
 	typedef IColorTransformer::PlaneList PlaneList;
 
-private:
+protected:
 //	Module's data
 	Mode myMode;///< the mode of the tree, returned by ::getMode
 	int width	///  zoomed width of the image

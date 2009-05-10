@@ -4,7 +4,7 @@
 #include "debug.h"
 
 
-/** Structure representing a rectangle */
+/** A simple structure representing a rectangle */
 struct Block {
 	short x0, y0, xend, yend;
 
@@ -160,7 +160,7 @@ template<class T,class I=PtrInt> struct MatrixSummer {
 	}
 }; // MatrixSummer class template
 
-/** Helper structuree for computing with value and squared sums at once */
+/** Helper structure for computing with value and squared sums at once */
 template<class Num> struct DoubleNum {
 	Num value, square;
 	
@@ -192,6 +192,7 @@ template<class Num> struct DoubleNum {
 }; // DoubleNum template struct
 
 
+/** Structure for a block of pixels - also contains summers and dimensions */
 template< class SumT, class PixT, class I=PtrInt >
 struct SummedMatrix {
 	typedef DoubleNum<SumT> BSumRes;
@@ -204,12 +205,11 @@ struct SummedMatrix {
 	bool sumsValid;				///< Indicates whether the summer values are valid
 	
 	/** Sets the size of #pixels, optionally allocates memory */
-	void setSize( I width_, I height_, bool allocPixels=true ) {
+	void setSize( I width_, I height_ ) {
 		free();
 		width= width_;
 		height= height_;
-		if (allocPixels)
-			pixels.allocate(width,height);
+		pixels.allocate(width,height);
 	}
 	/** Frees the memory */
 	void free(bool freePixels=true) {
@@ -249,7 +249,38 @@ struct SummedMatrix {
  *	to be used in walkOperate() and walkOperateCheckRotate() */
 namespace MatrixWalkers {
 
-	/** Base structure for walkers changing 'x' in the outer and 'y' in the inner loop */
+	/** Iterates two matrix iterators and performs an action.
+	 *	The loop is controled by the first iterator (\p checked) 
+	 *	and on every corresponding pair (a,b) \p oper(a,b) is invoked. Returns \p oper. */
+	template < class Check, class Unchecked, class Operator >
+	Operator walkOperate( Check checked, Unchecked unchecked, Operator oper ) {
+	//	outer cycle start - to be always run at least once
+		ASSERT( checked.outerCond() );
+		do {
+		//	inner initialization
+			checked.innerInit();
+			unchecked.innerInit();
+		// inner cycle start - to be always run at least once
+			ASSERT( checked.innerCond() );
+			do {
+			//	perform the operation and do the inner step for both iterators
+				oper( checked.get(), unchecked.get() );
+				checked.innerStep();
+				unchecked.innerStep();
+			} while ( checked.innerCond() );
+
+		//	signal the end of inner cycle to the operator and do the outer step for both iterators
+			oper.innerEnd();
+			checked.outerStep();
+			unchecked.outerStep();
+
+		} while ( checked.outerCond() );
+
+		return oper;
+	}
+
+
+	/** Base structure for walkers */
 	template<class T,class I> struct RotBase {
 	public:
 		typedef MatrixSlice<T,I> TMatrix;
@@ -344,6 +375,25 @@ namespace MatrixWalkers {
 		void outerStep() { --lastStart; }
 		void innerStep() { current.start+= current.colSkip; }
 	};
+
+	
+	/** A flavour of walkOperate() choosing the right Rotation_* iterator based on \p rotation */
+	template<class Check,class U,class Operator> 
+	inline Operator walkOperateCheckRotate( Check checked, Operator oper
+	, MatrixSlice<U> pixels2, const Block &block2, char rotation) {
+		typedef PtrInt I;
+		switch (rotation) {
+			case 0: return walkOperate( checked, Rotation_0  <U,I>(pixels2,block2) , oper );
+			case 1: return walkOperate( checked, Rotation_0_T<U,I>(pixels2,block2) , oper );
+			case 2: return walkOperate( checked, Rotation_1  <U,I>(pixels2,block2) , oper );
+			case 3: return walkOperate( checked, Rotation_1_T<U,I>(pixels2,block2) , oper );
+			case 4: return walkOperate( checked, Rotation_2  <U,I>(pixels2,block2) , oper );
+			case 5: return walkOperate( checked, Rotation_2_T<U,I>(pixels2,block2) , oper );
+			case 6: return walkOperate( checked, Rotation_3  <U,I>(pixels2,block2) , oper );
+			case 7: return walkOperate( checked, Rotation_3_T<U,I>(pixels2,block2) , oper );
+			default: ASSERT(false); return oper;
+		}
+	}
 	
 	
 	/** Performs manipulations with rotation codes 0-7 (dihedral group of order eight) */
@@ -426,54 +476,6 @@ namespace MatrixWalkers {
 	}; // CheckedImage class template
 	
 
-	/** Iterates two matrix iterators and performs an action.
-	 *	The loop is controled by the first iterator (\p checked) 
-	 *	and on every corresponding pair (a,b) \p oper(a,b) is invoked. Returns \p oper. */
-	template < class Check, class Unchecked, class Operator >
-	Operator walkOperate( Check checked, Unchecked unchecked, Operator oper ) {
-	//	outer cycle start - to be always run at least once
-		ASSERT( checked.outerCond() );
-		do {
-		//	inner initialization
-			checked.innerInit();
-			unchecked.innerInit();
-		// inner cycle start - to be always run at least once
-			ASSERT( checked.innerCond() );
-			do {
-			//	perform the operation and do the inner step for both iterators
-				oper( checked.get(), unchecked.get() );
-				checked.innerStep();
-				unchecked.innerStep();
-			} while ( checked.innerCond() );
-
-		//	signal the end of inner cycle to the operator and do the outer step for both iterators
-			oper.innerEnd();
-			checked.outerStep();
-			unchecked.outerStep();
-
-		} while ( checked.outerCond() );
-
-		return oper;
-	}
-
-	/** A flavour of walkOperate() choosing the right Rotation_* iterator based on \p rotation */
-	template<class Check,class U,class Operator> 
-	inline Operator walkOperateCheckRotate( Check checked, Operator oper
-	, MatrixSlice<U> pixels2, const Block &block2, char rotation) {
-		typedef PtrInt I;
-		switch (rotation) {
-		case 0: return walkOperate( checked, Rotation_0  <U,I>(pixels2,block2) , oper );
-		case 1: return walkOperate( checked, Rotation_0_T<U,I>(pixels2,block2) , oper );
-		case 2: return walkOperate( checked, Rotation_1  <U,I>(pixels2,block2) , oper );
-		case 3: return walkOperate( checked, Rotation_1_T<U,I>(pixels2,block2) , oper );
-		case 4: return walkOperate( checked, Rotation_2  <U,I>(pixels2,block2) , oper );
-		case 5: return walkOperate( checked, Rotation_2_T<U,I>(pixels2,block2) , oper );
-		case 6: return walkOperate( checked, Rotation_3  <U,I>(pixels2,block2) , oper );
-		case 7: return walkOperate( checked, Rotation_3_T<U,I>(pixels2,block2) , oper );
-		default: ASSERT(false); return oper;
-		}
-	}
-
 	/** A convenience base type for operators to use with walkOperate() */
 	struct OperatorBase {
 		void innerEnd() {}
@@ -493,7 +495,7 @@ namespace MatrixWalkers {
 			{ ASSERT(!lineSum); return totalSum; }
 	};
 
-	/** An operator performing a= (b+#toAdd)*#toMul */
+	/** An operator performing a= (b+::toAdd)*::toMul */
 	template<class T> struct AddMulCopy: public OperatorBase {
 		const T toAdd, toMul;
 
@@ -504,12 +506,14 @@ namespace MatrixWalkers {
 			{ res= (f+toAdd)*toMul; }
 	};
 
-	/** An operator performing a= b*#toMul+#toAdd and moving the result into [#min,#max] bounds */
+	/** An operator performing a= b*::toMul+::toAdd
+	 *	and moving the result into [::min,::max] bounds */
 	template<class T> struct MulAddCopyChecked: public OperatorBase {
 		const T toMul, toAdd, min, max;
 
 		MulAddCopyChecked(T mul,T add,T minVal,T maxVal)
 		: toMul(mul), toAdd(add), min(minVal), max(maxVal) {}
+		
 		template<class R1,class R2> void operator()(R1 &res,R2 f) const
 			{ res= checkBoundsFunc( min, f*toMul+toAdd, max ); }
 	};

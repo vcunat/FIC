@@ -11,7 +11,7 @@ int MSquarePixels::createJobs(const PlaneList &planes) {
 	for (PlaneList::const_iterator plane= planes.begin(); plane!=planes.end(); ++plane) {
 	//	convert the Plane into a PlaneBlock (containing the whole contents)
 		const IColorTransformer::PlaneSettings *plSet= plane->settings;
-		Job job;
+		PlaneBlock job;
 		job.width= plSet->width;
 		job.height= plSet->height;
 		job.pixels= plane->pixels;

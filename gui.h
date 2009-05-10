@@ -93,7 +93,7 @@ public:
 private:
 	/** Reloads the image, iterates and shows it (returns true on success) */
 	bool rezoom();
-	/** Gets the path of the last used directory (from #lastPath) */
+	/** Gets the path of the last used directory (from ::lastPath) */
 	QString lastDir() 
 		{ QDir dir(lastPath); return dir.cdUp() ? dir.path() : QDir::currentPath();	}
 #ifndef NDEBUG
