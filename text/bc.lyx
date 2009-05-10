@@ -2531,7 +2531,8 @@ key "Loki"
 Pro\InsetSpace ~
 správu modulů a vytváření nových slouží třída 
 \family typewriter
-ModuleFactory
+Module\SpecialChar \-
+Factory
 \family default
 .
  Ta má jedinou instanci, která při startu vytvoří prototyp pro každý typ
@@ -2576,7 +2577,8 @@ interfaces.cpp
  Každé z\InsetSpace ~
 nich je potomkem šablonované třídy 
 \family typewriter
-Interface
+Inter\SpecialChar \-
+face
 \family default
 , která zpřístupňuje seznam identifikátorů všech typů modulů implementujících
  toto rozhraní (kód je vygenerován ze seznamu 
@@ -2597,8 +2599,668 @@ typů parametrů modulů je podřízený
  Konfigurace komprese je tedy dána tímto stromem typů modulů spolu s\InsetSpace ~
 jejich
  dalším nastavením.
-\cleardoublepage
+\end_layout
 
+\begin_layout Section
+Kořenový modul
+\end_layout
+
+\begin_layout Subsubsection
+IRoot
+\end_layout
+
+\begin_layout Standard
+Rozhraní pro kořenový modul je navrženo jako jediný přístupový bod pro GUI
+ ke kompresi a dekompresi.
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Kořen včetně celého stromu může být ve třech různých stavech.
+ V\InsetSpace ~
+počátečním prázdném stavu strom neobsahuje žádný obrázek, ale může v\InsetSpace ~
+něm
+ docházet ke změnám konfigurace, včetně vyměňování podřízených modulů.
+\end_layout
+
+\begin_layout Standard
+Z\InsetSpace ~
+počátečního stavu může přejít do komprimovaného stavu úspěšným voláním
+ metody 
+\family typewriter
+encode
+\family default
+, které je předán bitmapový obrázek ke kompresi (třída knihoven Qt) a reference
+ na strukturu 
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Standard
+doplnit název?
+\end_layout
+
+\end_inset
+
+ umožňující komunikaci s\InsetSpace ~
+jiným vláknem během tohoto často zdlouhavého procesu.
+ Pokud nebylo možné kompresi dokončit (například kvůli přerušení uživatelem),
+ vrátí metoda 
+\family typewriter
+false
+\family default
+ a strom zůstává v\InsetSpace ~
+počátečním stavu.
+\end_layout
+
+\begin_layout Standard
+Druhou možností je přejít z\InsetSpace ~
+počátečního stavu do dekomprimovaného stavu úspěšným
+ voláním metody 
+\family typewriter
+from\SpecialChar \-
+Stream
+\family default
+, které je předán proud bytů obsahující komprimovanou podobu obrázku a míra
+ přiblížení pro dekompresi.
+ Rozměry dekomprimovaného obrázku jsou původní rozměry vynásobené 
+\begin_inset Formula $2^{i}$
+\end_inset
+
+ pro nezáporné 
+\begin_inset Formula $i$
+\end_inset
+
+.
+ Pokud nebylo možné dekódovat obrázek, například kvůli špatnému formátu
+ souboru, vrátí metoda 
+\family typewriter
+false
+\family default
+ a stav stromu se nezmění.
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dále rozhraní obsahuje metody pro ukládání obrázku v\InsetSpace ~
+komprimovaném stavu
+ do proudu bytů, pro provádění dekódovacích akcí (vyčištění obrázku nebo
+ iterování zobrazení), pro uložení momentálního stavu dekódování do bitmapového
+ obrázku (třída knihoven Qt) a pro ukládání a nahrávání nastavení celého
+ stromu.
+\end_layout
+
+\begin_layout Subsubsection
+MRoot
+\end_layout
+
+\begin_layout Standard
+Implementace kořenového modulu umožňuje jednotné nastavení nejzákladnějších
+ parametrů komprese a rozděluje fáze procesu mezi několik nezávislých modulů.
+\end_layout
+
+\begin_layout Standard
+Kvůli uživatelské přívětivosti bylo zvoleno nastavování kvality komprese
+ v\InsetSpace ~
+rozsahu 0--100.
+ Hodnota je pomocí zvoleného modulu s\InsetSpace ~
+rozhraním 
+\family typewriter
+IQua\SpecialChar \-
+lity\SpecialChar \-
+2SE
+\family default
+ konvertována na nejvyšší možnou čtvercovou chybu pro danou velikost cílového
+ bloku (modul je ve skutečnosti použit až v\InsetSpace ~
+podřízených modulech).
+\end_layout
+
+\begin_layout Standard
+Dále lze zvolit modul s\InsetSpace ~
+rozhraním 
+\family typewriter
+IColor\SpecialChar \-
+Trans\SpecialChar \-
+former
+\family default
+ starající se o\InsetSpace ~
+barvy v\InsetSpace ~
+obrázku, modul s\InsetSpace ~
+rozhraním 
+\family typewriter
+IShape\SpecialChar \-
+Trans\SpecialChar \-
+former
+\family default
+ zajišťující další fáze komprese a také maximální množství zdrojových bloků,
+ protože je to velmi důležitý parametr pro všechny metody fraktální komprese.
+\end_layout
+
+\begin_layout Section
+Konverze kvality
+\end_layout
+
+\begin_layout Subsubsection
+IQuality2SE
+\end_layout
+
+\begin_layout Standard
+Rozhraní pro konverzi kvality\InsetSpace ~
+--- z\InsetSpace ~
+velikosti cílového bloku a nastavení kvality
+ spočítá odpovídající maximální přípustnou čtvercovou odchylku.
+\end_layout
+
+\begin_layout Subsubsection
+MQuality2SE
+\end_layout
+
+\begin_layout Standard
+Třída 
+\family typewriter
+MQuality2SE_std
+\family default
+ je triviální implementací rozhraní pro konverzi kvality, která používá
+ čtvercovou odchylku nezávislou na velikostech bloků.
+ Přípustná odchylka je pro nejvyšší kvalitu nulová a pak roste přibližně
+ exponenciálně (exponenciální funkce je mírně posunutá tak, aby procházela
+ nulou při kvalitě 
+\begin_inset Formula $100\%$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Bylo by sice přirozenější mít pro danou kvalitu místo čtvercové chyby konstantní
+ její podíl s\InsetSpace ~
+počtem pixelů bloku.
+ To by vedlo k\InsetSpace ~
+větší variabilitě velikostí bloků a ve většině případů i k\InsetSpace ~
+nepatrně
+ lepší objektivní kvalitě (při stejném kompresním poměru), ale protože v\InsetSpace ~
+tomto
+ projektu nebyly implementovány žádné vyhlazovací techniky, objevily by
+ se u\InsetSpace ~
+velkých bloků velmi výrazné hrany, takže by se subjektivní kvalita
+ zhoršila.
+ Pro porovnání je implementována i tato možnost v\InsetSpace ~
+podobě modulu 
+\family typewriter
+MQuality2SE_alt
+\family default
+.
+\end_layout
+
+\begin_layout Section
+Zpracování barev
+\end_layout
+
+\begin_layout Subsubsection
+IColorTransformer
+\end_layout
+
+\begin_layout Standard
+Rozhraní převádí práci s\InsetSpace ~
+jedním barevným obrázkem na práci s\InsetSpace ~
+několika jednobarevný
+mi.
+ Barevné obrázky jsou reprezentované třídou 
+\family typewriter
+QImage
+\family default
+ z\InsetSpace ~
+knihoven Qt, jednobarevné obrázky jsou zde definovány jako matice pixelů
+ spolu s\InsetSpace ~
+ukazatelem na strukturu obsahující některé parametry (rozměry, přiblížen
+í, kvalita komprese a modul pro její konverzi, maximální počet zdrojových
+ bloků).
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Standard
+rozepsat? aktualizační struktura? diskuze o volbě reprezentace?
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Metody rozhraní umožňují vytvoření jednobarevných obrázků pro dané parametry
+ a barevný obrázek, zpětné složení do barevného obrázku, uložení nebo načtení
+ případných dat modulu.
+\end_layout
+
+\begin_layout Subsubsection
+MColorModel
+\end_layout
+
+\begin_layout Standard
+Třída 
+\family typewriter
+MColorModel
+\family default
+ je triviální implementací rozhraní pro zpracování barev, která nabízí práci
+ v\InsetSpace ~
+modelech RGB a YCbCr.
+ Protože je citlivost oka na jednotlivé barevné složky různá, je navíc umožněno
+ zvolit pro každou ze složek číslo z\InsetSpace ~
+intervalu 
+\begin_inset Formula $\left[0;1\right]$
+\end_inset
+
+, kterým se vynásobí původní kvalita komprese.
+\end_layout
+
+\begin_layout Section
+Počítání s maticemi pixelů
+\begin_inset LatexCommand label
+name "Implementace/Matice"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+V\InsetSpace ~
+souboru 
+\family sans
+matrixutil.h
+\family default
+ je definováno mnoho generických struktur a několik funkcí pro jednoduchou
+ a efektivní práci s\InsetSpace ~
+maticemi.
+ Tyto nástroje jsou pak použity v\InsetSpace ~
+mnoha modulech a jejich rozhraních.
+\end_layout
+
+\begin_layout Subsubsection
+Reprezentace pixelů
+\end_layout
+
+\begin_layout Standard
+Při ukládání digitálních obrázků se pro reprezentaci pixelu nejčastěji používá
+ celé číslo v\InsetSpace ~
+rozsahu 0--255.
+ Tento způsob je paměťově velmi úsporný, ale pro tento projekt se ukázal
+ jako příliš omezující.
+ Například už při převodu do jiných barevných modelů by mohlo docházet k\InsetSpace ~
+výrazněj
+ším ztrátám informace.
+ Proto byla zvolena reprezentace pomocí čísla s\InsetSpace ~
+plovoucí řádovou čárkou z\InsetSpace ~
+interval
+u 
+\begin_inset Formula $\left[0;1\right]$
+\end_inset
+
+.
+ Pro reprezentaci běžných pixelů postačují čísla s\InsetSpace ~
+
+\emph on
+jednoduchou přesností
+\emph default
+, ale pro většinu složitějších výpočtů a mezivýsledků jsou použita čísla
+ s\InsetSpace ~
+
+\emph on
+dvojitou přesností
+\emph default
+, aby byly minimalizovány zaokrouhlovací chyby.
+\end_layout
+
+\begin_layout Subsubsection
+Reprezentace matic
+\end_layout
+
+\begin_layout Standard
+Matice jsou reprezentovány tak, že jsou jejich prvky po sloupcích uloženy
+ za sebe do pole.
+ Vlastní práci s\InsetSpace ~
+maticemi zajišťuje šablona 
+\family typewriter
+Matrix\SpecialChar \-
+Slice
+\family default
+ (parametrizovaná typem prvků matice), která uchovává ukazatel na levý horní
+ prvek a počet kroků nutných k\InsetSpace ~
+přechodu na další sloupec.
+ Navenek poskytuje přirozené indexování, konverzi na instanci pouze pro
+ čtení a další operace.
+\end_layout
+
+\begin_layout Standard
+Oproti reprezentacím založených na ukládání jednotlivých řádkových nebo
+ sloupcových vektorů má toto řešení mnoho výhod.
+ Má menší nároky na spotřebu paměťi a na její alokátor, průchody jsou překladače
+m lépe optimalizovatelné a je možné vytvářet odkazy na podmatice.
+\end_layout
+
+\begin_layout Subsubsection
+Rychlé sčítání podmatic
+\end_layout
+
+\begin_layout Standard
+Některé moduly potřebují znát součty hodnot pixelů a jejich druhých mocnin
+ na blocích se kterými pracují.
+ Pro tyto účely je používána jednoduchá struktura (implementovaná v\InsetSpace ~
+šabloně
+ 
+\family typewriter
+Matrix\SpecialChar \-
+Summer
+\family default
+), která si předpočítá součty pro všechny obdélníky začínající v\InsetSpace ~
+levém horním
+ rohu a pak může spočítat součet libovolného obdélníka pouze ze čtyř rohových
+ hodnot.
+\end_layout
+
+\begin_layout Standard
+Šablona 
+\family typewriter
+Matrix\SpecialChar \-
+Summer
+\family default
+ není používána samostaně, ale jako součást šablony 
+\family typewriter
+Summed\SpecialChar \-
+Matrix
+\family default
+, která kromě matice vlastních hodnot obsahuje její rozměry a šablonu 
+\family typewriter
+Matrix\SpecialChar \-
+Summer
+\family default
+ pro rychlý výpočet součtů hodnot a jejich druhých mocnin.
+ Konkrétně je definována struktura 
+\family typewriter
+Summed\SpecialChar \-
+Pixels
+\family default
+, která je jen instanciací šablony 
+\family typewriter
+Summed\SpecialChar \-
+Matrix
+\family default
+ pro již zmíněné typy hodnot pixelů používané v\InsetSpace ~
+projektu.
+\end_layout
+
+\begin_layout Subsubsection
+Iterace na matici
+\end_layout
+
+\begin_layout Standard
+Na mnoha místech v\InsetSpace ~
+projektu je potřeba současně procházet dvě stejně velké
+ obdélníkové podmatice a provádět nějakou činnost s\InsetSpace ~
+příslušnými dvojicemi
+ jejich prvků, navíc je často nutné počítat s\InsetSpace ~
+libovolnou z\InsetSpace ~
+8 vzájemných afinních
+ transformací podmatic.
+ Opakovaně ručně psané cykly by velmi znepřehledňovaly kód a byly by potencionál
+ním zdrojem chyb.
+ Proto je zde použit jiný přístup využívající generické programovaní a optimaliz
+ace kompilátoru.
+\end_layout
+
+\begin_layout Standard
+Základem celé techniky je funkce 
+\family typewriter
+walk\SpecialChar \-
+Operate
+\family default
+, která má tři parametry\InsetSpace ~
+--- řídící iterátor, druhý (podřízený) iterátor
+ a operátor.
+ Funkce pak pouze najednou posouvá oba iterátory a na odpovídajících dvojicích
+ prvků volá operátor.
+ Díky tomu, že se jednotlivé části cyklu takto oddělí, je možné konkrétní
+ alternativy implementovat a pak libovolně kombinovat.
+\end_layout
+
+\begin_layout Standard
+Iterátory musí podporovat metody pro získání aktuálního prvku (nejlépe formou
+ reference), posun na další prvek, posun na další seznam (řádek/sloupec),
+ zahájení práce se seznamem a v\InsetSpace ~
+případě řídícího iterátoru také test konce
+ seznamu a test úplného konce iterace.
+ Operátor pak musí být schopný volání s\InsetSpace ~
+parametry prvků prvního a druhého
+ iterátoru.
+ Díky tomu, že funkce
+\family typewriter
+ walk\SpecialChar \-
+Operate
+\family default
+ vrací koncový stav operátoru, lze jako operátor použít i strukturu, která
+ do sebe sbírá nějaká data.
+\end_layout
+
+\begin_layout Standard
+V\InsetSpace ~
+souboru jsou přímo implementovány iterátory pro osm afinních zobrazení
+ a také přetížení funkce 
+\family typewriter
+walk\SpecialChar \-
+Operate
+\family default
+, které má v\InsetSpace ~
+parametrech místo druhého iterátoru číslo afinní transformace,
+ podle kterého vybere příslušný iterátor.
+ Dále je zde iterátor pro třídu QImage používaný pro konverzi na matici
+ a také několik jednoduchých operátorů pro výpočet součtu vzájemných součinů
+ a pro afinní transformaci hodnot.
+\end_layout
+
+\begin_layout Section
+Změny tvarů
+\end_layout
+
+\begin_layout Subsubsection
+IShapeTransformer
+\end_layout
+
+\begin_layout Standard
+Rozhraní pro 
+\begin_inset Quotes gld
+\end_inset
+
+transformaci tvarů
+\begin_inset Quotes grd
+\end_inset
+
+ zajišťuje kompresi a dekompresi jednobarevných obrázků (definovaných v\InsetSpace ~
+rozhraní
+ 
+\family typewriter
+IColor\SpecialChar \-
+Trans\SpecialChar \-
+former
+\family default
+).
+ Je zamýšleno jako rozcestí pro několik druhů voleb, například pro možnost
+ přechodu k\InsetSpace ~
+šestiúhelníkovému tvaru pixelů.
+ 
+\end_layout
+
+\begin_layout Standard
+Ze souboru vstupujících obrázků je vytvořeno několik nezávislých 
+\emph on
+úkolů
+\emph default
+, pro které lze provádět výpočty vzájemně paralelně.
+ Rozhraní poskytuje metody pro provádění komprese a dekódovacích akcí pro
+ jednotlivé 
+\emph on
+úkoly
+\emph default
+ a také ukládání do proudu bytů a zpětné nahrávání.
+ Data všech 
+\emph on
+úkolů
+\emph default
+ jsou ukládána po fázích, což umožňuje implementaci progresivního dekódování,
+ přestože pro něj momentálně není v\InsetSpace ~
+kořenovém modulu podpora.
+\end_layout
+
+\begin_layout Subsubsection
+MSquarePixels
+\end_layout
+
+\begin_layout Standard
+Třída 
+\family typewriter
+MSquarePixels
+\family default
+ je implementací rozhraní pro 
+\begin_inset Quotes gld
+\end_inset
+
+transformaci tvarů
+\begin_inset Quotes grd
+\end_inset
+
+ zůstávající u\InsetSpace ~
+čtvercového tvaru pixelů, umožňující navíc dělení velkých
+ obrázků na menší, nezávisle (případně i\InsetSpace ~
+paralelně) zpracovávané.
+ Pro vlastní práci s
+\emph on
+\InsetSpace ~
+úkoly
+\emph default
+ jsou použity zvolené moduly pro dělení na cílové bloky, pro výběr množiny
+ zdrojových bloků a pro hledání optimálních zobrazení.
+\end_layout
+
+\begin_layout Standard
+Dělení jednobarevných obrázků na 
+\emph on
+úkoly
+\emph default
+ vychází z\InsetSpace ~
+předaných bloků a probíhá rekurzivně.
+ Každý blok, který je větší než nastavená mez, je rozdělen podle delší souřadnic
+e tak, že poměr velikostí je nejvýše dvojnásobný a navíc nově vzniklá strana
+ levé/horní části má délku mocniny 2.
+\end_layout
+
+\begin_layout Subsubsection
+\begin_inset Quotes gld
+\end_inset
+
+Čtvercové
+\begin_inset Quotes grd
+\end_inset
+
+ moduly
+\end_layout
+
+\begin_layout Standard
+Na třídu 
+\family typewriter
+MSquarePixels
+\family default
+ navazuje několik rozhraní a modulů obsahující v\InsetSpace ~
+názvu slovo 
+\emph on
+square
+\emph default
+.
+ Všechny pracují pouze s\InsetSpace ~
+klasickou (čtvercovou) topologií pixelů a upřednostňují
+ čtvercové bloky o\InsetSpace ~
+hraně délky mocniny 2.
+\end_layout
+
+\begin_layout Standard
+Moduly s\InsetSpace ~
+rozhraními 
+\family typewriter
+ISquare\SpecialChar \-
+Ranges
+\family default
+, 
+\family typewriter
+ISquare\SpecialChar \-
+Domains
+\family default
+ a 
+\family typewriter
+ISquare\SpecialChar \-
+Encoder
+\family default
+ (definovanými níže) spolupracující na jenom 
+\emph on
+úkolu
+\emph default
+ často potřebují vzájemně volat své metody a také sdílet některá další data.
+ Proto je definována struktura 
+\family typewriter
+Plane\SpecialChar \-
+Block
+\family default
+ s\InsetSpace ~
+instancí pro každý 
+\emph on
+úkol
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+Plane\SpecialChar \-
+Block
+\family default
+ obsahuje vlastní jednobarevnou část obrázku zpracovávnou 
+\emph on
+úkolem
+\emph default
+, schovanou v\InsetSpace ~
+podstruktuře 
+\family typewriter
+Summed\SpecialChar \-
+Pixels
+\family default
+ (zmíněné v\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Implementace/Matice"
+
+\end_inset
+
+).
+ Dále obsahuje ukazatele na moduly spolupracující na 
+\emph on
+úkolu
+\emph default
+ a na strukturu s\InsetSpace ~
+některými nastaveními (definovanou v\InsetSpace ~
+rozhraní 
+\family typewriter
+IColor\SpecialChar \-
+Trans\SpecialChar \-
+former
+\family default
+).
 \end_layout
 
 \begin_layout Chapter*
