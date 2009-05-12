@@ -42,6 +42,7 @@ QWidget* MSquarePixels::debugModule(QPixmap &pixmap,const QPoint &click) {
 	ASSERT( !planeList.empty() );
 //	create a tab widget
 	QTabWidget *tabs= new QTabWidget;
+	bool isInside= pixmap.rect().contains(click);
 //	fill one tab for every job by three sub-tabs with the three modules
 	for (int i=0; i<(int)jobs.size(); ++i) {
 		PlaneBlock &job= jobs[i];
@@ -52,16 +53,19 @@ QWidget* MSquarePixels::debugModule(QPixmap &pixmap,const QPoint &click) {
 			find_if( planeList.begin(), planeList.end(), PlaneFinder(job.settings) );
 		ASSERT( plane != planeList.end() );
 	//	find out the position of the job in the plane
-		int xShift=-1, yShift;
-		plane->pixels.getPosition(job.pixels.start,xShift,yShift);
-		ASSERT(xShift>=0);
-		QPoint jobClick= click-QPoint(xShift,yShift);
-		if ( jobClick.x()<0 || jobClick.y()<0 
-		|| jobClick.x()>=job.width || jobClick.y()>=job.height )
-			continue;
+		QPoint jobClick= click;
+		if (isInside) {
+			int xShift=-1, yShift;
+			plane->pixels.getPosition(job.pixels.start,xShift,yShift);
+			ASSERT(xShift>=0);
+			jobClick-= QPoint(xShift,yShift);
+			if ( jobClick.x()<0 || jobClick.y()<0 
+			|| jobClick.x()>=job.width || jobClick.y()>=job.height )
+				continue;
+		}
 	//	make children do the work	
 		QTabWidget *tabs2= new QTabWidget;
-		tabs2->addTab( job.encoder->debugModule(pixmap,jobClick) , "Encoder" );
+		tabs2->addTab( job.encoder->debugModule(pixmap,jobClick), "Encoder" );
 		tabs2->addTab( job.ranges->debugModule(pixmap,jobClick), "Ranges" );
 		tabs2->addTab( job.domains->debugModule(pixmap,jobClick), "Domains" );
 		
@@ -258,11 +262,18 @@ QWidget* MQuadTree::debugModule(QPixmap &pixmap,const QPoint &click) {
 	if ( pixmap.rect().contains(click) ) { // info about range clicked on
 		const ISquareRanges::RangeNode &range= *findRangeOnPoint( fringe, click );
 		
+		Real rSum, r2Sum;
+		planeBlock->summers_makeValid(); /// \todo only approximation
+		planeBlock->getSums(range).unpack(rSum,r2Sum);
+		float estSE= estimateSE(rSum,r2Sum,range.size(),range.level);
+		
 		QString msg= QString("Level: %1\nRegular: %2\n"
-			"Top-left corner: %3 %4\nWidth: %5\nHeight: %6")
+			"Top-left corner: %3 %4\nWidth: %5\nHeight: %6\n"
+			"Estimated SE: %7 - %8% of the encoded value")
 			.arg(range.level) .arg(range.isRegular())
 			.arg(range.x0) .arg(range.y0)
-			.arg(range.width()) .arg(range.height());
+			.arg(range.width()) .arg(range.height())
+			.arg(estSE) .arg(100*estSE/range.encoderData->bestSE);
 		return new QLabel(msg);
 		
 	} else { // provide general info

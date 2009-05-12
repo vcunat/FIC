@@ -9,7 +9,7 @@ namespace NOSPACE {
 
 /** Routines for computing with T[length] number fields */
 namespace FieldMath {
-	/** Calls transformer(x,y) for every x from [i1..iEnd1) and corresponding y from [i2..) */
+	/** Calls transformer(x,y) for every x from [i1;iEnd1) and corresponding y from [i2;?) */
 	template<class I1,class I2,class Transf>
 	Transf transform2( I1 i1, I1 iEnd1, I2 i2, Transf transformer ) {
 		for (; i1!=iEnd1; ++i1,++i2)
@@ -372,8 +372,8 @@ protected:
 			transform2( nowData, nowData+length, boundsRes, BoundsExpander() );
 		}
 	}
-	/** Like #getBounds, but it only works on vectors with indices from [\p beginIDs..\p endIDs)
-	 *	instead of [0..#count), \p boundsRes should be preallocated to store the result */
+	/** Like #getBounds, but it only works on vectors with indices from [\p beginIDs;\p endIDs)
+	 *	instead of [0;#count), \p boundsRes should be preallocated to store the result */
 	void getBounds(const int *beginIDs,const int *endIDs,Bounds boundsRes) const {
 		using namespace FieldMath;
 		ASSERT(endIDs>beginIDs);

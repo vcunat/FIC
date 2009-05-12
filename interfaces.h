@@ -228,7 +228,8 @@ struct ISquareRanges: public Interface<ISquareRanges> {
 	typedef std::vector<RangeNode*> RangeList;
 
 	/** Starts encoding, calls modules in the passed structure.
-	 *	It should update UpdateInfo continually by the count of encoded pixels. */
+	 *	It should update UpdateInfo continually by the count of encoded pixels.
+	 *	\throws std::exception when cancelled via UpdateInfo or on other errors */
 	virtual void encode(const PlaneBlock &toEncode) =0;
 	/** Returns a reference to the current range-block list */
 	virtual const RangeList& getRangeList() const =0;
@@ -323,7 +324,7 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 		int indexBegin ///	the beginning of domain indices in "this pool" on "this level"
 		, density; ///<		the domain density (step size) in "this pool" on "this level"
 	};
-	/* TODO */
+	/** \todo documentation */
 	typedef std::vector< std::vector<LevelPoolInfo> > LevelPoolInfos;
 
 	/** Initializes the module for encoding or decoding of a PlaneBlock */
@@ -418,7 +419,7 @@ struct IStdEncPredictor::NewPredictorData {
 
 /** Integer sequences (de)coder interface */
 struct IIntCodec: public Interface<IIntCodec> {
-	/** Sets the number of possible symbols to work with from now on data: [0..possib-1] */
+	/** Sets the number of possible symbols to work with from now on data: [0;possib-1] */
 	virtual void setPossibilities(int possib) =0;
 	/** Codes data and sends them into a stream */
 	virtual void encode(std::vector<int> &data,std::ostream &file) =0;

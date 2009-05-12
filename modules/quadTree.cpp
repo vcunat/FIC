@@ -22,6 +22,7 @@ struct MQuadTree::NodeExtremes {
 
 void MQuadTree::encode(const PlaneBlock &toEncode) {
 	ASSERT( !root && fringe.empty() && toEncode.ranges==this && toEncode.isReady() );
+	DEBUG_ONLY( planeBlock= &toEncode; )
 	zoom= 0;
 //	if allowed, prepare accelerators for heuristic dividing
 	if ( heuristicAllowed() )
@@ -72,6 +73,7 @@ void MQuadTree::Node::disconnect() {
 		prev= prev->brother;
 	prev->brother= this->brother;
 }
+
 void MQuadTree::Node::deleteSons() {
 // 	delete all sons
 	if (!son)
@@ -84,6 +86,7 @@ void MQuadTree::Node::deleteSons() {
     } while (now!=son);
     son= 0;
 }
+
 void MQuadTree::Node::divide() {
 //	check against dividing already divided self
 	ASSERT(!son);
@@ -106,6 +109,7 @@ void MQuadTree::Node::divide() {
 //  son finish
 	son->brother= last;
 }
+
 void MQuadTree::Node::getHilbertList(RangeList &list,char start,char cw) {
 	if (!son) {
 		list.push_back(this);
@@ -113,7 +117,7 @@ void MQuadTree::Node::getHilbertList(RangeList &list,char start,char cw) {
 	}
 	Node *now= son
 	, *sons[4]= {0,0,0,0};
-//	categorize sons by their position into sons[0..3] - clockwise from top-left
+//	categorize sons by their position into sons[0-3] - clockwise from top-left
 	do {
 		int pos= 0;
 		if ( now->x0 > x0 )
@@ -137,6 +141,7 @@ void MQuadTree::Node::getHilbertList(RangeList &list,char start,char cw) {
 	if (sons[pos])
 		sons[pos]->getHilbertList(list,start+2,-cw);
 }
+
 int MQuadTree::Node::getSonCount() const {
 	if (!son)
 		return 0;
@@ -148,6 +153,7 @@ int MQuadTree::Node::getSonCount() const {
 	}
 	return count;
 }
+
 bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 	if (*toEncode.settings->updateInfo.terminate)
 		throw exception();
@@ -164,7 +170,7 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 		return false;
 	}
 
-//	TODO: regular ranges optimization
+///	\todo regular ranges optimization
 	float maxSE= plSet.moduleQ2SE->rangeSE( plSet.quality, pixCount );
 	bool tryEncode= true;
 
@@ -175,7 +181,7 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 		if ( mod->heuristicAllowed() ) {
 			Real rSum, r2Sum;
 			toEncode.getSums(*this).unpack(rSum,r2Sum);
-			if ( ldexp( r2Sum-sqr(rSum)/pixCount, -4 ) * level > maxSE )
+			if ( estimateSE(rSum,r2Sum,pixCount,level) > maxSE )
 				tryEncode= false;
 		}
 	//	if we decided to try to encode, do it and return if the quality is sufficient
@@ -213,6 +219,7 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 		return true;
 	}
 }
+
 void MQuadTree::Node::toFile(BitWriter &file,NodeExtremes extremes) {
 	if (son) {
 	//  Node is divided
@@ -228,6 +235,7 @@ void MQuadTree::Node::toFile(BitWriter &file,NodeExtremes extremes) {
 		if (level>extremes.min)
 			file.putBits(0,1);
 }
+
 void MQuadTree::Node::fromFile(BitReader &file,NodeExtremes extremes) {
 //	should I be divided ?
 	bool div= level>extremes.max || ( level>extremes.min && file.getBits(1) ) ;

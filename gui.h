@@ -224,9 +224,9 @@ private:
 		instance->progress+= increment;
 		instance->updateProgress= true;
 	}
-	//	TODO: Should we provide a thread-safe version?
-	//	q_atomic_fetch_and_add_acquire_int(&instance->progress,increment);
-	//	instance->setValue((volatile int&)instance->progress);
+	///	\todo Should we provide a thread-safe version?
+	///	q_atomic_fetch_and_add_acquire_int(&instance->progress,increment);
+	///	instance->setValue((volatile int&)instance->progress);
 
 private slots:
 	/** Slot for catching cancel-pressed signal */

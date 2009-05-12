@@ -7,7 +7,9 @@
 class BitWriter;
 class BitReader;
 
-/** Module dividing range blocks with a quad-tree, can use heuristic dividing */
+/// \ingroup modules
+/** Module dividing range blocks with a quad-tree.
+ *	It can use heuristic dividing, minimum and maximum block level can be specified. */
 class MQuadTree: public ISquareRanges {
 	DECLARE_debugModule;
 
@@ -27,24 +29,28 @@ class MQuadTree: public ISquareRanges {
 				"with bad quality and try to merge ranges with good quality",
 		type:	settingCombo("no\nyes",1)
 	} )
+	/// \todo better heuristics via changes in ISquareEncoder interface
+	
+protected:
+	class Node;	// forward declaration, derived from RangeNode
+	friend class Node;
 
-private:
+protected:
 	/** Indices for settings */
 	enum Settings { MinLevel, MaxLevel, HeuristicAllowed };
 //	Settings-retrieval methods
 	int minLevel()			{ return settingsInt(MinLevel); }
 	int maxLevel()			{ return settingsInt(MaxLevel); }
 	bool heuristicAllowed()	{ return settingsInt(HeuristicAllowed); }
+
 protected:
-	class Node;	// forward declaration, derived from RangeNode
-	friend class Node;
-private:
 //	Module's data
 	Node *root;						///< Quad-tree's root node
 	std::vector<RangeNode*> fringe;	///< List of quad-tree's leaves
 	int zoom;						///< The zoom
 #ifndef NDEBUG /* things needed for showing debugging info */
 	int badDivides, triedMerges, badTries;
+	const PlaneBlock *planeBlock;
 #endif
 
 protected:
@@ -53,7 +59,7 @@ protected:
 	MQuadTree()
 	: root(0), zoom(-1)
 	#ifndef NDEBUG
-	, badDivides(0), triedMerges(0), badTries(0)
+	, badDivides(0), triedMerges(0), badTries(0), planeBlock(0)
 	#endif
 		{}
 	/** Only deletes #root */
@@ -72,6 +78,9 @@ public:
 	void writeData(std::ostream &file);
 	void readData_buildRanges(std::istream &file,const PlaneBlock &block);
 ///	@}
+protected:
+	static float estimateSE(Real rSum,Real r2Sum,int pixCount,int level)
+		{ return ldexp( r2Sum-sqr(rSum)/pixCount, -4 ) * level; }
 protected:
 	struct NodeExtremes;
 	/** Class used for tree nodes in the quad-tree structure */

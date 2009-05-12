@@ -4,6 +4,8 @@
 #include "headers.h"
 #include "debug.h"
 
+/// \file
+
 /** Field containing 2^i on i-th position, defined in modules.cpp */
 extern const int powers[31];
 
@@ -62,7 +64,7 @@ template<class T> inline T checkBoundsFunc(T low,T value,T high) {
 	return value;
 }
 
-/** Struct for conversion between [0..1] Real and 0..(2^power-1) integer */
+/** Struct for conversion between 0-1 Real and 0-(2^power-1) integer */
 template<int power,class R> struct Float2int {
 	static R convert(int i)
 		{ return std::ldexp( i+R(0.5), -power ); }	
@@ -100,7 +102,7 @@ template <class T> inline T* constCast(const T* toCast) { return const_cast<T*>(
 /** Automatic version of const_cast for references */
 template <class T> inline T& constCast(const T& toCast)	{ return const_cast<T&>(toCast); }
 
-/** Checking a condition - throws an exception if false */
+/** Checking a condition - throws std::exception if false */
 inline void checkThrow(bool check) { if (!check) throw std::exception(); }
 
 
@@ -168,7 +170,7 @@ public:
 		nextIndex+=count;
 		return result;
 	}
-};
+}; // BulkAllocator class
 
 /** Structure providing support for progress update and interruption (used for encoding) */
 struct UpdateInfo {
