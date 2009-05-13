@@ -53,16 +53,16 @@ void MStdDomains::initPools(const PlaneBlock &planeBlock) {
 	height=	rShift( planeBlock.height, zoom );
 //	checks some things
 	ASSERT( width>0 && height>0 && this && settings && pools.empty() );
-	if ( min(width,height) < MinDomSize*2 )
+	if ( min(width,height)/2 < MinDomSize )
 	//	no domains (too small)
 		return;
 //	create the first set of domain pools for standard, horizontal and vertical domains
 	if ( settingsInt(DomPortion_Standard) )
-		pools.push_back(Pool( width/2, height/2, DomPortion_Standard, 1, 0.25f, zoom ));
-	if ( settingsInt(DomPortion_Horiz) )
-		pools.push_back(Pool( width/2, height, DomPortion_Horiz, 1, 0.5f, zoom ));
-	if ( settingsInt(DomPortion_Vert) )
-		pools.push_back(Pool( width, height/2, DomPortion_Vert, 1, 0.5f, zoom ));
+		pools.push_back(Pool( width/2, height/2, DomPortion_Standard, 1, 0.25, zoom ));
+	if ( settingsInt(DomPortion_Horiz) && width/3<MinDomSize )
+		pools.push_back(Pool( width/3, height*2/3, DomPortion_Horiz, 1, 2.0/9.0, zoom ));
+	if ( settingsInt(DomPortion_Vert) && height/3<MinDomSize )
+		pools.push_back(Pool( width*2/3, height/3, DomPortion_Vert, 1, 2.0/9.0, zoom ));
 //	create the first set of domain pools for diamond domains
 	if ( settingsInt(DomPortion_Diamond) ) {
 	//	get longer and shorter dimension
@@ -348,22 +348,60 @@ namespace MatrixWalkers {
 	struct HorizShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
 		typedef Rotation_0<T,I> Base;
 		
+		bool addHalf; ///< Adds half a pixel to the current position
+		
 		HorizShrinker(TMatrix matrix)
-		: Base( matrix, Block(0,0,0,0) ) {}
+		: Base( matrix, Block(0,0,0,0) ), addHalf(false) {}
 
-		T get() { return ldexp( current.start[0] + current.start[current.colSkip], -1 ); }
-		void outerStep() { Base::outerStep(); Base::outerStep(); }
+		T get() {
+			Real groups[2]; // groups[0]= sum of a full line, groups[1]= sum of a half line
+			T *cs= current.start;
+			groups[addHalf]= cs[0] + cs[current.colSkip] + cs[current.colSkip*2];
+			++cs;
+			groups[!addHalf]= cs[0] + cs[current.colSkip] + cs[current.colSkip*2];
+			return (ldexp(groups[0],1)+groups[1]) * Real(1/9);
+		}
+		void innerStep() {
+		//	do a 1.5-pixel step
+			Base::innerStep();
+			if (addHalf)
+				Base::innerStep();
+			addHalf= !addHalf;
+		}
+		void outerStep() {
+			for (int i=0; i<3; ++i)
+				Base::outerStep();
+		}
 	};
 	
 	template<class T,class I=PtrInt>
 	struct VertShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
 		typedef Rotation_0<T,I> Base;
 		
+		bool addHalf; ///< Adds half a pixel to the current position
+		
 		VertShrinker(TMatrix matrix)
 		: Base( matrix, Block(0,0,0,0) ) {}
 
-		T get() { return ldexp( current.start[0] + current.start[1], -1 ); }
-		void innerStep() { Base::innerStep(); Base::innerStep(); }
+		T get() { 
+			Real groups[2]; // groups[0]= sum of a full line, groups[1]= sum of a half line
+			T *cs= current.start;
+			groups[addHalf]= cs[0] + cs[1] + cs[2];
+			cs+= current.colSkip;
+			groups[!addHalf]= cs[0] + cs[1] + cs[2];
+			return (ldexp(groups[0],1)+groups[1]) * Real(1/9);
+		}
+		void innerStep() { 
+			for (int i=0; i<3; ++i)
+				Base::innerStep(); 
+		}
+		void outerStep() {
+		//	do a 1.5-pixel step
+			Base::outerStep();
+			if (addHalf)
+				Base::outerStep();
+			addHalf= !addHalf;
+		}
 	};
 	
 	template<class T,class I=PtrInt> 

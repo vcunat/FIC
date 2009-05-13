@@ -3,7 +3,11 @@
 
 #include "../interfaces.h"
 
-/** Standard domain-pool generator */
+/** Standard domain-pool generator. Available settings:
+ *	- the decrease of max. number of domains per level
+ *	- how many of more-downscaled domains to use
+ *	- how big portions of standard, horizontal, vertical and diamond domains to use
+ */
 class MStdDomains: public ISquareDomains {
 	DECLARE_debugModule;
 
@@ -49,7 +53,7 @@ protected:
 	, DomPortion_Standard, DomPortion_Diamond, DomPortion_Horiz, DomPortion_Vert  };
 
 //	Module's data
-	/** The list of domain pools, pool IDs are the indices, the Pool::pixels are owned */
+	/// The list of domain pools, pool IDs are the indices, the Pool::pixels are owned
 	PoolList pools;
 	int width	///  Width of the original image (not zoomed)
 	, height	///  Height of the original image (not zoomed)
