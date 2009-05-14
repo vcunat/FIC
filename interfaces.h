@@ -288,7 +288,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 	 *	returns unzoomed densities */
 	virtual std::vector<short> getLevelDensities(int level,int stdDomCountLog2) =0;
 
-	/** Writes all data needed for reconstruction that don't depend on the input (=settings) */
+	/** Writes all settings (data needed for reconstruction that don't depend on the input) */
 	virtual void writeSettings(std::ostream &file) =0;
 	/** Reads all settings (like ::writeSettings) */
 	virtual void readSettings(std::istream &file) =0;

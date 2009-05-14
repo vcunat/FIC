@@ -120,7 +120,7 @@ protected:
 		void toFile(BitWriter &file,NodeExtremes extremes);
 		/** Loads sons from a stream (extremes contain the min.\ and max.\ block level) */
 		void fromFile(BitReader &file,NodeExtremes extremes);
-	};
+	}; // MQuadTree::Node class
 };
 
 #endif // QUADTREE_HEADER_

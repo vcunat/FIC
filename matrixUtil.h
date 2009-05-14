@@ -517,6 +517,6 @@ namespace MatrixWalkers {
 		template<class R1,class R2> void operator()(R1 &res,R2 f) const
 			{ res= checkBoundsFunc( min, f*toMul+toAdd, max ); }
 	};
-}
+} // MatrixWalkers namespace
 
 #endif // MATRIXUTIL_HEADER_

@@ -81,8 +81,8 @@ namespace NOSPACE {
 		int rotCounts[9];
 		vector<int> poolCounts, levelCounts;
 		
-		RangeInfoAccumulator(const ISquareDomains::PoolList &poolList)
-		: pools( &poolList ), poolCounts( pools->size(), 0 ), levelCounts( 10, 0 ) {
+		RangeInfoAccumulator(const ISquareDomains::PoolList &poolList,int maxLevel)
+		: pools( &poolList ), poolCounts( pools->size(), 0 ), levelCounts( maxLevel+1, 0 ) {
 			for (int i=0; i<9; ++i)
 				rotCounts[i]= 0;
 		}
@@ -200,7 +200,8 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 		);
 		
 	} else { // provide general info
-		RangeInfoAccumulator info( planeBlock->domains->getPools() );
+		int maxLevel= 1 +log2ceil( max(planeBlock->width,planeBlock->height) );
+		RangeInfoAccumulator info( planeBlock->domains->getPools(), maxLevel );
 		info= for_each( ranges.begin(), ranges.end(), info );
 		
 		{// create a label with various counts info
@@ -221,8 +222,6 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 		//	create the label and add it to the layout
 			layout->addWidget( new QLabel(msg) );
 		}
-		
-		int maxLevel= 1 +log2ceil( max(planeBlock->width,planeBlock->height) );
 		
 		QTableWidget *table= new QTableWidget( maxLevel-2, 3 );
 		table->setHorizontalHeaderLabels
@@ -292,6 +291,25 @@ QWidget* MQuadTree::debugModule(QPixmap &pixmap,const QPoint &click) {
 } // MQuadTree::debugModule method
 
 
+/*
+#include <QImage>
+void debugPool(const ISquareDomains::Pool &pool) {
+	//	create and fill the image
+	QImage image( pool.width, pool.height, QImage::Format_RGB32 );
+
+	for (int y=0; y<pool.height; ++y) {
+		QRgb *line= (QRgb*)image.scanLine(y);
+		for (int x=0; x<pool.width; ++x) {
+			int c= checkBoundsFunc( 0, (int)(pool.pixels[x][y]*256), 255 );
+			line[x]= qRgb(c,c,c);
+		}
+	}
+
+	image.save("pool.png");
+
+	return;
+}
+*/
 QWidget* MStdDomains::debugModule(QPixmap &pixmap,const QPoint &click) {
 	
 	if ( pixmap.rect().contains(click) ) { // info about range clicked on

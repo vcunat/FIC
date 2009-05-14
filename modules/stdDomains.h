@@ -3,6 +3,7 @@
 
 #include "../interfaces.h"
 
+/// \ingroup modules
 /** Standard domain-pool generator. Available settings:
  *	- the decrease of max. number of domains per level
  *	- how many of more-downscaled domains to use

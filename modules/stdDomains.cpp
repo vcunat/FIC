@@ -5,29 +5,6 @@ enum { MinDomSize=8, MinRngSize=4 };
 
 using namespace std;
 
-
-/*
-#include <QImage>
-void debugPool(const ISquareDomains::Pool &pool) {
-	//	create and fill the image
-	QImage image( pool.width, pool.height, QImage::Format_RGB32 );
-
-	for (int y=0; y<pool.height; ++y) {
-		QRgb *line= (QRgb*)image.scanLine(y);
-		for (int x=0; x<pool.width; ++x) {
-			int c= checkBoundsFunc( 0, (int)(pool.pixels[x][y]*256), 255 );
-			line[x]= qRgb(c,c,c);
-		}
-	}
-
-	image.save("pool.png");
-
-	return;
-}
-*/
-
-
-
 namespace NOSPACE {
 	/** Pool ordering according to Pool::type (primary key) and Pool::level (secondary) */
 	struct PoolTypeLevelComparator {
@@ -39,7 +16,7 @@ namespace NOSPACE {
 				return a.level<b.level;
 		}
 	};
-	/* All unzoomed sizes */
+	/* All sizes are unzoomed */
 	inline static int minSizeNeededForDiamond() 
 		{ return 2*MinDomSize-1; }
 	inline static int getDiamondSize(int fromSize)
@@ -81,7 +58,7 @@ void MStdDomains::initPools(const PlaneBlock &planeBlock) {
 //	if allowed, create more downscaled domains (at most 256 pools)
 	if ( settingsInt(MultiDownScaling) )
 		for (Uint i=0; i<pools.size() && i<256; ++i) {
-			const Pool &pool=pools[i];
+			const Pool &pool= pools[i];
 		//	compute new dimensions and add the pool if it's big enough	
 			int w= rShift<int>(pool.width,zoom+1);
 			int h= rShift<int>(pool.height,zoom+1);
@@ -132,8 +109,7 @@ void MStdDomains::fillPixelsInPools(PlaneBlock &planeBlock) {
 			}
 		//	we have the right procedure -> fill the first pool
 			ASSERT( begin->level == 1 );
-			shrinkProc( planeBlock.pixels, begin->pixels
-			, begin->width, begin->height );
+			shrinkProc( planeBlock.pixels, begin->pixels, begin->width, begin->height );
 		//	fill the rest (in the same-type interval)
 			while (++begin != end) {
 				ASSERT( halfShrinkOK(begin-1,begin,zoom) );
@@ -177,7 +153,7 @@ void MStdDomains::fillPixelsInPools(PlaneBlock &planeBlock) {
 namespace NOSPACE {
 	/** Computes the ideal domain density for pool, level and max.\ domain count,
 	 *	the density is push_back-ed, returns the generated domain count (used once)
-	 *	\relates MStandardDomains */
+	 *	\relates MStdDomains */
 	inline static int bestDomainDensity( PoolIt pool, int level, int maxCount, int zoom
 	, vector<short> &result) {
 		level-= zoom;
@@ -189,42 +165,9 @@ namespace NOSPACE {
 			result.push_back(0);
 			return 0;
 		}
-	/*
-		int dens= 1+(int)floor(sqrt( float(wms*hms)/maxCount ));
-		int wdd= wms/dens, hdd= hms/dens;
-		int count= (wdd+1)*(hdd+1);
-		if (count>maxCount) {
-			int wdiff= wms-wdd*dens, hdiff= hms-hdd*dens;
-			dens+= 1+(int)(min( wdiff/float(wdd), hdiff/float(hdd) ));
-			count= (wms/dens+1)*(hms/dens+1);
-			ASSERT(count<=maxCount)x;
-		}
-		result.push_back(dens);
-		return count;
-	*/
-	/*
-		int xLowCount= (int)floor( sqrt(maxCount*wms/(double)hms) -1 );
-		int yLowCount= (int)floor( sqrt(maxCount*hms/(double)wms) -1 );
-		int dens= (int)ceil(max( wms/(double)xLowCount, hms/(double)yLowCount ));
-
-		if (count<=maxCount) {
-			dens= (short)floor(min( wms/xHighCount, hms/yHighCount ));
-			ASSERT( wms/dens==xHighCount && hms/dens==yHighCount );
-		} else {
-			dens= (short)floor(max( wms/xHighCount, hms/yHighCount ));
-			count= (wms/dens+1)*(hms/dens+1);
-
-			if (count>maxCount) {
-				dens= (short)floor(min( wms/xLowCount, hms/yLowCount ));
-				count= (xLowCount+1)*(yLowCount+1);
-				ASSERT( wms/dens==xLowCount && hms/dens==yLowCount );
-			}
-		}
-	*/
-		//int dens= (int)ceil(sqrt( wms*hms/(double)maxCount ));
 		int dens;
 		if (maxCount>1) {
-			double temp= (  wms+hms+sqrt( sqr<double>(wms+hms) +double(4*wms*hms)*(maxCount-1) )  )
+			Real temp= (  wms+hms+sqrt( sqr<Real>(wms+hms) +Real(4*wms*hms)*(maxCount-1) )  )
 				/ ( 2*(maxCount-1) );
 			dens= (int)ceil(temp);
 		} else
@@ -242,7 +185,7 @@ namespace NOSPACE {
 	/** Generates (\p results.push_back) densities for domains on level \p level for
 	 *	all pools of one type. It distributes at most \p maxCount domains among
 	 *	the pools' scale-levels in one of three ways (\p divType)
-	 *	and returns the number of generated domains \relates MStandardDomains */
+	 *	and returns the number of generated domains \relates MStdDomains */
 	static int divideDomsInType( PoolIt begin, PoolIt end, int maxCount, int level
 	, char divType, int zoom, vector<short> &results ) {
 		ASSERT( begin!=end && divType>=0 && divType<=2 );
@@ -427,29 +370,29 @@ namespace NOSPACE {
 	using namespace MatrixWalkers;
 
 	/** Performs a simple 50\%^2 image shrink (dimensions belong to the destination)
-	 *	\relates MStandardDomains */
+	 *	\relates MStdDomains */
 	void shrinkToHalf( CSMatrix src, SMatrix dest, int width, int height ) {
 		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
 		, HalfShrinker<const SReal>(src), ReverseAssigner() );
 	}
 	
-	/** Performs a simple 50\% image horizontal shrink (dimensions belong to the destination)
-	 *	\relates MStandardDomains */
+	/** Performs a simple 33\%x66\% image horizontal shrink
+	 *	(dimensions belong to the destination) \relates MStdDomains */
 	void shrinkHorizontally( CSMatrix src, SMatrix dest, int width, int height ) {
 		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
 		, HorizShrinker<const SReal>(src), ReverseAssigner() );
 	}
 	
-	/** Performs a simple 50\% image vertical shrink (dimensions belong to the destination)
-	 *	\relates MStandardDomains */
+	/** Performs a simple 66\%x33\% image vertical shrink
+	 *	(dimensions belong to the destination) \relates MStdDomains */
 	void shrinkVertically( CSMatrix src, SMatrix dest, int width, int height ) {
 		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
 		, VertShrinker<const SReal>(src), ReverseAssigner() );
 	}
 	
-	/** Performs 50\% shrink with 45-degree anticlockwise rotation (\p side - the length of
-	 *	the destination square; \p sx0, \p sy0 - the top-left of the enclosing source square)
-	 *	\relates MStandardDomains */
+	/** Performs 50\% shrink with 45-degree anticlockwise rotation
+	 *	(\p side - the length of the destination square; 
+	 *	\p sx0, \p sy0 - the top-left of the enclosing source square) \relates MStdDomains */
 	void shrinkToDiamond( CSMatrix src, SMatrix dest, int side ) {
 		walkOperate( Checked<SReal>(dest,Block(0,0,side,side))
 		, DiamShrinker<const SReal>(src,side), ReverseAssigner() );
