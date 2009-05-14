@@ -9,7 +9,7 @@
 %\usepackage{a4wide} % nastavuje standardní evropský formát stránek A4
 %\usepackage{index} % nutno použít v případě tvorby rejstříku balíčkem makeindex
 %\usepackage{fancybox} % umožňuje pokročilé rámečkování :-)
-\usepackage[final]{graphicx} % nezbytné pro standardní vkládání obrázků do dokumentu
+%\usepackage[final]{graphicx} % nezbytné pro standardní vkládání obrázků do dokumentu
 
 \usepackage[bindingoffset=1.5cm]{geometry} % nastavení dané velikosti okrajů
 %[outer=2.5cm,inner=4cm,top=2cm,bottom=3cm]
@@ -3593,16 +3593,6 @@ závislosti na
 
 \begin_layout Paragraph
 Druhy zdrojových bloků
-\begin_inset Note Note
-status open
-
-\begin_layout Standard
-dokreslit obrázky
-\end_layout
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard
@@ -3702,7 +3692,14 @@ pruhovanému
 \end_inset
 
  Zmenšování probíhá výpočtem váženého průměru, kde jeden pixel vzniká ze
- tří celých a tří polovin pixelů.
+ tří celých a tří polovin pixelů, viz obrázek\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Implementace/Domény/Náčrtek"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -3741,7 +3738,84 @@ tvaru pootočeného čtverce.
 \emph on
 kosočtvercovými
 \emph default
- maticemi rozmístěnými tak, aby nevznikaly identické zdrojové bloky.
+ maticemi rozmístěnými tak, aby nevznikaly identické zdrojové bloky, viz
+ obrázek\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Implementace/Domény/Náčrtek"
+
+\end_inset
+
+.
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "Implementace/Domény/Náčrtek"
+
+\end_inset
+
+Schéma zmenšování pro 
+\emph on
+klasické
+\emph default
+, 
+\emph on
+svislé
+\emph default
+ a 
+\emph on
+kosočtvercové
+\emph default
+ zdrojové bloky.
+ Tenké čáry značí původní pixely, čárkované značí jejich pokrytí pixely
+ po zmenšení.
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename dom_regular.eps
+	width 4cm
+
+\end_inset
+
+
+\hfill
+
+\begin_inset Graphics
+	filename dom_hv.eps
+	width 4cm
+
+\end_inset
+
+
+\hfill
+
+\begin_inset Graphics
+	filename dom_diamond.eps
+	width 4cm
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Paragraph
