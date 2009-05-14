@@ -759,7 +759,7 @@ ní, na druhou stranu díky tomu pro větší bloky nedává metrika výsledky
  Možnosti použití alternativních metrik jsou zmíněny v\InsetSpace ~
 
 \begin_inset LatexCommand vref
-reference "Články-Zlepšení_vzhledu-Další_metody"
+reference "Články/Zlepšení_vzhledu/Další_metody"
 
 \end_inset
 
@@ -810,6 +810,12 @@ encoderu>.
 
 \begin_layout Subsection
 Rychlá konvergence
+\begin_inset LatexCommand label
+name "PIFS/Rychlá_konvergence"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -2141,7 +2147,7 @@ něm.
 \begin_layout Subsubsection
 Další metody
 \begin_inset LatexCommand label
-name "Články-Zlepšení_vzhledu-Další_metody"
+name "Články/Zlepšení_vzhledu/Další_metody"
 
 \end_inset
 
@@ -3187,6 +3193,28 @@ square
 klasickou (čtvercovou) topologií pixelů a upřednostňují
  čtvercové bloky o\InsetSpace ~
 hraně délky mocniny 2.
+ Často se pro libovolný blok definuje jeho 
+\emph on
+úroveň
+\emph default
+, což je nejmenší 
+\begin_inset Formula $i$
+\end_inset
+
+ takové, že oba rozměry jsou nejvýše 
+\begin_inset Formula $2^{i}$
+\end_inset
+
+.
+ Nejmenší povolená 
+\emph on
+úroveň
+\emph default
+ je 2, což nejčastěji odpovídá blokům velikosti 
+\begin_inset Formula $4\times4$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -3261,6 +3289,487 @@ Trans\SpecialChar \-
 former
 \family default
 ).
+\end_layout
+
+\begin_layout Section
+Dělení na cílové bloky
+\end_layout
+
+\begin_layout Subsubsection
+ISquareRanges
+\end_layout
+
+\begin_layout Standard
+Rozhraní pro dělení na obdélníkové cílové bloky definuje základní strukturu
+ 
+\family typewriter
+Range\SpecialChar \-
+Block
+\family default
+ pro reprezentaci cílového bloku, která obsahuje souřadnice jeho okrajů,
+ přepočítanou 
+\emph on
+úroveň
+\emph default
+ bloku a přídavný ukazatel, do kterého si spolupracující modul s\InsetSpace ~
+rozhraním
+ 
+\family typewriter
+ISquare\SpecialChar \-
+Encoder
+\family default
+ může ukládat pomocná data
+\family typewriter
+.
+
+\family default
+ Moduly implementující rozhraní mohou používat libovolný typ odvozený z\InsetSpace ~
+
+\family typewriter
+Range\SpecialChar \-
+Block
+\family default
+, ale ostatním je viditelná pouze část definovaná v\InsetSpace ~
+rozhraní.
+\end_layout
+
+\begin_layout Standard
+Kromě klasických metod pro ukládání a nahrávání nastavení a dalších dat
+ je zde metoda pro získání seznamu ukazatelů na bloky, na které je 
+\emph on
+úkol
+\emph default
+ rozdělen, a metoda pro zpracování celého 
+\emph on
+úkolu
+\emph default
+.
+ Při jejím provádění je celý blok rozdělen na cílové bloky a pomocí volání
+ metod modulů spolupracujících na úkolu je pro každý z\InsetSpace ~
+nich nalezeno optimální
+ zobrazení.
+ Tyto činnosti jsou spojeny proto, že schopnost nalézt dostatečně dobrá
+ zobrazení typicky ovlivňuje jemnost rozdělení na cílové bloky.
+\end_layout
+
+\begin_layout Subsubsection
+MQuadTree
+\end_layout
+
+\begin_layout Standard
+Třída 
+\family typewriter
+MQuadTree
+\family default
+ implementuje klasický čtyřstromový algoritmus s\InsetSpace ~
+několika drobnými rozšířeními.
+ Je možné zvolit zda se má používat heuristické dělení a také nejmenší a
+ největší povolenou velikost bloku.
+\end_layout
+
+\begin_layout Paragraph
+Způsob dělení
+\end_layout
+
+\begin_layout Standard
+Původní algoritmus počítá pouze s\InsetSpace ~
+obrázky tvaru čtverce o\InsetSpace ~
+hraně mocniny 2,
+ což by zde nebylo dostačující.
+ Naštěstí stačí pracovat s\InsetSpace ~
+bloky stejným způsobem, jen v\InsetSpace ~
+některých případech
+ jsou jejich skutečné rozměry menší, protože jsou 
+\begin_inset Quotes gld
+\end_inset
+
+ořízlé
+\begin_inset Quotes grd
+\end_inset
+
+ okrajem obrázku.
+ Je pouze potřeba navíc ošetřit případy, kdy by při dělení na čtvrtiny vznikly
+ prázdné bloky.
+\end_layout
+
+\begin_layout Standard
+Dělení čtyřstromem se řídí jednoduchým principem.
+ Na začátku je celý vstupní obrázek jeden cílový blok.
+ Pak se rekurzivně pro každý blok zkouší nalézt dostatečně dobré zobrazení
+ a v\InsetSpace ~
+případě neúspěchu je blok rozdělen na čtyři o\InsetSpace ~
+poloviční velikosti.
+ Samozřejmě, bloky větší než nastavené maximum jsou rozděleny bez hledání
+ zobrazení a u\InsetSpace ~
+bloků o\InsetSpace ~
+velikosti nastaveného minima se modul vždy spokojí
+ s\InsetSpace ~
+nejlepším nalezeným zobrazením.
+\end_layout
+
+\begin_layout Paragraph
+Heuristika
+\end_layout
+
+\begin_layout Standard
+Byla zde jedna velká nevýhoda\InsetSpace ~
+--- původní algoritmus slepě zkoušel hledat
+ zobrazení i pro bloky, pro které bylo zřejmé, že nemůže uspět.
+ Proto zde může být dělení prováděno podle jednoduché heuristiky, která
+ rychle odhadne (z\InsetSpace ~
+rozptylu hodnot v\InsetSpace ~
+bloku) chybu optimálního zobrazení.
+ Pokud pro nějaký blok bylo hledáno dostatečně dobré zobrazení, ale neúspěšně,
+ je blok dále dělen původním algoritmem.
+ Pokud byl nějaký blok naopak spekulativně rozdělen a všem jeho následníkům
+ se podařilo najít optimální zobrazení, pak se zkusí hledat zobrazení i
+ pro něj a v\InsetSpace ~
+případě úspěchu je zpětně sloučen (to může způsobit kaskádu
+ slučování).
+ 
+\end_layout
+
+\begin_layout Standard
+Heuristické dělení dává stejný výsledek za předpokladu (který platí téměř
+ vždy), že pokud je možné nalézt dostatečně dobré zobrazení pro blok, pak
+ je to možné i pro jeho čtvrtiny.
+ V\InsetSpace ~
+praxi představuje tato technika významné urychlení, přestože není heuristika
+ moc přesná, například chyby bloků s\InsetSpace ~
+
+\begin_inset Quotes gld
+\end_inset
+
+náhodným
+\begin_inset Quotes grd
+\end_inset
+
+ šumem jsou podhodnoceny a naopak chyby bloků s\InsetSpace ~
+jedním pozvolným nebo ostrým
+ přechodem výrazně nadhodnoceny.
+ Urychlení nastává zejména proto, že přeskočené hledání zobrazení pro velké
+ bloky bývá časově velmi náročné, často kvůli nutnosti stavby složitých
+ datových struktur.
+\end_layout
+
+\begin_layout Standard
+Bylo by možné heuristiku ještě výrazně zpřesnit pomocí rozšíření rozhraní
+ 
+\family typewriter
+ISquare\SpecialChar \-
+Encoder
+\family default
+ o\InsetSpace ~
+příslušnou odhadující metodu.
+ Například implementace založené na mnohadimenzionálních prostorových datových
+ strukturách by pak mohly odhadovat optimální chybu mnohem přesněji a také
+ velmi rychle.
+\end_layout
+
+\begin_layout Paragraph
+Způsob uložení
+\end_layout
+
+\begin_layout Standard
+Efektivita uložení do proudu bytů je při kompresi obrazu velmi důležitá.
+ Proto je nejprve uložena největší a nejmenší použitá 
+\emph on
+úroveň
+\emph default
+ (tedy ne nastavené limity) a potom při rekurzivním průchodu čtyřstromem
+ je pro blok uložen jeden bit nastavený podle toho, zda blok byl nebo nebyl
+ rozdělen.
+ Bit se ukládá pouze pro bloky, kdy není možné informaci získat už z\InsetSpace ~
+uložené
+ minimální a maximální 
+\emph on
+úrovně
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+Cílové bloky jsou vraceny z\InsetSpace ~
+rozhraní v\InsetSpace ~
+pořadí jejich výskytu na Hilbertově
+ křivce.
+ Tím jsou sníženy vzájemné vzdálenosti po sobě jdoucích bloků a tedy i zefektivn
+ěny diferenční metody používané v\InsetSpace ~
+implementaci rozhraní 
+\family typewriter
+ISquare\SpecialChar \-
+Encoder
+\family default
+ <odkaz>.
+\end_layout
+
+\begin_layout Section
+Výběr množiny zrojových bloků
+\end_layout
+
+\begin_layout Subsubsection
+ISquareDomains
+\end_layout
+
+\begin_layout Standard
+Vytváření rozhraní vybírajícího množinu zdrojových bloků bylo obtížné.
+ Zdrojové bloky lze volit mnoha různými způsoby.
+ Pokud by ale bylo rozhraní příliš obecné, mohla by se velmi výrazně snížit
+ rychlost komprese a dekomprese.
+\end_layout
+
+\begin_layout Standard
+Rozhraní poskytuje několik matic pro cílové bloky, jejichž obsah je už zmenšen
+ tak, že zbytek zobrazení mezi zdrojovými a cílovými bloky nemění rozměry.
+ Poskytované zdrojové bloky jsou vždy čtverce o\InsetSpace ~
+hranách délky mocniny 2,
+ které jsou pravidelně rozmístěny po matici.
+ Omezení velikostí zdrojových bloků ve skutečnosti neomezuje velikosti cílových
+ bloků, protože modul pro zobrazování (s\InsetSpace ~
+rozhraním 
+\family typewriter
+ISquare\SpecialChar \-
+Encoder
+\family default
+) nemusí využít celý blok.
+ Pro každou z\InsetSpace ~
+těchto matic a pro každou 
+\emph on
+úroveň
+\emph default
+ bloku je rozhraním poskytnut rozestup - počet pixelů, o\InsetSpace ~
+který jsou vzdáleny
+ odpovídající rohy zdrojových bloků v\InsetSpace ~
+obou souřadnicích.
+\end_layout
+
+\begin_layout Standard
+Metody rozhraní umožňují inicializaci modulu pro daný 
+\emph on
+úkol
+\emph default
+, aktualizaci hodnot pixelů v\InsetSpace ~
+maticích pro zdrojové bloky (ze stavu 
+\emph on
+úkolu
+\emph default
+), vrácení seznamu těchto matic, ukládání a nahrávaní nastavení a dalších
+ dat.
+ Také je zde metoda pro zjištění hustoty pokrytí zdrojovými bloky pro všechny
+ matice, danou úroveň a daný maximální počet zdrojových bloků.
+\end_layout
+
+\begin_layout Subsubsection
+MStdDomains
+\end_layout
+
+\begin_layout Standard
+Třída 
+\family typewriter
+MStdDomains
+\family default
+ implementuje rozhraní 
+\family typewriter
+ISquare\SpecialChar \-
+Domains
+\family default
+ a nabízí mnoho možností nastavení.
+\end_layout
+
+\begin_layout Standard
+Předně lze regulovat maximální množství zdrojových bloků v\InsetSpace ~
+závislosti na
+ jejich 
+\emph on
+úrovni
+\emph default
+.
+ Původní maximum platí pro 
+\emph on
+úroveň
+\emph default
+ 2, pro vyšší lze nastavit míru poklesu (koeficient geometrické řady).
+\end_layout
+
+\begin_layout Paragraph
+Druhy zdrojových bloků
+\begin_inset Note Note
+status open
+
+\begin_layout Standard
+dokreslit obrázky
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Třída umožňuje vytvářet několik druhů matic pro zdrojové bloky.
+ Základní matice jsou čtyř druhů: 
+\emph on
+klasické
+\emph default
+, 
+\emph on
+vodorovné
+\emph default
+, 
+\emph on
+svislé
+\emph default
+ a 
+\emph on
+kosočtvercové
+\emph default
+.
+ Vzájemné poměry množství zdrojových bloků generovaných z\InsetSpace ~
+matic jednotlivých
+ druhů může uživatel nastavit (přibližně).
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Klasické
+\emph default
+ matice vznikají zmenšením celého vstupu v\InsetSpace ~
+obou směrech na polovinu pomocí
+ průměrování hodnot pixelů po čtveřicích.
+ To je ve fraktální kompresi nejčastější metoda, protože je velmi jednoduchá,
+ rychlá a dává v\InsetSpace ~
+praxi dobré výsledky.
+ Další způsoby zmenšování jsou inspirovány především článkem 
+\begin_inset LatexCommand cite
+key "Aoue04"
+
+\end_inset
+
+, ale podobné návrhy lze najít i na mnoha jiných místech.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Vodorovné
+\emph default
+ a 
+\emph on
+svislé
+\emph default
+ matice vznikají nerovnoměrným zmenšením celého vstupu v\InsetSpace ~
+obou směrech\InsetSpace ~
+---
+ v\InsetSpace ~
+jednom směru probíhá zmenšení na 
+\begin_inset Formula $\nicefrac{1}{3}$
+\end_inset
+
+ a v\InsetSpace ~
+druhém směru na 
+\begin_inset Formula $\nicefrac{2}{3}$
+\end_inset
+
+.
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+Ve starší implementaci projektu probíhalo zmenšování pouze v\InsetSpace ~
+jednom směru,
+ což těsně porušovalo podmínku kontraktivity z\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "PIFS/Rychlá_konvergence"
+
+\end_inset
+
+.
+ Při okrajovém nastavení pak bylo snadno možné dosáhnout obrázku, kde některé
+ bloky konvergovaly velmi pomalu a k\InsetSpace ~
+chybnému vodorovně nebo svisle 
+\begin_inset Quotes gld
+\end_inset
+
+pruhovanému
+\begin_inset Quotes grd
+\end_inset
+
+ výsledku.
+\end_layout
+
+\end_inset
+
+ Zmenšování probíhá výpočtem váženého průměru, kde jeden pixel vzniká ze
+ tří celých a tří polovin pixelů.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Kosočtvercové
+\emph default
+ matice vznikají otáčením částí vstupu o\InsetSpace ~
+
+\begin_inset Formula $45^{\circ}$
+\end_inset
+
+ proti směru hodinových ručiček.
+ Přes svůj název (odvozený z\InsetSpace ~
+anglického 
+\emph on
+diamond
+\emph default
+ z\InsetSpace ~
+
+\begin_inset LatexCommand cite
+key "Aoue04"
+
+\end_inset
+
+) vznikají z\InsetSpace ~
+části o\InsetSpace ~
+tvaru pootočeného čtverce.
+ Zde je použit jednoduchý způsob zmenšování\InsetSpace ~
+--- středy nových pixelů leží
+ na některých rozích vstupních pixelů a jejich hodnota je spočtena jako
+ průměr hodnot čtveřice vstupních pixelů sdílející daný roh.
+ Při čtvercovém vstupu se takto využije jen polovina jeho plochy a pokud
+ by poměr stran byl větší, bylo by to ještě méně.
+ Proto jsou takové vstupy pokryty více 
+\emph on
+kosočtvercovými
+\emph default
+ maticemi rozmístěnými tak, aby nevznikaly identické zdrojové bloky.
+\end_layout
+
+\begin_layout Paragraph
+Vícenásobné zmenšování
+\end_layout
+
+\begin_layout Standard
+Ze základních matic lze ještě vytvářet další, ještě více zmenšené (a z\InsetSpace ~
+nich
+ rekurzivně další).
+ Použit je stejný algoritmus jako pro vytváření 
+\emph on
+klasických
+\emph default
+ matic.
+ Lze navíc zvolit, jak velké množství zdrojových bloků bude z\InsetSpace ~
+těchto matic
+ vytvořeno\InsetSpace ~
+--- buď stejné ze všech zmenšujících kroků (přestože ty více zmenšené
+ mají menší plochu) nebo se bude s\InsetSpace ~
+každým krokem množství vytvořených bloků
+ zmenšovat na polovinu nebo se vícenásobné zmenšování nepoužije.
+\end_layout
+
+\begin_layout Standard
+Kvůli obecnosti návrhu rozhraní se i při dekompresi nezobrazují bloky rovnou,
+ ale přes tyto matice, takže počet matic pro zdrojové bloky významně ovlivňuje
+ rychlost dekomprese (na rozdíl od komprese, kde nehraje znatelnou roli).
 \end_layout
 
 \begin_layout Chapter*
