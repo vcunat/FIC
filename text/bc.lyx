@@ -402,6 +402,12 @@ tom, že na rozdíl od klasických IFS
 
 \begin_layout Section
 PIFS
+\begin_inset LatexCommand label
+name "PIFS"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -624,7 +630,7 @@ Postačí, aby existovalo
 \begin_inset Formula $\vec{z}\in R_{i}$
 \end_inset
 
- a platí 
+ a platí
 \begin_inset Formula \[
 \left|\left(F_{i}g_{1}\right)\left(\vec{z}\right)-\left(F_{i}g_{2}\right)\left(\vec{z}\right)\right|\quad\le\quad s\left|\left(g_{1}\circ w_{i}\right)\left(\vec{z}\right)-\left(g_{2}\circ w_{i}\right)\left(\vec{z}\right)\right|\quad\leq\quad s\, d_{s\mathrm{up}}\left(g_{1},g_{2}\right)\]
 
@@ -722,35 +728,10 @@ Volba optimálního zobrazení
 \end_inset
 
  je silně závislá na použité metrice.
- Ve fraktální kompresi se téměř výhradně používá RMSE metrika (zde uvedena
- v\InsetSpace ~
-nebvyklé spojité podobě):
-\begin_inset Note Note
-status open
-
-\begin_layout Standard
-existence integrálu, metoda nejmenších čtverců
-\end_layout
-
-\end_inset
-
-
-\begin_inset Formula \[
-d_{\mathrm{RMSE}}\left(g_{1},g_{2}\right)=\sqrt{\frac{\iintop_{R_{i}}\left[g_{1}\left(x,y\right)-g_{2}\left(x,y\right)\right]^{2}\,\mathrm{d}x\mathrm{\, d}y}{\iintop_{R_{i}}\,\mathrm{d}x\mathrm{\, d}y}}\]
-
-\end_inset
-
-Její hlavní výhody i nevýhody jsou dány tím, že se vždy berou v\InsetSpace ~
+ Ve fraktální kompresi se téměř výhradně používá RMSE metrika.
+ Její hlavní výhody i nevýhody jsou dány tím, že se vždy berou v\InsetSpace ~
 úvahu pouze
- sobě odpovídající body 
-\begin_inset Formula $g_{1}\left(x,y\right)$
-\end_inset
-
- a 
-\begin_inset Formula $g_{2}\left(x,y\right)$
-\end_inset
-
-.
+ sobě odpovídající body.
  To umožnuje velmi jednoduchou a rychlou práci s\InsetSpace ~
 metrikou a také optimalizaci
  v\InsetSpace ~
@@ -767,7 +748,14 @@ reference "Články/Zlepšení_vzhledu/Další_metody"
 \end_layout
 
 \begin_layout Standard
-Při použití RMSE existuje právě jedno optimální 
+Jak je ukázáno v\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Chyba-zobrazení"
+
+\end_inset
+
+ pro diskrétní případ, při použití RMSE existuje právě jedno optimální 
 \begin_inset Formula $c_{i}$
 \end_inset
 
@@ -802,10 +790,6 @@ Při použití RMSE existuje právě jedno optimální
 aproximaci konstantním blokem, volba lineárního
  koeficientu by byla libovolná a výsledek vždy horší, než při výběru jakéhokoliv
  nekonstantního zdrojového bloku.
- Podrobnosti jsou pro diskrétní případ rozebrány v\InsetSpace ~
-části <odkaz na kapitolu
- o\InsetSpace ~
-encoderu>.
 \end_layout
 
 \begin_layout Subsection
@@ -878,7 +862,11 @@ drobnou modifikaci barevného zobrazení.
 \end_inset
 
 .
- Nové zobrazení pak znormalizuje barvu zdrojového bloku 
+ Nové zobrazení 
+\begin_inset Formula $\tilde{c_{i}}$
+\end_inset
+
+ pak znormalizuje barvu zdrojového bloku 
 \begin_inset Formula $D_{i}$
 \end_inset
 
@@ -895,29 +883,16 @@ drobnou modifikaci barevného zobrazení.
 \end_layout
 
 \begin_layout Standard
-Formálně bude zobrazení vypadat 
-\begin_inset Formula \[
-\bar{c_{i}}\left(z\right)=p_{i}\left(z-\frac{\iintop_{D_{i}}\bar{g}\left(x,y\right)\,\mathrm{d}x\mathrm{\, d}y}{\iintop_{D_{i}}\,\mathrm{d}x\mathrm{\, d}y}\right)+\frac{\iintop_{R_{i}}g\left(x,y\right)\,\mathrm{d}x\mathrm{\, d}y}{\iintop_{R_{i}}\,\mathrm{d}x\mathrm{\, d}y}\mbox{,}\]
-
+Je důležité, že zatímco přičítaná průměrná barva 
+\begin_inset Formula $R_{i}$
 \end_inset
 
-kde 
-\begin_inset Formula $g$
-\end_inset
-
- značí vstupní obrázek a 
-\begin_inset Formula $\bar{g}$
-\end_inset
-
- právě dekódovaný obrázek z\InsetSpace ~
-předchozí iterace.
- Je důležité, že zatímco druhý zlomek je uložený v\InsetSpace ~
-charakteristice zobrazení
- a je stále stejný, první zlomek se může měnit s\InsetSpace ~
+ je uložena v\InsetSpace ~
+charakteristice zobrazení a je stále stejná, lineární koeficient
+ se může měnit s\InsetSpace ~
 každou iterací, takže z\InsetSpace ~
-matematic
-kého hlediska se 
-\begin_inset Formula $\bar{c_{i}}$
+matematického hlediska se 
+\begin_inset Formula $\tilde{c_{i}}$
 \end_inset
 
  chová pokaždé jako jiné zobrazení.
@@ -926,7 +901,7 @@ kého hlediska se
 \begin_layout Standard
 V\InsetSpace ~
 rámci jedné iterace je ale 
-\begin_inset Formula $\bar{c_{i}}$
+\begin_inset Formula $\tilde{c_{i}}$
 \end_inset
 
  stále afinní zobrazení.
@@ -943,18 +918,14 @@ rámci jedné iterace je ale
 \begin_inset Formula $R_{i}$
 \end_inset
 
-, takže když 
-\begin_inset Formula $\bar{g}$
-\end_inset
-
- konverguje k\InsetSpace ~
+, takže když stav obrázku při iterování konverguje k\InsetSpace ~
 
 \begin_inset Formula $g$
 \end_inset
 
-, pak i\InsetSpace ~
+ (zdrojovému obrázku), pak i\InsetSpace ~
 
-\begin_inset Formula $\bar{c_{i}}$
+\begin_inset Formula $\tilde{c_{i}}$
 \end_inset
 
  konverguje k\InsetSpace ~
@@ -1054,12 +1025,8 @@ ostrými přechody bez ztráty
 
 \begin_layout Subsection
 Úprava lineárních koeficientů
-\begin_inset Note Note
-status open
-
-\begin_layout Standard
-značení konvergence
-\end_layout
+\begin_inset LatexCommand label
+name "PIFS/Použitý_model"
 
 \end_inset
 
@@ -1072,225 +1039,14 @@ Podobným způsobem, jako byly konstantní koeficienty barevných zobrazení
  odchylkami\InsetSpace ~
 --- barvy zdrojových bloků jsou vyděleny svou směrodatnou odchylkou
  a vynásobeny cílovou směrodatnou odchylkou.
- Stále budeme vycházet z\InsetSpace ~
-RMSE metriky.
-\end_layout
-
-\begin_layout Standard
-V\InsetSpace ~
-následujících výpočtech budeme pro zjednodušení pracovat s\InsetSpace ~
-diskrétním modelem
- obrázku (vektorem hodnot), přestože analogická odvození lze udělat s\InsetSpace ~
-dosud
- upřednostňovaným spojitým modelem.
-  Bude použito statistické značení, které je názornější:
-\end_layout
-
-\begin_layout Description
-zdrojové\InsetSpace ~
-a\InsetSpace ~
-cílové\InsetSpace ~
-bloky 
-\begin_inset Formula $x\mbox{ a }y$
-\end_inset
-
-, oba mají pixely indexované od 
-\begin_inset Formula $1$
-\end_inset
-
- do 
-\begin_inset Formula $n$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Description
-zdrojový\InsetSpace ~
-blok\InsetSpace ~
-z\InsetSpace ~
-předchozí\InsetSpace ~
-iterace 
-\begin_inset Formula $\bar{x}$
-\end_inset
-
-, používán stejně jako 
-\begin_inset Formula $x\mbox{ a }y$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Description
-výběrová\InsetSpace ~
-směrodatná\InsetSpace ~
-odchylka 
-\begin_inset Formula ${\displaystyle s_{x}=\frac{1}{n-1}\left(\sum_{i=1}^{n}x_{i}^{2}-\frac{1}{n}\left(\sum_{i=1}^{n}x_{i}\right)^{2}\right)}$
-\end_inset
-
-
-\begin_inset Formula $ $
-\end_inset
-
-
-\end_layout
-
-\begin_layout Description
-výběrová\InsetSpace ~
-kovariance 
-\begin_inset Formula ${\displaystyle q_{x,y}=\frac{1}{n-1}\left(\sum_{i=1}^{n}x_{i}y_{i}-\frac{1}{n}\sum_{i=1}^{n}x_{i}\sum_{i=1}^{n}y_{i}\right)}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Description
-výběrová\InsetSpace ~
-korelace 
-\begin_inset Formula ${\displaystyle r_{x,y}=\frac{q_{x,y}}{s_{x}s_{y}}}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Zde budeme vycházet ze vztahů odvozených v\InsetSpace ~
-<kapitola o encoderu> přepsaných
- do výše uvedené notace.
-\end_layout
-
-\begin_layout Standard
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-Optimální lineární koeficient 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
-\begin_inset Formula ${\displaystyle p=\frac{q_{x,y}}{s_{x}^{2}}}$
-\end_inset
-
- bude nahrazen koeficientem 
-\begin_inset Formula ${\displaystyle \bar{p}=\pm\frac{s_{y}}{s_{\bar{x}}}}$
-\end_inset
-
- počítaným pro každou iteraci z\InsetSpace ~
-hodnoty 
-\begin_inset Formula $s_{y}$
-\end_inset
-
-, která bude uložena jako parametr zobrazení místo vlastního 
-\begin_inset Formula $p$
-\end_inset
-
-.
- Pokud povolíme zobrazení se záporným lineárním koeficientem, je třeba také
- uložit znaménko.
- Při implementaci je také potřeba ošetřit situaci, kdy 
-\begin_inset Formula $s_{\bar{x}}=0$
-\end_inset
-
-, což nastává hlavně při první iteraci pro typický případ inicializace celého
- obrázku šedivou barvou.
-\end_layout
-
-\begin_layout Standard
-Pokud
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
- 
-\begin_inset Formula $s_{\bar{x}}\rightarrow s_{x}$
-\end_inset
-
- (platí speciálně když 
-\begin_inset Formula $\bar{x}\rightarrow x$
-\end_inset
-
-), pak 
-\begin_inset Formula \[
-{\displaystyle \frac{p}{\bar{p}}\rightarrow\pm\frac{q_{x,y}}{s_{x}^{2}}\frac{s_{x}}{s_{y}}=\pm\frac{q_{x,y}}{s_{x}s_{y}}}=\pm r_{x,y}\]
+ Jak je rozebráno v\InsetSpace ~
+části 
+\begin_inset LatexCommand ref
+reference "Chyba-zobrazení"
 
 \end_inset
 
-Pokud byla chyba barevného zobrazení s\InsetSpace ~
-koeficientem 
-\begin_inset Formula $p$
-\end_inset
-
- malá, pak korelace 
-\begin_inset Formula $r_{x,y}\rightarrow\pm1$
-\end_inset
-
-.
- Navíc znaménko 
-\begin_inset Formula $p$
-\end_inset
-
- (zde značeno jako 
-\begin_inset Formula $\pm$
-\end_inset
-
-) je stejné jako znaménko 
-\begin_inset Formula $r_{x,y}$
-\end_inset
-
-, takže 
-\begin_inset Formula $\bar{p}\rightarrow p$
-\end_inset
-
-.
- Z\InsetSpace ~
-toho je zřejmé, že cílový obrázek bude pevným bodem i takto pozměněného
- operátoru.
-\end_layout
-
-\begin_layout Standard
-Nová a původní optimální čtvercová chyba:
-\begin_inset Formula \[
-\overline{SE}=<\cdots>=2n\, s_{y}^{2}\left(1\mp r_{x,y}\right)=2n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-SE=n\frac{s_{x}^{2}s_{y}^{2}-q_{x,y}^{2}}{s_{x}^{2}}=n\, s_{y}^{2}\left(1-r_{x,y}^{2}\right)=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\left(1+\left|r_{x,y}\right|\right)\]
-
-\end_inset
-
-Z toho dostaneme absolutní a relativní nárůst chyby:
-\begin_inset Formula \[
-\overline{SE}-SE=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)\left[2-\left(1+\left|r_{x,y}\right|\right)\right]=n\, s_{y}^{2}\left(1-\left|r_{x,y}\right|\right)^{2}\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \[
-\frac{\overline{SE}-SE}{SE}=\frac{\left(1-\left|r_{x,y}\right|\right)^{2}}{\left(1-\left|r_{x,y}\right|\right)\left(1+\left|r_{x,y}\right|\right)}=\frac{1-\left|r_{x,y}\right|}{1+\left|r_{x,y}\right|}\]
-
-\end_inset
-
-Tedy nárůst chyby pro podobné bloky bude velmi malý.
+, mírně se tím zvýší chyba optimálního zobrazení.
 \end_layout
 
 \begin_layout Standard
@@ -1301,58 +1057,28 @@ Výhody a nevýhody tohoto přístupu jsou podobné jako při nahrazování kons
 \end_layout
 
 \begin_layout Standard
-V\InsetSpace ~
-některých novějších publikacích
-\begin_inset Note Note
-status open
-
-\begin_layout Standard
-potřeba upřesnit
-\end_layout
+Například v\InsetSpace ~
+článku 
+\begin_inset LatexCommand cite
+key "HuQK07"
 
 \end_inset
 
- o\InsetSpace ~
-fraktální kompresi a také v\InsetSpace ~
-této práci je používán právě tento model barevných
- zobrazení, ale nikde se mi nepodařilo nalézt nějaké zdůvodnění nebo odkaz
- na text zabývající se vlastnostmi tohoto modelu.
+ a také v\InsetSpace ~
+této práci je používán právě tento model barevných zobrazení, ale
+ nikde se mi nepodařilo nalézt nějaké zdůvodnění nebo odkaz na text zabývající
+ se jeho vlastnostmi.
  Nejsou mi tedy známy žádné výsledky týkající se konvergence ani pro případné
  omezené varianty.
 \end_layout
 
 \begin_layout Standard
-Koeficienty
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
- 
-\begin_inset Formula $\bar{p}$
-\end_inset
-
-
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
- nejsou stejně jako v předchozím modelu nijak omezeny, ale experimenty prováděné
- v\InsetSpace ~
-rámci této práce ukazují, že může být výhodné vyhýbat se zobrazením s\InsetSpace ~
-vysokým
- poměrem 
-\begin_inset Formula ${\displaystyle \frac{s_{y}}{s_{\bar{x}}}}$
-\end_inset
-
-.
+Lineární koeficienty barevných zobrazení nejsou stejně jako v\InsetSpace ~
+předchozím
+ modelu nijak omezeny, ale experimenty prováděné v\InsetSpace ~
+rámci této práce ukazují,
+ že může být výhodné vyhýbat se zobrazením, kde je absolutní hodnota lineárního
+ koeficientu vysoká.
  Tato úprava je diskutována v\InsetSpace ~
 <kapitola o\InsetSpace ~
 encoderu>, včetně teoretického zdůvodněn
@@ -2359,6 +2085,464 @@ původní nahrávce nebyly.
 \end_layout
 
 \begin_layout Chapter
+Chyba zobrazení mezi bloky
+\begin_inset LatexCommand label
+name "Chyba-zobrazení"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+V\InsetSpace ~
+následujících výpočtech budeme pro zjednodušení pracovat s\InsetSpace ~
+diskrétním modelem
+ obrázku, přestože analogická odvození lze udělat i se spojitým modelem.
+ Protože je zde použita RMSE metrika, nehraje tvar bloků žádnou roli.
+\end_layout
+
+\begin_layout Standard
+Pro zjednodušení budou bloky uvažovány jako jednorozměrné vektory hodnot,
+ indexované tak, aby sobě odpovídající hodnoty zdrojových a cílových bloků
+ měly stejné indexy (ovlivněno rotacemi).
+ Hodnoty 
+\begin_inset Formula $i$
+\end_inset
+
+-tého pixelu zdrojového a cílového bloku budeme značit 
+\begin_inset Formula $d_{i}$
+\end_inset
+
+ a 
+\begin_inset Formula $r_{i}$
+\end_inset
+
+, kde index 
+\begin_inset Formula $i$
+\end_inset
+
+ je z\InsetSpace ~
+rozsahu 
+\begin_inset Formula $\left\{ 1,2,\ldots,n\right\} $
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Je potřeba si uvědomit, že zde jsou počítané odchylky mezi původním obrázkem
+ a jeho obrazem, přestože ve skutečnosti potřebujeme omezit odchylku obrázku
+ od pevného bodu zobrazení.
+ V\InsetSpace ~
+části\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "PIFS"
+
+\end_inset
+
+ byla diskutována možnost použití kolážové věty, která skutečnou chybu omezuje,
+ ale v\InsetSpace ~
+praxi je nepoužitelná.
+ Prvním důvodem je to, že dává příliš volný odhad, který neodpovídá realitě
+ a druhým je to, že plnění předpokladu kontraktivity barevných zobrazení
+ výslednou odchylku výrazně zvětšuje.
+\end_layout
+
+\begin_layout Section
+Klasický model
+\end_layout
+
+\begin_layout Standard
+Při klasické fraktálové kompresi je chyba zobrazení dána
+\begin_inset Formula \[
+SE=\sum_{i=1}^{n}\left(ud_{i}+v-r_{i}\right)^{2}\]
+
+\end_inset
+
+přičemž uvažujeme minimum pro libovolné konstanty 
+\begin_inset Formula $u$
+\end_inset
+
+ a 
+\begin_inset Formula $v$
+\end_inset
+
+.
+ Úloha odpovídá lineární regresi používané ve statistice, kde RMSE metrika
+ dává volbu koeficientů metodou nejmenších čtverců.
+ Použitím derivací a řešením jednoduché soustavy rovnic
+\begin_inset Foot
+status collapsed
+
+\begin_layout Standard
+rozsahy u\InsetSpace ~
+sum jsou dále vynechány, protože jsou vždy stejné a zbytečně by
+ výpočty znepřehled
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+ňovaly
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula \begin{eqnarray*}
+{\textstyle 2u\sum d_{i}^{2}+2v\sum d_{i}-2\sum r_{i}d_{i}} & = & 0\\
+{\textstyle 2u\sum d_{i}+2nv-2\sum r_{i}} & = & 0\end{eqnarray*}
+
+\end_inset
+
+lze spočítat obecné optimální hodnoty koeficientů
+\begin_inset Formula \[
+\hat{u}=\frac{n\sum r_{i}d_{i}-\left(\sum d_{i}\right)\left(\sum r_{i}\right)}{n\sum d_{i}^{2}-\left(\sum d_{i}\right)^{2}},\qquad\hat{v}=\frac{\left(\sum d_{i}^{2}\right)\left(\sum r_{i}\right)-\left(\sum d_{i}\right)\left(\sum r_{i}d_{i}\right)}{n\sum d_{i}^{2}-\left(\sum d_{i}\right)^{2}}\]
+
+\end_inset
+
+Jmenovatele jsou nulové právě když má zdrojový blok konstantní barvu, což
+ je případ vyloučený například i proto, že chyba zobrazení nemůže být lepší
+ než s\InsetSpace ~
+libovoným jiným zdrojovým blokem.
+ Díky tomu, že matice druhých parciálních derivací
+\begin_inset Formula \[
+\left(\begin{array}{cc}
+2\sum d_{i}^{2} & 2\sum d_{i}\\
+2\sum d_{i} & 2n\end{array}\right)\]
+
+\end_inset
+
+je pozitivně definitní pro libovolný nekonstantní zdrojový blok, jedná se
+ o\InsetSpace ~
+jediné minimum.
+ Zpětným dosazením optimálních parametrů do vzorce pro chybu a úpravou získáme
+ optimální chybu
+\begin_inset Formula \[
+\widehat{SE}=\frac{\left(\sum r_{i}d_{i}\right)\left[2\left(\sum d_{i}\right)\left(\sum r_{i}\right)-n\sum r_{i}d_{i}\right]-\left(\sum d_{i}^{2}\right)\left(\sum d_{i}\right)^{2}}{n\sum d_{i}^{2}-\left(\sum d_{i}\right)^{2}}+\sum r_{i}^{2}\]
+
+\end_inset
+
+Pomocí struktur uvedených v\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Implementace/Matice"
+
+\end_inset
+
+ lze všechny sumy kromě jedné snadno spočítat.
+ Součet 
+\begin_inset Formula $\sum r_{i}d_{i}$
+\end_inset
+
+ je nutné vyčíslit pro každou uvažovanou dvojici bloků zvlášť.
+\end_layout
+
+\begin_layout Section
+Chyba upravených zobrazení
+\end_layout
+
+\begin_layout Standard
+V\InsetSpace ~
+implementaci je použita úprava klasického modelu popsaná v\InsetSpace ~
+části 
+\begin_inset LatexCommand ref
+reference "PIFS/Použitý_model"
+
+\end_inset
+
+, kde místo koeficientů 
+\begin_inset Formula $u$
+\end_inset
+
+ a 
+\begin_inset Formula $v$
+\end_inset
+
+ je uložena průměrná hodnota a směrodatná odchylka hodnot cílového bloku.
+ Koeficienty zobrazení jsou pak počítány v\InsetSpace ~
+každé iteraci z\InsetSpace ~
+těchto uložených
+ hodnot a ze stavu zdrojového bloku v\InsetSpace ~
+předchozí iteraci.
+ Nová definice koeficientů je
+\begin_inset Formula \[
+\bar{u}=\pm\frac{\sqrt{n\sum r_{i}^{2}-\left(\sum r_{i}\right)^{2}}}{\sqrt{n\sum\bar{d}_{i}^{2}-\left(\sum\bar{d_{i}}\right)^{2}}},\qquad\bar{v}=\frac{1}{n}\sum r_{i}-\frac{\bar{u}}{n}\sum\bar{d}_{i}\]
+
+\end_inset
+
+kde 
+\begin_inset Formula $\bar{d_{i}}$
+\end_inset
+
+ je značení pro hodnotu pixelu zdrojového bloku z\InsetSpace ~
+přechozí iterace.
+\end_layout
+
+\begin_layout Standard
+Tím je ovlivněna i optimální chyba zobrazení, protože ani za předpokladu
+ zobrazování původního obrázku se nemusí 
+\begin_inset Formula $\bar{u}$
+\end_inset
+
+ rovnat 
+\begin_inset Formula $u$
+\end_inset
+
+.
+ Pro následující odvození bude použito statistické značení, které je zde
+ názornější:
+\end_layout
+
+\begin_layout Description
+výběrová\InsetSpace ~
+směrodatná\InsetSpace ~
+odchylka 
+\begin_inset Formula ${\displaystyle s_{r}=\sqrt{\frac{1}{n-1}\left(\sum_{i=1}^{n}r_{i}^{2}-\frac{1}{n}\left(\sum_{i=1}^{n}r_{i}\right)^{2}\right)}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+výběrová\InsetSpace ~
+kovariance 
+\begin_inset Formula ${\displaystyle q_{d,r}=\frac{1}{n-1}\left(\sum_{i=1}^{n}d_{i}r_{i}-\frac{1}{n}\sum_{i=1}^{n}d_{i}\sum_{i=1}^{n}r_{i}\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+výběrová\InsetSpace ~
+korelace 
+\begin_inset Formula ${\displaystyle \rho_{d,r}=\frac{q_{d,r}}{s_{d}s_{r}}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+konvergence frázemi typu 
+\begin_inset Quotes gld
+\end_inset
+
+
+\emph on
+pokud 
+\begin_inset Formula $a\rightarrow b$
+\end_inset
+
+, pak 
+\begin_inset Formula $c\rightarrow d$
+\end_inset
+
+
+\emph default
+
+\begin_inset Quotes grd
+\end_inset
+
+ je myšlen zápis 
+\begin_inset Formula ${\displaystyle \lim_{a\rightarrow b}c=d}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+Optimální lineární koeficient 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula ${\displaystyle u=\frac{q_{d,r}}{s_{d}^{2}}}$
+\end_inset
+
+ bude nahrazen koeficientem 
+\begin_inset Formula ${\displaystyle \bar{u}=\pm\frac{s_{r}}{s_{\bar{d}}}}$
+\end_inset
+
+.
+ Pokud povolíme zobrazení se záporným lineárním koeficientem, je nutné také
+ uložit znaménko (zde značeno symbolem 
+\begin_inset Formula $\pm$
+\end_inset
+
+).
+ Při implementaci je navíc potřeba ošetřit situaci, kdy 
+\begin_inset Formula $s_{\bar{d}}=0$
+\end_inset
+
+, což nastává hlavně při první iteraci pro typický případ inicializace celého
+ obrázku šedivou barvou.
+\end_layout
+
+\begin_layout Standard
+Pokud
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+ 
+\begin_inset Formula $s_{\bar{d}}\rightarrow s_{d}$
+\end_inset
+
+ (platí speciálně když 
+\begin_inset Formula $\bar{d}\rightarrow d$
+\end_inset
+
+), pak 
+\begin_inset Formula \[
+{\displaystyle \frac{u}{\bar{u}}\rightarrow\pm\frac{q_{d,r}}{s_{d}^{2}}\frac{s_{d}}{s_{r}}=\pm\frac{q_{d,r}}{s_{d}s_{r}}}=\pm\rho_{d,r}\]
+
+\end_inset
+
+Pokud byla chyba barevného zobrazení s\InsetSpace ~
+koeficientem 
+\begin_inset Formula $u$
+\end_inset
+
+ malá (konverguje k\InsetSpace ~
+nule), pak korelace 
+\begin_inset Formula $\rho_{d,r}\rightarrow\pm1$
+\end_inset
+
+.
+ Navíc znaménko 
+\begin_inset Formula $u$
+\end_inset
+
+ je stejné jako znaménko 
+\begin_inset Formula $\rho_{d,r}$
+\end_inset
+
+, takže 
+\begin_inset Formula $\bar{u}\rightarrow u$
+\end_inset
+
+.
+ Z\InsetSpace ~
+toho je zřejmé, že cílový obrázek bude pevným bodem i takto pozměněného
+ operátoru.
+\begin_inset VSpace bigskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Nová čtvercová chyba lze vyjádřit jako
+\begin_inset Formula \[
+\overline{SE}\;=\;\sum_{i=1}^{n}\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}\]
+
+\end_inset
+
+po postupném dosazení 
+\begin_inset Formula $\bar{v}=\frac{1}{n}\sum r_{i}-\frac{\bar{u}}{n}\sum\bar{d}_{i}$
+\end_inset
+
+ a 
+\begin_inset Formula ${\displaystyle \bar{u}=\pm\frac{s_{r}}{s_{\bar{d}}}}$
+\end_inset
+
+ dostaneme
+\begin_inset Formula \begin{multline*}
+\overline{SE}\;=\;\sum_{i=1}^{n}\left[\bar{u}\left(\bar{d}_{i}-\frac{1}{n}\sum\bar{d}_{j}\right)-\left(r_{i}-\frac{1}{n}\sum r_{j}\right)\right]^{2}\;=\\
+=\;{\textstyle \bar{u}^{2}{\displaystyle \sum_{i=1}^{n}}\left(\bar{d}_{i}-\frac{\sum\bar{d}_{j}}{n}\right)^{2}-2\bar{u}{\displaystyle \sum_{i=1}^{n}}\left(\bar{d}_{i}-\frac{\sum\bar{d}_{j}}{n}\right)\left(r_{i}-\frac{\sum r_{j}}{n}\right)+{\displaystyle \sum_{i=1}^{n}}\left(r_{i}-\frac{\sum r_{j}}{n}\right)^{2}\;=}\\
+{\displaystyle =\; n\bar{u}^{2}s_{\bar{d}}^{2}-2n\bar{u}q_{\bar{d},r}+ns_{r}^{2}\;=\; n\frac{s_{r}^{2}}{s_{\bar{d}}^{2}}s_{\bar{d}}^{2}\mp2n\frac{s_{r}}{s_{\bar{d}}}q_{\bar{d},r}+ns_{r}^{2}\;=\;2n\left(s_{r}^{2}\mp\frac{s_{r}}{s_{\bar{d}}}q_{\bar{d},r}\right)}\end{multline*}
+
+\end_inset
+
+Protože 
+\begin_inset Formula $q_{\bar{d},r}$
+\end_inset
+
+ má vždy stejné znaménko jako 
+\begin_inset Formula $\bar{u}$
+\end_inset
+
+, lze výraz upravit na 
+\begin_inset Formula \[
+\overline{SE}\;=\;2ns_{r}^{2}\left(1-\frac{\left|q_{\bar{d},r}\right|}{s_{\bar{d}}s_{r}}\right)\;=\;2ns_{r}^{2}\left(1-\left|\rho_{\bar{d},r}\right|\right)\]
+
+\end_inset
+
+
+\begin_inset VSpace bigskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Původní optimální čtvercová chyba lze přepsat do tvaru:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\widehat{SE}\;=\; n\frac{s_{d}^{2}s_{r}^{2}-q_{d,r}^{2}}{s_{d}^{2}}\;=\; ns_{r}^{2}\left(1-\rho_{d,r}^{2}\right)\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)\left(1+\left|\rho_{d,r}\right|\right)\]
+
+\end_inset
+
+Za předpokladu, že 
+\begin_inset Formula $s_{\bar{d}}\rightarrow s_{d}$
+\end_inset
+
+, dostaneme absolutní a relativní nárůst chyby
+\begin_inset Formula \[
+\overline{SE}-\widehat{SE}\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)\left[2-\left(1+\left|\rho_{d,r}\right|\right)\right]\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)^{2}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\overline{SE}-\widehat{SE}}{\widehat{SE}}=\frac{\left(1-\left|\rho_{d,r}\right|\right)^{2}}{\left(1-\left|\rho_{d,r}\right|\right)\left(1+\left|\rho_{d,r}\right|\right)}=\frac{1-\left|\rho_{d,r}\right|}{1+\left|\rho_{d,r}\right|}\]
+
+\end_inset
+
+
+\begin_inset VSpace defskip
+\end_inset
+
+Pro vzájemně dobře zobrazitelné bloky 
+\begin_inset Formula $\left|\rho_{d,r}\right|\rightarrow1$
+\end_inset
+
+, takže nárůst chyby bude velmi malý.
+\end_layout
+
+\begin_layout Section
+Penalizace vysokého lineárního koeficientu
+\end_layout
+
+\begin_layout Chapter
 Implementace
 \end_layout
 
@@ -3078,6 +3262,12 @@ Změny tvarů
 
 \begin_layout Subsubsection
 IShapeTransformer
+\begin_inset LatexCommand label
+name "Implementace/IShapeTransformer"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -3751,7 +3941,7 @@ reference "Implementace/Domény/Náčrtek"
 \begin_inset Float figure
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
 \begin_inset Caption
@@ -3844,6 +4034,62 @@ každým krokem množství vytvořených bloků
 Kvůli obecnosti návrhu rozhraní se i při dekompresi nezobrazují bloky rovnou,
  ale přes tyto matice, takže počet matic pro zdrojové bloky významně ovlivňuje
  rychlost dekomprese (na rozdíl od komprese, kde nehraje znatelnou roli).
+\end_layout
+
+\begin_layout Section
+Hledání optimálních zobrazení
+\end_layout
+
+\begin_layout Standard
+Hledání optimálních zobrazení je nejdůležitější část celého kompresního
+ procesu.
+ Zde se nejvíce ovlivňuje kvalita výsledku a také stráví nejvíce výpočetního
+ času.
+\end_layout
+
+\begin_layout Subsubsection
+ISquareEncoder
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+ISquareEncoder
+\family default
+ je rozhraní pro správu zobrazení mezi zdrojovými bloky generovanými modulem
+ s\InsetSpace ~
+rozhraním 
+\family typewriter
+ISquare\SpecialChar \-
+Domains
+\family default
+ a cílovými bloky vytvářenými modulem s\InsetSpace ~
+rozhraním 
+\family typewriter
+ISquare\SpecialChar \-
+Ranges
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+Rozhraní obsahuje metody pro inicializaci před (de)kompresí 
+\emph on
+úkolu
+\emph default
+, pro hledání optimálního zobrazení do daného cílového bloku, pro dokončení
+ komprese a pro provádění dekódovacích akcí (vyčištění obrázku nebo iterování
+ zobrazení).
+ Dále jsou zde metody pro uložení a nahrátí nastavení, pro zjištění počtu
+ ukládacích fází a pro uložení nebo nahrátí dat jednotlivých fází (význam
+ fází vysvětlen v\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Implementace/IShapeTransformer"
+
+\end_inset
+
+).
 \end_layout
 
 \begin_layout Chapter*
