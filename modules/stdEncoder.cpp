@@ -193,11 +193,12 @@ public:
 
 	/** Initializes a RangeInfo object from #this */
 	RangeInfo* initRangeInfo(RangeInfo *ri) const {
-		ri->bestSE=			best.error;
-		ri->prediction()=	best;
-		ri->qrAvg=			stable.qrAvg;
-		ri->qrDev2=			stable.qrDev2;
-		ri->inverted=		best.inverted;
+		ri->bestSE=		best.error;
+		ri->domainID=	best.domainID;
+		ri->rotation=	best.rotation;
+		ri->qrAvg=		stable.qrAvg;
+		ri->qrDev2=		stable.qrDev2;
+		ri->inverted=	best.inverted;
 		#ifndef NDEBUG
 		ri->exact.avg=	stable.rSum/stable.pixCount;
 		ri->exact.dev2=	stable.r2Sum/stable.pixCount - sqr(ri->exact.avg);
@@ -408,7 +409,7 @@ float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 			: variance*info.stable.pixCount;
 	}
 //	store the important info and return the error
-	range.encoderData= info.initRangeInfo( rangeInfoAlloc.make() );
+	range.encoderData= info.initRangeInfo( /*rangeInfoAlloc.make()*/ new RangeInfo );
 	return info.best.error;
 }
 
@@ -487,7 +488,7 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				const RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+				const RangeInfo *info= getInfo(*it);
 				averages.push_back( quant.quant(info->qrAvg) );
 			}
 		//	pass it to the codec
@@ -504,7 +505,7 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				const RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+				const RangeInfo *info= getInfo(*it);
 				int dev= ( info->domainID>=0 ? quant.quant(sqrt(info->qrDev2)) : 0 );
 				devs.push_back(dev);
 			}
@@ -521,7 +522,7 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 				for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 					ASSERT( *it && (*it)->encoderData );
 					STREAM_POS(file);
-					const RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+					const RangeInfo *info= getInfo(*it);
 					if ( info->domainID >= 0 )
 						stream.putBits(info->inverted,1);
 				}
@@ -530,7 +531,7 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 				for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 					ASSERT( *it && (*it)->encoderData );
 					STREAM_POS(file);
-					const RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+					const RangeInfo *info= getInfo(*it);
 					if ( info->domainID >= 0 ) {
 						ASSERT( 0<=info->rotation && info->rotation<8 );
 						stream.putBits( info->rotation, 3 );
@@ -549,7 +550,7 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				const RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+				const RangeInfo *info= getInfo(*it);
 				int domID= info->domainID;
 				if ( domID >= 0 ) {
 					int bits= domBits[ (*it)->level ];
@@ -582,7 +583,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && !(*it)->encoderData );
 				STREAM_POS(file);
-				RangeInfo *info= rangeInfoAlloc.make();
+				RangeInfo *info= new RangeInfo;//rangeInfoAlloc.make();
 				(*it)->encoderData= info;
 				info->qrAvg= quant.dequant(averages[it-ranges.begin()]);
 				DEBUG_ONLY( info->bestSE= -1; ) // SE not needed for decoding,saving,...
@@ -602,7 +603,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+				RangeInfo *info= getInfo(*it);
 				int quantDev= devs[it-ranges.begin()];
 				if (quantDev)
 					info->qrDev2= sqr(quant.dequant(quantDev));
@@ -623,7 +624,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 				for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 					ASSERT( *it && (*it)->encoderData );
 					STREAM_POS(file);
-					RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+					RangeInfo *info= getInfo(*it);
 					if (info->qrDev2)
 						info->inverted= stream.getBits(1);
 				}
@@ -631,7 +632,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+				RangeInfo *info= getInfo(*it);
 				if (info->qrDev2)
 					info->rotation= settingsInt(AllowedRotations) ? stream.getBits(3) : 0;
 			}
@@ -641,7 +642,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				RangeInfo *info= static_cast<RangeInfo*>( (*it)->encoderData );
+				RangeInfo *info= getInfo(*it);
 				if (!info->qrDev2)
 					continue;
 				int level= (*it)->level;
@@ -688,7 +689,7 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 		//	prepare the domains, iterate each range block
 			planeBlock->domains->fillPixelsInPools(*planeBlock);
 			for (RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it) {
-				const RangeInfo &info= *(const RangeInfo*) (*it)->encoderData;
+				const RangeInfo &info= *getInfo(*it);
 				if ( info.domainID < 0 ) { // no domain - constant color
 					planeBlock->pixels.fillSubMatrix( **it, info.qrAvg );
 					continue;
@@ -726,7 +727,7 @@ void MStandardEncoder::initRangeInfoAccelerators() {
 	for ( RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it ) {
 	//	get range level, reference to the range's info and to the level's pool infos
 		int level= (*it)->level;
-		RangeInfo &info= *static_cast<RangeInfo*>( (*it)->encoderData );
+		RangeInfo &info= *getInfo(*it);
 		if ( info.domainID < 0 )
 			continue;
 		const PoolInfos &poolInfos= levelPoolInfos[level];

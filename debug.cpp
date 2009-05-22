@@ -88,8 +88,7 @@ namespace NOSPACE {
 		}
 		
 		void operator()(const ISquareRanges::RangeNode *range) {
-			const MStandardEncoder::RangeInfo &info
-			= static_cast<MStandardEncoder::RangeInfo&>( *range->encoderData );
+			const MStandardEncoder::RangeInfo &info= *MStandardEncoder::getInfo(range);
 		//	increment the counts of ranges on this rotation and level
 			++rotCounts[info.rotation+1];
 			++levelCounts.at(range->level);
@@ -160,7 +159,7 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 	
 	if ( pixmap.rect().contains(click) ) { // info about range clicked on
 		const RangeNode &range= *findRangeOnPoint( ranges, click );
-		const RangeInfo &info= static_cast<RangeInfo&>(*range.encoderData);
+		const RangeInfo &info= *getInfo(&range);
 		
 		QString msg= QString("Quantized average: %1\nQuantized deviation: %2\n\n")
 			.arg((double)info.qrAvg) .arg((double)sqrt(info.qrDev2));

@@ -3,6 +3,7 @@
 
 #include "../interfaces.h"
 
+/// \ingroup modules
 /** Standard square encoder - uses affine color transformation
  *	for one-domain to one-range mappings */
 class MStandardEncoder: public ISquareEncoder {
@@ -65,7 +66,7 @@ public:
 		type:	settingModule<IIntCodec>()
 	} )
 
-private:
+protected:
 	/** Indices for settings */
 	enum Settings { ModulePredictor, AllowedRotations, AllowedInversion, BigScaleCoeff
 	, AllowedQuantError, MaxLinCoeff, SufficientSEq, QuantStepLog_avg, QuantStepLog_dev
@@ -80,7 +81,7 @@ private:
 		( settings[ forAverage ? ModuleCodecAvg : ModuleCodecDev ].m );
 	}
 
-	/** Information about just encoded range block */
+	/** Information about just encoded range block, defined in stdEncoder.cpp */
 	struct EncodingInfo;
 
 public:
@@ -89,6 +90,7 @@ public:
 	typedef ISquareDomains	::Pool			Pool;
 	typedef IStdEncPredictor::Prediction	Prediction;
 
+public:
 	/** Stores information about a range's mapping, to be pointed by ISquareRanges::RangeNode.encoderData */
 	struct RangeInfo: public RangeNode::EncoderData, public Prediction {
 		struct {
@@ -103,18 +105,24 @@ public:
 			Real avg, dev2, constCoeff, linCoeff;
 		} exact;
 		#endif
-
-		Prediction& prediction()
-			{ return *this; }
 	};
+	
+	/** Extracts RangeNode::encoderData and down-casts it to RangeInfo */
+	static RangeInfo* getInfo(RangeNode *range) {
+		RangeInfo *result= static_cast<RangeInfo*>(range->encoderData);
+		ASSERT(result);
+		return result;
+	}
+	static const RangeInfo* getInfo(const RangeNode *range)
+		{ return getInfo(constCast(range)); }
 
-private:
+protected:
 //	Module's data
 	PlaneBlock *planeBlock;			///< Pointer to the block to encode/decode
 	std::vector<float> stdRangeSEs;	///< Caches the result of IQuality2SE::regularRangeErrors
-	LevelPoolInfos levelPoolInfos;	///< [level][pool] -> LevelPoolInfo (the levels are zoomed)
+	LevelPoolInfos levelPoolInfos;	///< see LevelPoolInfos, only initialized for used levels
 
-	BulkAllocator<RangeInfo> rangeInfoAlloc; ///< Allocator for RangeNode::encoderData
+	//BulkAllocator<RangeInfo> rangeInfoAlloc; ///< Allocator for RangeNode::encoderData
 
 protected:
 //	Construction and destruction
@@ -140,7 +148,7 @@ public:
 	void writeData(std::ostream &file,int phase);
 	void readData(std::istream &file,int phase);
 ///	@}
-private:
+protected:
 	/** Builds #levelPoolInfos[\p level], uses #planeBlock->domains */
 	void buildPoolInfos4aLevel(int level,int zoom);
 	/** Initializes decoding accelerators (in RangeInfo) for all range blocks */

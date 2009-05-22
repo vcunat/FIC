@@ -253,7 +253,7 @@ struct ISquareRanges::RangeNode: public Block {
 		float bestSE; ///< the best square error found until now
 	};
 
-	/// Encoders can store their data here, !not deleted! (use BulkAllocator)
+	/// \todo Encoders can store their data here, !not deleted! 
 	mutable EncoderData *encoderData;
 	/// The smallest integer such that the block fits into square with side of length 2^level
 	int level;
@@ -265,6 +265,9 @@ protected:
 	/** Constructor - initializes ::encoderData to zero, to be used by derived classes */
 	RangeNode(const Block &block,int level_)
 	: Block(block), encoderData(0), level(level_) {}
+	
+	~RangeNode()
+		{ delete encoderData; }
 }; // ISquareRanges::RangeNode struct
 
 
@@ -321,10 +324,11 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 
 	/** Used by encoders, represents information about a domain pool on a level */
 	struct LevelPoolInfo {
-		int indexBegin ///	the beginning of domain indices in "this pool" on "this level"
-		, density; ///<		the domain density (step size) in "this pool" on "this level"
+		int indexBegin	///  the beginning of domain indices in "this pool" on "this level"
+		, density;		///< the domain density (step size) in "this pool" on "this level"
 	};
-	/** \todo documentation */
+	/** [level][pool] -> LevelPoolInfo (the levels are zoomed). For every used level
+	 *	contains for all domain pools precomputed densities and the domain-ID boundaries */
 	typedef std::vector< std::vector<LevelPoolInfo> > LevelPoolInfos;
 
 	/** Initializes the module for encoding or decoding of a PlaneBlock */

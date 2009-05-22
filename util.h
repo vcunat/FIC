@@ -151,12 +151,12 @@ public:
 		ASSERT(nextIndex<=bulkCount);
 
 		if (count>bulkCount/2) {
-			T *result=new T[count];
+			T *result= new T[count];
 			if (pools.empty())
 				pools.push_back(result);
 			else {
 				pools.push_back(pools.back());
-				*(pools.end()-2)=result;
+				*(pools.end()-2)= result;
 			}
 			return result;
 		}
