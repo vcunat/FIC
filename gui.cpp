@@ -182,8 +182,8 @@ void ImageViewer::read() {
 		QMessageBox::information( this, tr("Error"), tr("Cannot open %1.").arg(fname) );
 		return;
 	}
-//	convert to 32-bits
-	if (image.depth()<32)
+//	convert to 24-bits
+	if ( image.format() != QImage::Format_RGB32 )
 		image= image.convertToFormat(QImage::Format_RGB32);
 //  display it
 	changePixmap(QPixmap::fromImage(image));
@@ -213,7 +213,8 @@ void ImageViewer::compare() {
 	lastPath.setPath(fname);
 //	open the file as an image, check it's got the same dimensions as the diplayed one
 	QImage image(fname);
-	image= image.convertToFormat(QImage::Format_RGB32);
+	if ( image.format() != QImage::Format_RGB32 )
+		image= image.convertToFormat(QImage::Format_RGB32);
 	if (image.isNull()) {
 		QMessageBox::information( this, tr("Error"), tr("Cannot open %1.").arg(fname) );
 		return;
