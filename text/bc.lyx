@@ -751,7 +751,7 @@ reference "Články/Zlepšení_vzhledu/Další_metody"
 Jak je ukázáno v\InsetSpace ~
 
 \begin_inset LatexCommand ref
-reference "Chyba-zobrazení"
+reference "Chyba_zobrazení"
 
 \end_inset
 
@@ -1042,7 +1042,7 @@ Podobným způsobem, jako byly konstantní koeficienty barevných zobrazení
  Jak je rozebráno v\InsetSpace ~
 části 
 \begin_inset LatexCommand ref
-reference "Chyba-zobrazení"
+reference "Chyba_zobrazení/Upravená"
 
 \end_inset
 
@@ -1080,9 +1080,13 @@ rámci této práce ukazují,
  že může být výhodné vyhýbat se zobrazením, kde je absolutní hodnota lineárního
  koeficientu vysoká.
  Tato úprava je diskutována v\InsetSpace ~
-<kapitola o\InsetSpace ~
-encoderu>, včetně teoretického zdůvodněn
-í.
+
+\begin_inset LatexCommand ref
+reference "Chyba_zobrazení/Penalizace"
+
+\end_inset
+
+, včetně teoretického zdůvodnění.
 \end_layout
 
 \begin_layout Section
@@ -2087,7 +2091,7 @@ původní nahrávce nebyly.
 \begin_layout Chapter
 Chyba zobrazení mezi bloky
 \begin_inset LatexCommand label
-name "Chyba-zobrazení"
+name "Chyba_zobrazení"
 
 \end_inset
 
@@ -2100,12 +2104,9 @@ následujících výpočtech budeme pro zjednodušení pracovat s\InsetSpace ~
 diskrétním modelem
  obrázku, přestože analogická odvození lze udělat i se spojitým modelem.
  Protože je zde použita RMSE metrika, nehraje tvar bloků žádnou roli.
-\end_layout
-
-\begin_layout Standard
-Pro zjednodušení budou bloky uvažovány jako jednorozměrné vektory hodnot,
- indexované tak, aby sobě odpovídající hodnoty zdrojových a cílových bloků
- měly stejné indexy (ovlivněno rotacemi).
+ Navíc budou bloky uvažovány jako jednorozměrné vektory hodnot, indexované
+ tak, aby sobě odpovídající hodnoty zdrojových a cílových bloků měly stejné
+ indexy (ovlivněno rotacemi).
  Hodnoty 
 \begin_inset Formula $i$
 \end_inset
@@ -2152,12 +2153,18 @@ praxi je nepoužitelná.
 
 \begin_layout Section
 Klasický model
+\begin_inset LatexCommand label
+name "Chyba_zobrazení/Klasická"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 Při klasické fraktálové kompresi je chyba zobrazení dána
 \begin_inset Formula \[
-SE=\sum_{i=1}^{n}\left(ud_{i}+v-r_{i}\right)^{2}\]
+\mathrm{SE}=\sum_{i=1}^{n}\left(ud_{i}+v-r_{i}\right)^{2}\]
 
 \end_inset
 
@@ -2245,6 +2252,12 @@ reference "Implementace/Matice"
 
 \begin_layout Section
 Chyba upravených zobrazení
+\begin_inset LatexCommand label
+name "Chyba_zobrazení/Upravená"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -2303,7 +2316,7 @@ Tím je ovlivněna i optimální chyba zobrazení, protože ani za předpokladu
 výběrová\InsetSpace ~
 směrodatná\InsetSpace ~
 odchylka 
-\begin_inset Formula ${\displaystyle s_{r}=\sqrt{\frac{1}{n-1}\left(\sum_{i=1}^{n}r_{i}^{2}-\frac{1}{n}\left(\sum_{i=1}^{n}r_{i}\right)^{2}\right)}}$
+\begin_inset Formula ${\displaystyle s_{r}=\sqrt{\frac{1}{n-1}\left[\sum_{i=1}^{n}r_{i}^{2}-\frac{1}{n}\left(\sum_{i=1}^{n}r_{i}\right)^{2}\right]}}$
 \end_inset
 
 
@@ -2457,7 +2470,7 @@ toho je zřejmé, že cílový obrázek bude pevným bodem i takto pozměněnéh
 \begin_layout Standard
 Nová čtvercová chyba lze vyjádřit jako
 \begin_inset Formula \[
-\overline{SE}\;=\;\sum_{i=1}^{n}\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}\]
+\mathrm{\overline{SE}}\;=\;\sum_{i=1}^{n}\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}\]
 
 \end_inset
 
@@ -2471,7 +2484,7 @@ po postupném dosazení
 
  dostaneme
 \begin_inset Formula \begin{multline*}
-\overline{SE}\;=\;\sum_{i=1}^{n}\left[\bar{u}\left(\bar{d}_{i}-\frac{1}{n}\sum\bar{d}_{j}\right)-\left(r_{i}-\frac{1}{n}\sum r_{j}\right)\right]^{2}\;=\\
+\mathrm{\overline{SE}}\;=\;\sum_{i=1}^{n}\left[\bar{u}\left(\bar{d}_{i}-\frac{1}{n}\sum\bar{d}_{j}\right)-\left(r_{i}-\frac{1}{n}\sum r_{j}\right)\right]^{2}\;=\\
 =\;{\textstyle \bar{u}^{2}{\displaystyle \sum_{i=1}^{n}}\left(\bar{d}_{i}-\frac{\sum\bar{d}_{j}}{n}\right)^{2}-2\bar{u}{\displaystyle \sum_{i=1}^{n}}\left(\bar{d}_{i}-\frac{\sum\bar{d}_{j}}{n}\right)\left(r_{i}-\frac{\sum r_{j}}{n}\right)+{\displaystyle \sum_{i=1}^{n}}\left(r_{i}-\frac{\sum r_{j}}{n}\right)^{2}\;=}\\
 {\displaystyle =\; n\bar{u}^{2}s_{\bar{d}}^{2}-2n\bar{u}q_{\bar{d},r}+ns_{r}^{2}\;=\; n\frac{s_{r}^{2}}{s_{\bar{d}}^{2}}s_{\bar{d}}^{2}\mp2n\frac{s_{r}}{s_{\bar{d}}}q_{\bar{d},r}+ns_{r}^{2}\;=\;2n\left(s_{r}^{2}\mp\frac{s_{r}}{s_{\bar{d}}}q_{\bar{d},r}\right)}\end{multline*}
 
@@ -2487,7 +2500,7 @@ Protože
 
 , lze výraz upravit na 
 \begin_inset Formula \[
-\overline{SE}\;=\;2ns_{r}^{2}\left(1-\frac{\left|q_{\bar{d},r}\right|}{s_{\bar{d}}s_{r}}\right)\;=\;2ns_{r}^{2}\left(1-\left|\rho_{\bar{d},r}\right|\right)\]
+\mathrm{\overline{SE}}\;=\;2ns_{r}^{2}\left(1-\frac{\left|q_{\bar{d},r}\right|}{s_{\bar{d}}s_{r}}\right)\;=\;2ns_{r}^{2}\left(1-\left|\rho_{\bar{d},r}\right|\right)\]
 
 \end_inset
 
@@ -2504,7 +2517,7 @@ Původní optimální čtvercová chyba lze přepsat do tvaru:
 
 \begin_layout Standard
 \begin_inset Formula \[
-\widehat{SE}\;=\; n\frac{s_{d}^{2}s_{r}^{2}-q_{d,r}^{2}}{s_{d}^{2}}\;=\; ns_{r}^{2}\left(1-\rho_{d,r}^{2}\right)\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)\left(1+\left|\rho_{d,r}\right|\right)\]
+\mathrm{\widehat{SE}}\;=\; n\frac{s_{d}^{2}s_{r}^{2}-q_{d,r}^{2}}{s_{d}^{2}}\;=\; ns_{r}^{2}\left(1-\rho_{d,r}^{2}\right)\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)\left(1+\left|\rho_{d,r}\right|\right)\]
 
 \end_inset
 
@@ -2514,7 +2527,7 @@ Za předpokladu, že
 
 , dostaneme absolutní a relativní nárůst chyby
 \begin_inset Formula \[
-\overline{SE}-\widehat{SE}\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)\left[2-\left(1+\left|\rho_{d,r}\right|\right)\right]\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)^{2}\]
+\mathrm{\overline{SE}}-\mathrm{\widehat{SE}}\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)\left[2-\left(1+\left|\rho_{d,r}\right|\right)\right]\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)^{2}\]
 
 \end_inset
 
@@ -2523,7 +2536,7 @@ Za předpokladu, že
 
 \begin_layout Standard
 \begin_inset Formula \[
-\frac{\overline{SE}-\widehat{SE}}{\widehat{SE}}=\frac{\left(1-\left|\rho_{d,r}\right|\right)^{2}}{\left(1-\left|\rho_{d,r}\right|\right)\left(1+\left|\rho_{d,r}\right|\right)}=\frac{1-\left|\rho_{d,r}\right|}{1+\left|\rho_{d,r}\right|}\]
+\frac{\mathrm{\overline{SE}}-\mathrm{\widehat{SE}}}{\mathrm{\widehat{SE}}}=\frac{\left(1-\left|\rho_{d,r}\right|\right)^{2}}{\left(1-\left|\rho_{d,r}\right|\right)\left(1+\left|\rho_{d,r}\right|\right)}=\frac{1-\left|\rho_{d,r}\right|}{1+\left|\rho_{d,r}\right|}\]
 
 \end_inset
 
@@ -2539,7 +2552,186 @@ Pro vzájemně dobře zobrazitelné bloky
 \end_layout
 
 \begin_layout Section
-Penalizace vysokého lineárního koeficientu
+Penalizace vysokého lineárního koeficientu 
+\begin_inset LatexCommand label
+name "Chyba_zobrazení/Penalizace"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Výše zmíněnou úpravou barevných zobrazení bylo sníženo riziko divergence
+ zobrazení bez nutnosti omezení lineárního koeficientu.
+ Díky tomu, že všechny hodnoty jsou omezeny v\InsetSpace ~
+intervalu 
+\begin_inset Formula $\left[0;1\right]$
+\end_inset
+
+ a cílové bloky mají vždy správnou průměrnou hodnotu, nemůžou se obrazy
+ zobrazení od původního obrázku příliš lišit (v\InsetSpace ~
+praxi funguje dobře, ale
+ bez jakéhokoliv důkazu omezení odchylky).
+\end_layout
+
+\begin_layout Standard
+Přesto jsou vysoké lineární koeficienty nebezpečné, protože zdrojové bloky
+ jsou při dekódování vždy pouze aproximací jejich stavu v\InsetSpace ~
+původním obrázku.
+ Čím vyšší je lineární koeficient, tím více se případná odchylka zdrojového
+ bloku distribuuje do cílového a poté případně v\InsetSpace ~
+dalších iteracích i do jiných
+ zdrojových bloků.
+\end_layout
+
+\begin_layout Standard
+Proto je zde navržena následující penalizace, která zvyšuje odhadovanou
+ chybu zobrazení v\InsetSpace ~
+závislosti na jeho lineárním koeficientu.
+ <*> Pokud ve vzorci pro chybu z\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Chyba_zobrazení/Upravená"
+
+\end_inset
+
+ přičteme k\InsetSpace ~
+hodnotám zdrojového bloku odchylku 
+\begin_inset Formula $\epsilon_{i}$
+\end_inset
+
+, dostaneme
+\begin_inset Formula \[
+\mathrm{\widetilde{SE}}\;=\;\sum_{i=1}^{n}\left[\bar{u}\left(\bar{d}_{i}+\epsilon_{i}\right)+\bar{v}\right]^{2}\;=\;\sum_{i=1}^{n}\left[\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}+\left(\bar{u}\bar{d}_{i}+\bar{v}\right)\bar{u}\epsilon_{i}+\bar{u}^{2}\epsilon_{i}^{2}\right]\]
+
+\end_inset
+
+Když označíme původní odchylku 
+\begin_inset Formula $e_{i}=\bar{u}\bar{d}_{i}+\bar{v}$
+\end_inset
+
+
+\begin_inset Formula \[
+\mathrm{\widetilde{SE}}\;=\;{\textstyle \sum}e_{i}^{2}+\bar{u}{\textstyle \sum}e_{i}\epsilon_{i}+\bar{u}^{2}{\textstyle \sum}\epsilon_{i}^{2}\]
+
+\end_inset
+
+První suma je zřejmě rovna původní chybě 
+\begin_inset Formula $\mathrm{\overline{SE}}$
+\end_inset
+
+.
+ Hodnota druhé sumy je závislá na korelaci odchylek způsobených nepřesností
+ zobrazení a odchylek ve zdrojovém bloku.
+ Lze snadno ukázat, že 
+\begin_inset Formula $\sum e_{i}=0$
+\end_inset
+
+ (platí díky tomu, že optimální zobrazení v\InsetSpace ~
+RMSE metrice zobrazují průměrnou
+ hodnotu zdrojového bloku na průměrnou hodnotu cílového bloku).
+ 
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Standard
+Deleted:
+\end_layout
+
+\begin_layout Standard
+Pokud by tedy byly chyby nezávislé, očekávaná hodnota sumy by byla nulová.
+ Protože o\InsetSpace ~
+její hodnotě nelze moc říct\InsetSpace ~
+--- může být kladná i záporná, je zde
+ zanedbána, což odpovídá předpokladu nezávislosti chyb (který je ale zcela
+ nepodložený).
+\end_layout
+
+\end_inset
+
+Za předpokladu, že chyby 
+\begin_inset Formula $\epsilon_{i}$
+\end_inset
+
+ nejsou korelované, vyjde nulová očekávaná hodnota druhé sumy.
+\end_layout
+
+\begin_layout Standard
+Třetí suma odpovídá odchylce zmenšeného zdrojového bloku.
+ Pokud požadovanou odchylku pro cílový blok označíme 
+\begin_inset Formula $\mathrm{SE'}$
+\end_inset
+
+ a poměr velikostí zdrojového bloku po zmenšení a před zmenšením označíme
+ 
+\begin_inset Formula $\alpha\in\left(0;1\right)$
+\end_inset
+
+.
+ Pak lze očekávat, že se bude odchylka zdrojového bloku před zmenšením pohybovat
+ okolo 
+\begin_inset Formula $\frac{\mathrm{SE'}}{\alpha}$
+\end_inset
+
+.
+ Když při zmenšování jeden pixel vzniká jako průměr 
+\begin_inset Formula $\frac{1}{\alpha}$
+\end_inset
+
+ pixelů zdrojového bloku s\InsetSpace ~
+nekorelovanými odchylkami, pak očekávaná čtvercová
+ chyba zmenšeného zdrojového bloku je rovna 
+\begin_inset Formula $\alpha\cdot\mathrm{SE'}$
+\end_inset
+
+, tedy nová chyba zobrazení zahrnující očekávanou odchylku se zjednoduší
+ na
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula \[
+\mathrm{\widetilde{SE}}\;\approx\;\mathrm{\overline{SE}}\ +\ \bar{u}^{2}\alpha\ \mathrm{SE'}\;=\;\mathrm{\overline{SE}}\ +\ \alpha\frac{s_{r}^{2}}{s_{\bar{d}}^{2}}\ \mathrm{SE'}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Celém odvození penalizace lze analogicky provést i pro klasický model zobrazován
+í (v\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Chyba_zobrazení/Klasická"
+
+\end_inset
+
+), ale v\InsetSpace ~
+obou případech jsou používany nepodložené předpoklady, především
+ předpoklad nekorelovanosti chyb jednotlivých pixelů, který by bylo vhodné
+ alespoň statisticky ověřit.
+\end_layout
+
+\begin_layout Standard
+Implementace příslušného modulu (popsaná v\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Implementace/Zobrazování"
+
+\end_inset
+
+) dává možnost započítat penalizaci do chyb zobrazení.
+ Při jejím použití je dosahována výrazně vyšší kvalita dekódovaného obrázku
+ než při klasickém počítání s\InsetSpace ~
+omezenou nebo neomezenou velikostí lineárních
+ koeficientů za cenu pouze nepatrného poklesu kompresního poměru.
 \end_layout
 
 \begin_layout Chapter
@@ -4038,6 +4230,12 @@ Kvůli obecnosti návrhu rozhraní se i při dekompresi nezobrazují bloky rovno
 
 \begin_layout Section
 Hledání optimálních zobrazení
+\begin_inset LatexCommand label
+name "Implementace/Zobrazování"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
