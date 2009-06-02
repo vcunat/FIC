@@ -439,11 +439,11 @@ možností reprezentace obrázků ve stupních šedi je funkce tvaru
 
  s\InsetSpace ~
 pevným bodem co nejblíže danému obrázku (jeho funkci).
- Aby bylo zaručeno, že sjednocení lze provést, v\InsetSpace ~
+ Aby bylo zaručeno, že lze sjednocení provést, v\InsetSpace ~
 PIFS (partitioned IFS) je
  prostor obrázku rozdělen na disjunktní části
 \begin_inset Formula \[
-\forall i\in J\quad R_{i}\subset I^{2},\qquad\bigcup_{i\in J}R_{i}=I^{2},\qquad\forall i,j\in J\quad i\neq j\rightarrow R_{i}\cap R_{j}=\emptyset\]
+\forall i\in J\quad R_{i}\subset I^{2},\qquad\bigcup_{i\in J}R_{i}=I^{2},\qquad\forall i,j\in J\quad i\neq j\;\rightarrow\; R_{i}\cap R_{j}=\emptyset\]
 
 \end_inset
 
@@ -637,7 +637,13 @@ Postačí, aby existovalo
 \end_inset
 
 Z toho už plyne kontraktivita celého operátoru 
-\begin_inset Formula $F:\; d_{s\mathrm{up}}\left(Fg_{1},Fg_{2}\right)\;\le\; s\, d_{s\mathrm{up}}\left(g_{1},g_{2}\right)$
+\begin_inset Formula $F$
+\end_inset
+
+ 
+\begin_inset Formula \[
+d_{s\mathrm{up}}\left(Fg_{1},Fg_{2}\right)\;\le\; s\, d_{s\mathrm{up}}\left(g_{1},g_{2}\right)\]
+
 \end_inset
 
  a díky tomu lze použít kolážovou větu.
@@ -651,6 +657,12 @@ implementaci je tento odhad příliš volný,
 
 \begin_layout Subsection
 Optimální zobrazení
+\begin_inset LatexCommand label
+name "PIFS/Optimální_zobrazení"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -671,12 +683,12 @@ Pro daný cílový blok
 \begin_inset Formula $w_{i}$
 \end_inset
 
- tak, aby mapovalo blok na jeden ze souboru zdrojových bloků, který bývá
- pevně daný kvůli zjednodušení ukládání a vyhledávání.
- Tato volba je hlavním zdrojem výpočetní složitosti celé komprese a jejímu
- urychlení byla věnována značná část výzkumu v\InsetSpace ~
+ tak, aby mapovalo blok na jeden ze souboru zdrojových bloků.
+ Tento soubor bývá pevně daný kvůli zjednodušení ukládání a vyhledávání.
+ Volba zdrojového bloku je hlavním zdrojem výpočetní složitosti celé komprese
+ a jejímu urychlení byla věnována značná část výzkumu v\InsetSpace ~
 oblasti.
- Obecně je snaha zvolit takový zdrojový blok 
+ Obecně je snaha zvolit takový blok 
 \begin_inset Formula $D_{i}$
 \end_inset
 
@@ -831,7 +843,7 @@ key "Oien94"
 
  a podrobněji rozebráno v\InsetSpace ~
 6.\InsetSpace ~
-kapitole\InsetSpace ~
+kapitole knihy\InsetSpace ~
 
 \begin_inset LatexCommand cite
 key "Fish95"
@@ -883,13 +895,17 @@ drobnou modifikaci barevného zobrazení.
 \end_layout
 
 \begin_layout Standard
-Je důležité, že zatímco přičítaná průměrná barva 
+Přestože přičítaná průměrná barva 
 \begin_inset Formula $R_{i}$
 \end_inset
 
  je uložena v\InsetSpace ~
-charakteristice zobrazení a je stále stejná, lineární koeficient
- se může měnit s\InsetSpace ~
+charakteristice zobrazení a je stále stejná, skutečný konstantní
+ koeficient (výše značený 
+\begin_inset Formula $q_{i}$
+\end_inset
+
+) se může měnit s\InsetSpace ~
 každou iterací, takže z\InsetSpace ~
 matematického hlediska se 
 \begin_inset Formula $\tilde{c_{i}}$
@@ -910,7 +926,7 @@ rámci jedné iterace je ale
 \begin_inset Formula $c_{i}$
 \end_inset
 
- vždy zobrazuje průměnou barvu 
+ také vždy zobrazuje průměnou barvu 
 \begin_inset Formula $D_{i}$
 \end_inset
 
@@ -2100,13 +2116,23 @@ name "Chyba_zobrazení"
 
 \begin_layout Standard
 V\InsetSpace ~
-následujících výpočtech budeme pro zjednodušení pracovat s\InsetSpace ~
-diskrétním modelem
- obrázku, přestože analogická odvození lze udělat i se spojitým modelem.
- Protože je zde použita RMSE metrika, nehraje tvar bloků žádnou roli.
- Navíc budou bloky uvažovány jako jednorozměrné vektory hodnot, indexované
- tak, aby sobě odpovídající hodnoty zdrojových a cílových bloků měly stejné
- indexy (ovlivněno rotacemi).
+této kapitole je rozebrána nejdůležitější část komprese\InsetSpace ~
+--- výpočet chyby
+ optimálního zobrazení mezi dvojicí bloků.
+ 
+\end_layout
+
+\begin_layout Standard
+V\InsetSpace ~
+následujících výpočtech budeme pro zjednodušení pracovat se zdrojovým blokem,
+ který je už zmenšen na velikost cílového a správně otočen.
+ Navíc použijeme diskrétní model obrázku, přestože analogická odvození lze
+ udělat i se spojitým modelem.
+ Protože zde pracujeme s\InsetSpace ~
+RMSE metrikou, nehraje tvar bloků žádnou roli.
+ Bloky budou uvažovány jako jednorozměrné vektory hodnot, indexované tak,
+ aby sobě odpovídající hodnoty zdrojových a cílových bloků měly stejné indexy
+ (ovlivněno rotacemi).
  Hodnoty 
 \begin_inset Formula $i$
 \end_inset
@@ -2146,8 +2172,8 @@ reference "PIFS"
  byla diskutována možnost použití kolážové věty, která skutečnou chybu omezuje,
  ale v\InsetSpace ~
 praxi je nepoužitelná.
- Prvním důvodem je to, že dává příliš volný odhad, který neodpovídá realitě
- a druhým je to, že plnění předpokladu kontraktivity barevných zobrazení
+ Hlavním důvodem je to, že dává příliš volný odhad, který neodpovídá realitě
+ a také je nepříjemné, že plnění předpokladu kontraktivity barevných zobrazení
  výslednou odchylku výrazně zvětšuje.
 \end_layout
 
@@ -4288,6 +4314,10 @@ reference "Implementace/IShapeTransformer"
 \end_inset
 
 ).
+\end_layout
+
+\begin_layout Standard
+
 \end_layout
 
 \begin_layout Chapter*
