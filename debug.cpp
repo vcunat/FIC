@@ -88,7 +88,7 @@ namespace NOSPACE {
 		}
 		
 		void operator()(const ISquareRanges::RangeNode *range) {
-			const MStandardEncoder::RangeInfo &info= *MStandardEncoder::getInfo(range);
+			const MStdEncoder::RangeInfo &info= *MStdEncoder::getInfo(range);
 		//	increment the counts of ranges on this rotation and level
 			++rotCounts[info.rotation+1];
 			++levelCounts.at(range->level);
@@ -151,7 +151,7 @@ namespace NOSPACE {
 			{ GrayImageAssigner::operator()( rgb, pixel*mul+add ); }
 	};
 }
-QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
+QWidget* MStdEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 	const ISquareRanges::RangeList &ranges= planeBlock->ranges->getRangeList();
 	
 	QWidget *widget= new QWidget;
@@ -252,7 +252,7 @@ QWidget* MStandardEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 	} // if-then-else
 	
 	return widget;
-} // MStandardEncoder::debugModule method
+} // MStdEncoder::debugModule method
 
 
 QWidget* MQuadTree::debugModule(QPixmap &pixmap,const QPoint &click) {

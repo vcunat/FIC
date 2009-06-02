@@ -358,7 +358,7 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 
 
 
-/** Interface for domain-range mapping predictors for MStandardEncoder */
+/** Interface for domain-range mapping predictors for MStdEncoder */
 struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 	/** Contains information about one predicted domain block */
 	struct Prediction {

@@ -6,12 +6,12 @@
 /// \ingroup modules
 /** Standard square encoder - uses affine color transformation
  *	for one-domain to one-range mappings */
-class MStandardEncoder: public ISquareEncoder {
+class MStdEncoder: public ISquareEncoder {
 	DECLARE_debugModule;
 public:
 	static const Real MaxLinCoeff_none= 0;
 
-	DECLARE_TypeInfo( MStandardEncoder, "Standard encoder"
+	DECLARE_TypeInfo( MStdEncoder, "Standard encoder"
 	, "Classic encoder supporting one-domain to one-range mappings"
 	, {
 		label:	"Best-match predictor",
@@ -30,7 +30,7 @@ public:
 		label:	"Coefficient of big-scale penalization",
 		desc:	"How much will big linear coefficients in color-value\n"
 				"projections be penalized? (select zero to disable it)",
-		type:	settingFloat(0,1,4)
+		type:	settingFloat(0,0.25,4)
 	}, {
 		label:	"Take quantization errors into account",
 		desc:	"Selecting yes will result in slower but more precise encoding?",
@@ -43,7 +43,7 @@ public:
 		label:	"Sufficient quotient of SE",
 		desc:	"After reaching this quotient of square error,\n"
 				"no other domain blocks will be tried",
-		type:	settingFloat( 0, 0.25, 1 )
+		type:	settingFloat( 0, 0.05, 1 )
 	}, {
 		label:	"Quantization steps for average",
 		desc:	"The number (a power of two) of possible range block\n"
@@ -127,7 +127,7 @@ protected:
 protected:
 //	Construction and destruction
 	/** Only initializes #planeBlock to zero */
-	MStandardEncoder(): planeBlock(0) {}
+	MStdEncoder(): planeBlock(0) {}
 
 public:
 /**	\name ISquareEncoder interface

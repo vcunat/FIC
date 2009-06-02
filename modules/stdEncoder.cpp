@@ -65,7 +65,7 @@ namespace NOSPACE {
 			{ return a.indexBegin < b.indexBegin; }
 	};
 }
-MStandardEncoder::PoolInfos::const_iterator MStandardEncoder
+MStdEncoder::PoolInfos::const_iterator MStdEncoder
 ::getPoolFromDomID( int domID, const PoolInfos &poolInfos ) {
 	ASSERT( domID>=0 && domID<poolInfos.back().indexBegin );
 //	get the right pool
@@ -75,7 +75,7 @@ MStandardEncoder::PoolInfos::const_iterator MStandardEncoder
 		, LevelPoolInfo_indexComparator() ) -1;
 }
 
-const ISquareDomains::Pool& MStandardEncoder::getDomainData
+const ISquareDomains::Pool& MStdEncoder::getDomainData
 ( const RangeNode &rangeBlock, const ISquareDomains::PoolList &pools
 , const PoolInfos &poolInfos, int domIndex, int zoom, Block &block ) {
 
@@ -129,7 +129,7 @@ inline static Block adjustDomainForIncompleteRange( Block range, int rotation, B
 
 ////	Member methods
 
-void MStandardEncoder::initialize( IRoot::Mode mode, PlaneBlock &planeBlock_ ) {
+void MStdEncoder::initialize( IRoot::Mode mode, PlaneBlock &planeBlock_ ) {
 	planeBlock= &planeBlock_;
 //	prepare the domains-module
 	planeBlock->domains->initPools(*planeBlock);
@@ -173,7 +173,7 @@ namespace NOSPACE {
 } // namespace NOSPACE
 
 
-struct MStandardEncoder::EncodingInfo {
+struct MStdEncoder::EncodingInfo {
 	typedef bool (EncodingInfo::*ExactCompareProc)( Prediction prediction );
 
 private:
@@ -237,9 +237,8 @@ private:
 #define ALTERNATE_3(name,params...) ALTERNATE_2(name,##params,false), ALTERNATE_2(name,##params,true)
 #define ALTERNATE_4(name,params...) ALTERNATE_3(name,##params,false), ALTERNATE_3(name,##params,true)
 #define ALTERNATE_5(name,params...) ALTERNATE_4(name,##params,false), ALTERNATE_4(name,##params,true)
-const MStandardEncoder::EncodingInfo::ExactCompareProc
-MStandardEncoder::EncodingInfo::exactCompareArray[]
-= {ALTERNATE_5(&MStandardEncoder::EncodingInfo::exactCompareProc)};
+const MStdEncoder::EncodingInfo::ExactCompareProc MStdEncoder::EncodingInfo::exactCompareArray[]
+	= {ALTERNATE_5(&MStdEncoder::EncodingInfo::exactCompareProc)};
 #undef ALTERNATE_0
 #undef ALTERNATE_1
 #undef ALTERNATE_2
@@ -249,7 +248,7 @@ MStandardEncoder::EncodingInfo::exactCompareArray[]
 
 template< bool quantErrors, bool allowInversion, bool isRegular
 , bool restrictMaxLinCoeff, bool bigScalePenalty >
-bool MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
+bool MStdEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 	using namespace MatrixWalkers;
 //	find out which domain was predicted (pixel matrix and position within it)
 	Block domBlock;
@@ -299,7 +298,7 @@ bool MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 
 //	add big-scaling penalty if needed
 	if (bigScalePenalty)
-		optSE+= linCoeff2 * targetSE * sqr(pool.contrFactor) * stable.bigScaleCoeff;
+		optSE+= linCoeff2 * targetSE * pool.contrFactor * stable.bigScaleCoeff;
 
 //	test if the error is the best so far
 	if ( optSE < best.error ) {
@@ -319,7 +318,7 @@ bool MStandardEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 } // EncodingInfo::exactCompareProc method
 
 
-float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
+float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	ASSERT( planeBlock && !stdRangeSEs.empty() && !range.encoderData );
 	const IColorTransformer::PlaneSettings *plSet= planeBlock->settings;
 
@@ -413,7 +412,7 @@ float MStandardEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	return info.best.error;
 }
 
-void MStandardEncoder::buildPoolInfos4aLevel(int level,int zoom) {
+void MStdEncoder::buildPoolInfos4aLevel(int level,int zoom) {
 //	get the real maximum domain count (divide by the number of rotations)
 	int domainCountLog2= planeBlock->settings->domainCountLog2;
 	if ( settingsInt(AllowedRotations) )
@@ -441,7 +440,7 @@ void MStandardEncoder::buildPoolInfos4aLevel(int level,int zoom) {
 	poolInfos[poolCount].density= -1;
 }
 
-void MStandardEncoder::writeSettings(ostream &file) {
+void MStdEncoder::writeSettings(ostream &file) {
 	ASSERT( /*modulePredictor() &&*/ moduleCodec(true) && moduleCodec(false) );
 //	put settings needed for decoding
 	put<Uchar>( file, settingsInt(AllowedRotations) );
@@ -456,7 +455,7 @@ void MStandardEncoder::writeSettings(ostream &file) {
 	moduleCodec(true)->writeSettings(file);
 	moduleCodec(false)->writeSettings(file);
 }
-void MStandardEncoder::readSettings(istream &file) {
+void MStdEncoder::readSettings(istream &file) {
 	ASSERT( !modulePredictor() && !moduleCodec(true) && !moduleCodec(false) );
 //	get settings needed for decoding
 	settingsInt(AllowedRotations)= get<Uchar>(file);
@@ -472,7 +471,7 @@ void MStandardEncoder::readSettings(istream &file) {
 	moduleCodec(false)->readSettings(file);
 }
 
-void MStandardEncoder::writeData(ostream &file,int phase) {
+void MStdEncoder::writeData(ostream &file,int phase) {
 	typedef RangeList::const_iterator RLcIterator;
 	ASSERT( moduleCodec(true) && moduleCodec(false) );
 	ASSERT( planeBlock && planeBlock->ranges && planeBlock->encoder==this );
@@ -565,7 +564,7 @@ void MStandardEncoder::writeData(ostream &file,int phase) {
 			ASSERT(false);
 	}
 }
-void MStandardEncoder::readData(istream &file,int phase) {
+void MStdEncoder::readData(istream &file,int phase) {
 	typedef RangeList::const_iterator RLcIterator;
 	ASSERT( moduleCodec(true) && moduleCodec(false) );
 	ASSERT( planeBlock && planeBlock->ranges && planeBlock->encoder==this );
@@ -668,7 +667,7 @@ void MStandardEncoder::readData(istream &file,int phase) {
 	}
 }
 
-void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
+void MStdEncoder::decodeAct( DecodeAct action, int count ) {
 //	do some checks
 	ASSERT( planeBlock && planeBlock->ranges && planeBlock->encoder==this );
 	const RangeList &ranges= planeBlock->ranges->getRangeList();
@@ -718,7 +717,7 @@ void MStandardEncoder::decodeAct( DecodeAct action, int count ) {
 	}
 }
 
-void MStandardEncoder::initRangeInfoAccelerators() {
+void MStdEncoder::initRangeInfoAccelerators() {
 //	get references that are the same for all range blocks
 	const RangeList &ranges= planeBlock->ranges->getRangeList();
 	const ISquareDomains::PoolList &pools= planeBlock->domains->getPools();

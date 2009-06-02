@@ -48,6 +48,7 @@ void MQuadTree::writeData(ostream &file) {
 
 void MQuadTree::readData_buildRanges(istream &file,const PlaneBlock &block) {
 	ASSERT( fringe.empty() && !root );
+	DEBUG_ONLY( planeBlock= &block; )
 	zoom= block.settings->zoom;
 //	get from the stream the minimal and the maximal used level
 	NodeExtremes extremes;

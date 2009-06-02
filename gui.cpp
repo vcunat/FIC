@@ -246,6 +246,7 @@ void ImageViewer::encDone() {
 	IRoot *modules_encoded= EncodingProgress::destroy(encMsecs);
 
 	if (modules_encoded) { // encoding successful - iterate the image and display some info
+		zoom= 0;
 	//	replace the old state
 		delete modules_encoding;
 		modules_encoding= modules_encoded;

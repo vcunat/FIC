@@ -4,7 +4,7 @@
 #include "../interfaces.h"
 #include "../kdTree.h"
 
-/** Predictor for MStandardEncoder based on a theorem proven in Saupe's work */
+/** Predictor for MStdEncoder based on a theorem proven in Saupe's work */
 class MSaupePredictor: public IStdEncPredictor {
 	DECLARE_debugModule;
 
