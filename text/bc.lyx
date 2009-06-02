@@ -3524,13 +3524,21 @@ Ze souboru vstupujících obrázků je vytvořeno několik nezávislých
 úkoly
 \emph default
  a také ukládání do proudu bytů a zpětné nahrávání.
- Data všech 
+ 
+\end_layout
+
+\begin_layout Standard
+Data všech 
 \emph on
 úkolů
 \emph default
  jsou ukládána po fázích, což umožňuje implementaci progresivního dekódování,
  přestože pro něj momentálně není v\InsetSpace ~
 kořenovém modulu podpora.
+ Důležité pro účinnost progresivního dekódování je, že uspořádání fází má
+ vyšší prioritu než dělení na jednobarevné části způsobené zpracováním barev
+ nebo přílišnou velikostí obrázku.
+ Proto bylo nutné dostat tento koncept už do tak obecného rozhraní.
 \end_layout
 
 \begin_layout Subsubsection
@@ -3762,6 +3770,12 @@ nich nalezeno optimální
 
 \begin_layout Subsubsection
 MQuadTree
+\begin_inset LatexCommand label
+name "Implementace/MQuadTree"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -4306,7 +4320,7 @@ Rozhraní obsahuje metody pro inicializaci před (de)kompresí
  zobrazení).
  Dále jsou zde metody pro uložení a nahrátí nastavení, pro zjištění počtu
  ukládacích fází a pro uložení nebo nahrátí dat jednotlivých fází (význam
- fází vysvětlen v\InsetSpace ~
+ fází je vysvětlen v\InsetSpace ~
 
 \begin_inset LatexCommand ref
 reference "Implementace/IShapeTransformer"
@@ -4316,8 +4330,156 @@ reference "Implementace/IShapeTransformer"
 ).
 \end_layout
 
-\begin_layout Standard
+\begin_layout Subsubsection
+MStdEncoder
+\end_layout
 
+\begin_layout Standard
+Třída 
+\family typewriter
+MStdEncoder
+\family default
+ implementuje rozhraní podle modelu upravených zobrazení popsaného v\InsetSpace ~
+části\InsetSpace ~
+
+\begin_inset LatexCommand vref
+reference "PIFS/Použitý_model"
+
+\end_inset
+
+ a využívá vzorců odvozených v\InsetSpace ~
+kapitole\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Chyba_zobrazení"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Při hledání optimálního zdrojového bloku pro daný cílový blok (při kompresi)
+ jsou nejprve předpočítány různé údaje z\InsetSpace ~
+hodnot pixelů v\InsetSpace ~
+bloku.
+ Pak je postupně pro všechny zdrojové bloky předané predikčním modulem s\InsetSpace ~
+rozhraní
+m 
+\family typewriter
+IStd\SpecialChar \-
+Enc\SpecialChar \-
+Pre\SpecialChar \-
+dictor
+\family default
+ (zvolen uživatelem) počítána chyba zobrazení mezi dvojicí a je zapamatována
+ nejlepší kombinace.
+ Uživatel také může zvolit, zda bude zkoušeno osm způsobů otočení nebo jen
+ identita, zda budou povoleny záporné lineární koeficienty, jak moc budou
+ penalizovány vysoké lineární koeficienty (diskutováno v\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Chyba_zobrazení/Penalizace"
+
+\end_inset
+
+), zda budou započítány chyby vzniklé kvantizací, jak bude omezena absolutní
+ hodnota lineárních koeficientů, jak nízká dosažená chyba bude stačit pro
+ okamžité ukončení hledání, jak jemná bude kvantizace průměrů a směrodatných
+ odchylek a jaké moduly se budou starat o\InsetSpace ~
+ukládání kvantizovaných hodnot.
+\end_layout
+
+\begin_layout Standard
+Moduly pro ukládání kvantizovaných průměrů a směrodatných odchylek cílových
+ bloků splňují rozhraní 
+\family typewriter
+IInt\SpecialChar \-
+Codec a
+\family default
+ jsou zapojeny proto, že po sobě jdoucí hodnoty mají vysokou pravděpodobnost
+ být sobě blízké.
+ To zajištuje například modul 
+\family typewriter
+MQuad\SpecialChar \-
+Tree
+\family default
+ (popsán v\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Implementace/MQuadTree"
+
+\end_inset
+
+), který řadí bloky podle jejich pořadí na Hilbertově křivce, což výrazně
+ zvyšuje lokalitu posloupnosti.
+ Tyto vlastnosti ukládaných posloupností lze využít různými způsoby ke zvýšení
+ efektivity jejich uložení, a proto je tato práce oddělena do jiných modulů.
+\end_layout
+
+\begin_layout Standard
+Celá chyba lze pro všechny konfigurace snadno spočítat ze součtu hodnot
+ ve zdrojovém bloku, součtu jejich druhých mocnin, z\InsetSpace ~
+předpočítaných údajů
+ o\InsetSpace ~
+cílovém bloku a ze součtu součinů hodnot odpovídajících pixelů zdrojového
+ a cílového bloku.
+ Tento součet součinů je jediný potřebný údaj, který nelze získat v\InsetSpace ~
+konstantním
+ čase.
+ Ostatní hodnoty jsou spočteny snadno, nejčastěji pomocí struktur zmíněných
+ v\InsetSpace ~
+části 
+\begin_inset LatexCommand ref
+reference "Implementace/Matice"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Uživatel má mnoho možností pro změnu způsobu výpočtu chyby mezi dvojicí
+ bloků.
+ Zjišťovat konfiguraci a vyhodnocovat mnoho podmínek při každém výpočtu
+ chyby by způsobilo výrazné zpomalení.
+ Proto jsou možnosti realizovány jako šablonové parametry funkce počítající
+ chybu, která je instanciována pro každou kombinaci parametrů.
+ Na začátku hledání optimálního zdrojového bloku pro cílový blok se podle
+ konfigurace zjistí adresa příslušné funkce, která je pak vždy volána.
+ Každá z\InsetSpace ~
+funkcí je tedy kompilátorem optimalizována zvlášť a již nevyhodnocuje
+ žádné podmínky způsobené konfigurací.
+ Velké množství instanciovaných funkcí zvyšuje kromě rychlosti také velikost
+ binárního souboru, ale díky tomu, že funkce obsahují jen nejnutnější výpočty,
+ je jeho přínos pro celkovou velikost souboru nevýznamný.
+\end_layout
+
+\begin_layout Standard
+Modul implementuje podporu pro progresivní dekódování založenou na ukládácích
+ fázích zavedených v\InsetSpace ~
+části\InsetSpace ~
+
+\begin_inset LatexCommand ref
+reference "Implementace/IShapeTransformer"
+
+\end_inset
+
+.
+ V\InsetSpace ~
+první fázi jsou uloženy průměrné hodnoty všech bloků.
+ Průměry zaberou málo místa, ale už z\InsetSpace ~
+nich samotných lze zrekonstruovat použiteln
+ý náhled výsledku.
+ V\InsetSpace ~
+druhé fázi jsou uloženy směrodatné odchylky bloků.
+ V\InsetSpace ~
+třetí, poslední, fázi je uložen zbytek potřebných informací pro cílové
+ bloky s\InsetSpace ~
+nenulovou směrodatnou odchylkou\InsetSpace ~
+--- vždy bit pro znaménko lineárního
+ koeficientu a tři bity kódující otočení (jen pokud jsou potřeba) a indexy
+ zdrojových bloků.
 \end_layout
 
 \begin_layout Chapter*
