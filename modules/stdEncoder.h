@@ -5,11 +5,24 @@
 
 /// \ingroup modules
 /** Standard square encoder - uses affine color transformation
- *	for one-domain to one-range mappings */
+ *	for one-domain to one-range mappings. Uses modified mappings with fixed target
+ *	average and deviation and allows to set
+ *	- a predictor module (IStdEncPredictor), so only some pairs have to be compared exactly
+ *	- whether to try 8 isometric square transformations or identity only
+ *	- whether to allow negative linear coefficients
+ *	- the amount of big-scaling penalization (multiplier) 
+ *	- whether to take quantization errors into account
+ *	- how much to restrict the linear coefficients (its absolute values)
+ *	- the part of max. error that suffices (interrupts searching for better)
+ *	- the fineness of average and deviation quantization (separate, in powers of two)
+ *	- codec modules for quantized averages and deviations (IIntCodec) 
+ *	When encoding, given a range block the module succesively tries domains returned 
+ *	by the predictor, computes exact error and keeps track of the best-fitting domain
+ *	seen (yet). */
 class MStdEncoder: public ISquareEncoder {
 	DECLARE_debugModule;
 public:
-	static const Real MaxLinCoeff_none= 0;
+	static const float MaxLinCoeff_none= 0;
 
 	DECLARE_TypeInfo( MStdEncoder, "Standard encoder"
 	, "Classic encoder supporting one-domain to one-range mappings"
@@ -38,7 +51,7 @@ public:
 	}, {
 		label:	"Maximum linear coefficient",
 		desc:	"The maximum absolute value of linear coefficients",
-		type:	settingFloat(MaxLinCoeff_none,MaxLinCoeff_none,1.2)
+		type:	settingFloat(MaxLinCoeff_none,MaxLinCoeff_none,5.0)
 	}, {
 		label:	"Sufficient quotient of SE",
 		desc:	"After reaching this quotient of square error,\n"
@@ -94,27 +107,29 @@ public:
 	/** Stores information about a range's mapping, to be pointed by ISquareRanges::RangeNode.encoderData */
 	struct RangeInfo: public RangeNode::EncoderData, public Prediction {
 		struct {
-			Block domBlock;
-			const Pool *pool;
-		} decAccel;
-		Real qrAvg, qrDev2; // quant-rounded values
-		bool inverted;
+			Block domBlock;		///< domain block's position and size in its pool
+			const Pool *pool;	///< the pool of the domain
+		} decAccel; 	///< precomputed information about the domain (to accelerate)
+		
+		Real qrAvg		///  quant-rounded target average of the block
+		, qrDev2;		///< quant-rounded target variance of the block
+		bool inverted;	///< indicates whether the linear coefficient is negative
 
 		#ifndef NDEBUG
 		struct {
 			Real avg, dev2, constCoeff, linCoeff;
 		} exact;
 		#endif
+		
+		/** Extracts RangeNode::encoderData and down-casts it to RangeInfo */
+		static RangeInfo* get(RangeNode *range) {
+			RangeInfo *result= static_cast<RangeInfo*>(range->encoderData);
+			ASSERT(result);
+			return result;
+		}
+		static const RangeInfo* get(const RangeNode *range)
+			{ return get(constCast(range)); }
 	};
-	
-	/** Extracts RangeNode::encoderData and down-casts it to RangeInfo */
-	static RangeInfo* getInfo(RangeNode *range) {
-		RangeInfo *result= static_cast<RangeInfo*>(range->encoderData);
-		ASSERT(result);
-		return result;
-	}
-	static const RangeInfo* getInfo(const RangeNode *range)
-		{ return getInfo(constCast(range)); }
 
 protected:
 //	Module's data
@@ -122,11 +137,9 @@ protected:
 	std::vector<float> stdRangeSEs;	///< Caches the result of IQuality2SE::regularRangeErrors
 	LevelPoolInfos levelPoolInfos;	///< see LevelPoolInfos, only initialized for used levels
 
-	//BulkAllocator<RangeInfo> rangeInfoAlloc; ///< Allocator for RangeNode::encoderData
-
 protected:
 //	Construction and destruction
-	/** Only initializes #planeBlock to zero */
+	/** Only initializes ::planeBlock to zero */
 	MStdEncoder(): planeBlock(0) {}
 
 public:
@@ -149,8 +162,8 @@ public:
 	void readData(std::istream &file,int phase);
 ///	@}
 protected:
-	/** Builds #levelPoolInfos[\p level], uses #planeBlock->domains */
-	void buildPoolInfos4aLevel(int level,int zoom);
+	/** Builds ::levelPoolInfos[\p level], uses ::planeBlock->domains */
+	void buildPoolInfos4aLevel(int level);
 	/** Initializes decoding accelerators (in RangeInfo) for all range blocks */
 	void initRangeInfoAccelerators();
 

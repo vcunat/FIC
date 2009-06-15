@@ -1,10 +1,11 @@
 #include "stdEncoder.h"
 #include "../fileUtil.h"
 
-/// \file stdEncoder.cpp
-
 using namespace std;
 
+/// \file
+
+/** Quantizing stuff used by MStdEncoder \relates MStdEncoder */
 namespace Quantizer {
 	/** Quantizes f that belongs to [0;possib/2^scale] into [0;possib-1] */
 	inline int quantizeByPower(Real f,int scale,int possib) {
@@ -21,27 +22,35 @@ namespace Quantizer {
 		return result;
 	}
 
-	/** (De)Quantizer for range-block averages */
-	class Average {
-		int scale, possib;
+	class QuantBase {
+	protected:
+		int scale	///  how much should the values be scaled (like in ::quantizeByPower)
+		, possib;	///< the number of possibilities for quantization
+	public:
+		/** Quantizes a value */
+		int quant(Real val) const
+			{ return quantizeByPower(val,scale,possib); }
+		/** Dequantizes a value */
+		Real dequant(int i) const
+			{ return dequantizeByPower(i,scale,possib); }
+		/** Quant-rounds a value - returns its state after quantization and dequantization */
+		Real qRound(Real val) const
+			{ return dequant(quant(val)); }
+	};
+
+	/** (De)%Quantizer for range-block averages, only initializes QuantBase correctly */
+	class Average: public QuantBase {
 	public:
 		Average(int possibLog2) {
 			ASSERT(possibLog2>0);
 		//	the average is from [0,1]
 			scale= possibLog2;
 			possib= powers[possibLog2];
-		}
-		int quant(Real avg)
-			{ return quantizeByPower(avg,scale,possib); }
-		Real dequant(int i)
-			{ return dequantizeByPower(i,scale,possib); }
-		Real qRound(Real avg)
-			{ return dequant(quant(avg)); }
+		}	
 	};
 
-	/** (De)Quantizer for range-block deviations */
-	class Deviation {
-		int scale, possib;
+	/** (De)%Quantizer for range-block deviations, only initializes QuantBase correctly */
+	class Deviation: public QuantBase {
 	public:
 		Deviation(int possibLog2) {
 			ASSERT(possibLog2>0);
@@ -49,53 +58,9 @@ namespace Quantizer {
 			scale= possibLog2+1;
 			possib= powers[possibLog2];
 		}
-		int quant(Real dev)
-			{ return quantizeByPower(dev,scale,possib); }
-		Real dequant(int i)
-			{ return dequantizeByPower(i,scale,possib); }
-		Real qRound(Real dev)
-			{ return dequant(quant(dev)); }
 	};
-}
+} // Quantizer namespace
 
-namespace NOSPACE {
-	struct LevelPoolInfo_indexComparator {
-		typedef ISquareEncoder::LevelPoolInfo LevelPoolInfo;
-		bool operator()( const LevelPoolInfo &a, const LevelPoolInfo &b )
-			{ return a.indexBegin < b.indexBegin; }
-	};
-}
-MStdEncoder::PoolInfos::const_iterator MStdEncoder
-::getPoolFromDomID( int domID, const PoolInfos &poolInfos ) {
-	ASSERT( domID>=0 && domID<poolInfos.back().indexBegin );
-//	get the right pool
-	PoolInfos::value_type toFind;
-	toFind.indexBegin= domID;
-	return upper_bound( poolInfos.begin(), poolInfos.end(), toFind
-		, LevelPoolInfo_indexComparator() ) -1;
-}
-
-const ISquareDomains::Pool& MStdEncoder::getDomainData
-( const RangeNode &rangeBlock, const ISquareDomains::PoolList &pools
-, const PoolInfos &poolInfos, int domIndex, int zoom, Block &block ) {
-
-//	get the pool
-	PoolInfos::const_iterator it= getPoolFromDomID( domIndex, poolInfos );
-	const Pool &pool= pools[ it - poolInfos.begin() ];
-//	get the coordinates
-	int indexInPool= domIndex - it->indexBegin;
-	ASSERT( indexInPool>=0 && indexInPool<(it+1)->indexBegin );
-	int sizeNZ= powers[rangeBlock.level-zoom];
-	int zoomFactor= powers[zoom];
-//	changed: the domains are mapped along columns and not rows
-	int domsInCol= getCountForDensity( pool.height/zoomFactor, it->density, sizeNZ );
-	block.x0= (indexInPool/domsInCol)*it->density*zoomFactor;
-	block.y0= (indexInPool%domsInCol)*it->density*zoomFactor;
-	block.xend= block.x0+powers[rangeBlock.level];
-	block.yend= block.y0+powers[rangeBlock.level];
-
-	return pool;
-}
 
 /** Adjust block of a domain to be mapped equally on an incomplete range (depends on rotation) */
 inline static Block adjustDomainForIncompleteRange( Block range, int rotation, Block domain ) {
@@ -142,6 +107,7 @@ void MStdEncoder::initialize( IRoot::Mode mode, PlaneBlock &planeBlock_ ) {
 		typedef ISquareDomains::PoolList PoolList;
 	//	prepare the domains
 		planeBlock->domains->fillPixelsInPools(*planeBlock);
+		for_each( planeBlock->domains->getPools(), mem_fun_ref(&Pool::summers_makeValid) );
 	//	initialize the range summers
 		planeBlock->summers_makeValid();
 
@@ -152,6 +118,47 @@ void MStdEncoder::initialize( IRoot::Mode mode, PlaneBlock &planeBlock_ ) {
 	}
 }
 
+
+namespace NOSPACE {
+	struct LevelPoolInfo_indexComparator {
+		typedef ISquareEncoder::LevelPoolInfo LevelPoolInfo;
+		bool operator()( const LevelPoolInfo &a, const LevelPoolInfo &b )
+			{ return a.indexBegin < b.indexBegin; }
+	};
+}
+MStdEncoder::PoolInfos::const_iterator MStdEncoder
+::getPoolFromDomID( int domID, const PoolInfos &poolInfos ) {
+	ASSERT( domID>=0 && domID<poolInfos.back().indexBegin );
+//	get the right pool
+	PoolInfos::value_type toFind;
+	toFind.indexBegin= domID;
+	return upper_bound( poolInfos.begin(), poolInfos.end(), toFind
+		, LevelPoolInfo_indexComparator() ) -1;
+}
+
+const ISquareDomains::Pool& MStdEncoder::getDomainData
+( const RangeNode &rangeBlock, const ISquareDomains::PoolList &pools
+, const PoolInfos &poolInfos, int domIndex, int zoom, Block &block ) {
+
+//	get the pool
+	PoolInfos::const_iterator it= getPoolFromDomID( domIndex, poolInfos );
+	const Pool &pool= pools[ it - poolInfos.begin() ];
+//	get the coordinates
+	int indexInPool= domIndex - it->indexBegin;
+	ASSERT( indexInPool>=0 && indexInPool<(it+1)->indexBegin );
+	int sizeNZ= powers[rangeBlock.level-zoom];
+	int zoomFactor= powers[zoom];
+//	changed: the domains are mapped along columns and not rows
+	int domsInCol= getCountForDensity( pool.height/zoomFactor, it->density, sizeNZ );
+	block.x0= (indexInPool/domsInCol)*it->density*zoomFactor;
+	block.y0= (indexInPool%domsInCol)*it->density*zoomFactor;
+	block.xend= block.x0+powers[rangeBlock.level];
+	block.yend= block.y0+powers[rangeBlock.level];
+
+	return pool;
+}
+
+
 namespace NOSPACE {
 	typedef IStdEncPredictor::NewPredictorData StableInfo;
 
@@ -160,34 +167,36 @@ namespace NOSPACE {
 		float error;	///< The square error of the mapping
 		bool inverted;	///< Whether the colours are mapped with a negative linear coefficient
 		#ifndef NDEBUG
-		Real rdSum
-		, dSum		///  Sum of all pixels in best domain
-		, d2Sum;	///< Sum of squares of all pixesl in the best domain
+		Real rdSum		///  
+		, dSum			///  Sum of all pixels in best domain
+		, d2Sum;		///< Sum of squares of all pixesl in the best domain
 		#endif
 
+		/** Only initializes ::error to the maximum float value */
 		BestInfo()
 		: Prediction(), error( numeric_limits<float>::max() ) {}
+		/** Only returns reference to *this typed as IStdEncPredictor::Prediciton */
 		IStdEncPredictor::Prediction& prediction() 
 			{ return *this; }
 	};
 } // namespace NOSPACE
 
-
+/** Structure constructed for a range to try domains */
 struct MStdEncoder::EncodingInfo {
+	/** The type for exact-comparing methods */
 	typedef bool (EncodingInfo::*ExactCompareProc)( Prediction prediction );
 
 private:
-	/** Possible comparing methods */
-	static const ExactCompareProc exactCompareArray[];
+	static const ExactCompareProc exactCompareArray[];	///< Possible comparing methods
 
-	ExactCompareProc selectedProc; ///< Selected comparing method
+	ExactCompareProc selectedProc;						///< Selected comparing method
 public:
 	StableInfo stable;	///< Information only depending on the range (and not domain) block
 	BestInfo best;		///< Information about the best (at the moment) mapping found
-	float targetSE		///	 The maximal accepted SE (square error) for the range
-	, maxSE2Predict;	///< The maximal SE that the predictor should try to predict
+	float targetSE;		///< The target SE (square error) for the range
 
 public:
+	/** Only nulls ::selectedProc */
 	EncodingInfo()
 	: selectedProc(0) {}
 
@@ -209,7 +218,7 @@ public:
 		return ri;
 	}
 
-	/** Selects the right comparing method according to #stable */
+	/** Selects the right comparing method according to ::stable */
 	void selectExactCompareProc() {
 		selectedProc= exactCompareArray
 		[(((  stable.quantError *2
@@ -229,7 +238,7 @@ private:
 	template < bool quantErrors, bool allowInversion, bool isRegular
 	, bool restrictMaxLinCoeff, bool bigScalePenalty >
 	bool exactCompareProc( Prediction prediction );
-}; // EncodingInfo class
+}; // EncodingInfo struct
 
 #define ALTERNATE_0(name,params...) name<params>
 #define ALTERNATE_1(name,params...) ALTERNATE_0(name,##params,false), ALTERNATE_0(name,##params,true)
@@ -303,7 +312,7 @@ bool MStdEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 //	test if the error is the best so far
 	if ( optSE < best.error ) {
 		best.prediction()= prediction;
-		best.error= maxSE2Predict= optSE;
+		best.error= optSE;
 		best.inverted= nRDs_RsDs<0;
 
 		#ifndef NDEBUG
@@ -333,7 +342,7 @@ float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	info.stable.poolInfos=		&levelPoolInfos[range.level];
 //	check the level has been initialized
 	if ( info.stable.poolInfos->empty() ) {
-		buildPoolInfos4aLevel(range.level,plSet->zoom);
+		buildPoolInfos4aLevel(range.level);
 		ASSERT( !info.stable.poolInfos->empty() );
 	}
 
@@ -374,15 +383,15 @@ float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 		}
 	}
 
-	info.targetSE= info.maxSE2Predict= info.stable.isRegular ? stdRangeSEs[range.level]
+	info.targetSE= info.best.error= info.stable.isRegular ? stdRangeSEs[range.level]
 		: plSet->moduleQ2SE->rangeSE( plSet->quality, range.size() );
 	ASSERT(info.targetSE>=0);
 	if (allowHigherSE)
-		info.maxSE2Predict= numeric_limits<float>::max();
+		info.best.error= numeric_limits<float>::max();
 	info.selectExactCompareProc();
 
 	{ // a goto-skippable block
-	//	create and initialize a new predictor
+	//	create and initialize a new predictor (in auto_ptr because of exceptions)
 		auto_ptr<IStdEncPredictor::IOneRangePredictor> predictor
 		( modulePredictor()->newPredictor(info.stable) );
 		typedef IStdEncPredictor::Predictions Predictions;
@@ -390,7 +399,7 @@ float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	
 		float sufficientSE= info.targetSE*settingsFloat(SufficientSEq);
 	//	get and process prediction chunks until an empty one is returned
-		while ( !predictor->getChunk(info.maxSE2Predict,predicts).empty() )
+		while ( !predictor->getChunk(info.best.error,predicts).empty() )
 			for (Predictions::iterator it=predicts.begin(); it!=predicts.end(); ++it) {
 				bool betterSE= info.exactCompare(*it);
 				if ( betterSE && info.best.error<=sufficientSE )
@@ -399,8 +408,8 @@ float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	}
 		
 	returning:
-//	check the case that the predictor didn't return any domains
-	if ( info.best.error == numeric_limits<float>::max() ) { // a constant block
+//	check the case that the predictor didn't return any domains (or jumped to returning:)
+	if ( info.best.domainID < 0 ) { // a constant block
 		info.stable.qrDev= info.stable.qrDev2= 0;
 		info.best.error= info.stable.quantError
 			? info.stable.r2Sum + info.stable.qrAvg
@@ -412,17 +421,18 @@ float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	return info.best.error;
 }
 
-void MStdEncoder::buildPoolInfos4aLevel(int level,int zoom) {
+void MStdEncoder::buildPoolInfos4aLevel(int level) {
 //	get the real maximum domain count (divide by the number of rotations)
 	int domainCountLog2= planeBlock->settings->domainCountLog2;
 	if ( settingsInt(AllowedRotations) )
 		domainCountLog2-= 3;
 //	get the per-domain-pool densities
 	vector<short> densities= planeBlock->domains->getLevelDensities(level,domainCountLog2);
-//	store it in the this-level infos with beginIndex values for all pools
+//	storing the result in this-level infos with beginIndex values for all pools
 	vector<LevelPoolInfo> &poolInfos= levelPoolInfos[level];
 	ASSERT( poolInfos.empty() );
 	const ISquareDomains::PoolList &pools= planeBlock->domains->getPools();
+	int zoom= planeBlock->settings->zoom;
 
 	int domainSizeNZ= powers[level-zoom];
 	int poolCount= pools.size();
@@ -433,8 +443,8 @@ void MStdEncoder::buildPoolInfos4aLevel(int level,int zoom) {
 		int dens= poolInfos[i].density= densities[i];
 		ASSERT(dens>=0);
 		if (dens) // if dens==0, there are no domains -> no increase
-			domCount+= getCountForDensity2D( pools[i].width/powers[zoom]
-				, pools[i].height/powers[zoom], dens, domainSizeNZ );
+			domCount+= getCountForDensity2D( rShift(pools[i].width,zoom)
+				, rShift(pools[i].height,zoom), dens, domainSizeNZ );
 		poolInfos[i+1].indexBegin= domCount;
 	}
 	poolInfos[poolCount].density= -1;
@@ -447,8 +457,7 @@ void MStdEncoder::writeSettings(ostream &file) {
 	put<Uchar>( file, settingsInt(AllowedInversion) );
 	put<Uchar>( file, settingsInt(QuantStepLog_avg) );
 	put<Uchar>( file, settingsInt(QuantStepLog_dev) );
-//	put ID's of connected modules
-	//the predictor module doesn't need to be known
+//	put ID's of connected modules (the predictor module doesn't need to be known)
 	file_saveModuleType( file, ModuleCodecAvg );
 	file_saveModuleType( file, ModuleCodecDev );
 //	put the settings of connected modules
@@ -462,8 +471,7 @@ void MStdEncoder::readSettings(istream &file) {
 	settingsInt(AllowedInversion)= get<Uchar>(file);
 	settingsInt(QuantStepLog_avg)= get<Uchar>(file);
 	settingsInt(QuantStepLog_dev)= get<Uchar>(file);
-//	create connected modules
-	//the predictor module doesn't need to be known
+//	create connected modules (the predictor module isn't needed)
 	file_loadModuleType( file, ModuleCodecAvg );
 	file_loadModuleType( file, ModuleCodecDev );
 //	get the settings of connected modules
@@ -487,7 +495,7 @@ void MStdEncoder::writeData(ostream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				const RangeInfo *info= getInfo(*it);
+				const RangeInfo *info= RangeInfo::get(*it);
 				averages.push_back( quant.quant(info->qrAvg) );
 			}
 		//	pass it to the codec
@@ -504,7 +512,7 @@ void MStdEncoder::writeData(ostream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				const RangeInfo *info= getInfo(*it);
+				const RangeInfo *info= RangeInfo::get(*it);
 				int dev= ( info->domainID>=0 ? quant.quant(sqrt(info->qrDev2)) : 0 );
 				devs.push_back(dev);
 			}
@@ -521,7 +529,7 @@ void MStdEncoder::writeData(ostream &file,int phase) {
 				for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 					ASSERT( *it && (*it)->encoderData );
 					STREAM_POS(file);
-					const RangeInfo *info= getInfo(*it);
+					const RangeInfo *info= RangeInfo::get(*it);
 					if ( info->domainID >= 0 )
 						stream.putBits(info->inverted,1);
 				}
@@ -530,7 +538,7 @@ void MStdEncoder::writeData(ostream &file,int phase) {
 				for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 					ASSERT( *it && (*it)->encoderData );
 					STREAM_POS(file);
-					const RangeInfo *info= getInfo(*it);
+					const RangeInfo *info= RangeInfo::get(*it);
 					if ( info->domainID >= 0 ) {
 						ASSERT( 0<=info->rotation && info->rotation<8 );
 						stream.putBits( info->rotation, 3 );
@@ -549,7 +557,7 @@ void MStdEncoder::writeData(ostream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				const RangeInfo *info= getInfo(*it);
+				const RangeInfo *info= RangeInfo::get(*it);
 				int domID= info->domainID;
 				if ( domID >= 0 ) {
 					int bits= domBits[ (*it)->level ];
@@ -602,7 +610,7 @@ void MStdEncoder::readData(istream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				RangeInfo *info= getInfo(*it);
+				RangeInfo *info= RangeInfo::get(*it);
 				int quantDev= devs[it-ranges.begin()];
 				if (quantDev)
 					info->qrDev2= sqr(quant.dequant(quantDev));
@@ -623,7 +631,7 @@ void MStdEncoder::readData(istream &file,int phase) {
 				for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 					ASSERT( *it && (*it)->encoderData );
 					STREAM_POS(file);
-					RangeInfo *info= getInfo(*it);
+					RangeInfo *info= RangeInfo::get(*it);
 					if (info->qrDev2)
 						info->inverted= stream.getBits(1);
 				}
@@ -631,7 +639,7 @@ void MStdEncoder::readData(istream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				RangeInfo *info= getInfo(*it);
+				RangeInfo *info= RangeInfo::get(*it);
 				if (info->qrDev2)
 					info->rotation= settingsInt(AllowedRotations) ? stream.getBits(3) : 0;
 			}
@@ -641,14 +649,14 @@ void MStdEncoder::readData(istream &file,int phase) {
 			for (RLcIterator it=ranges.begin(); it!=ranges.end(); ++it) {
 				ASSERT( *it && (*it)->encoderData );
 				STREAM_POS(file);
-				RangeInfo *info= getInfo(*it);
+				RangeInfo *info= RangeInfo::get(*it);
 				if (!info->qrDev2)
 					continue;
 				int level= (*it)->level;
 				int bits= domBits[level];
 				if (bits<0) {
 				//	yet unused level -> initialize it and get the right bits
-					buildPoolInfos4aLevel(level,planeBlock->settings->zoom);
+					buildPoolInfos4aLevel(level);
 					bits= domBits[level]
 					= log2ceil( levelPoolInfos[level].back().indexBegin );
 					ASSERT( bits>0 );
@@ -688,13 +696,14 @@ void MStdEncoder::decodeAct( DecodeAct action, int count ) {
 		//	prepare the domains, iterate each range block
 			planeBlock->domains->fillPixelsInPools(*planeBlock);
 			for (RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it) {
-				const RangeInfo &info= *getInfo(*it);
+				const RangeInfo &info= *RangeInfo::get(*it);
 				if ( info.domainID < 0 ) { // no domain - constant color
 					planeBlock->pixels.fillSubMatrix( **it, info.qrAvg );
 					continue;
 				}
 			//	get domain sums and the pixel count
 				Real dSum, d2Sum;
+				info.decAccel.pool->summers_makeValid();
 				info.decAccel.pool->getSums(info.decAccel.domBlock).unpack(dSum,d2Sum);
 				Real pixCount= (*it)->size();
 
@@ -726,13 +735,13 @@ void MStdEncoder::initRangeInfoAccelerators() {
 	for ( RangeList::const_iterator it=ranges.begin(); it!=ranges.end(); ++it ) {
 	//	get range level, reference to the range's info and to the level's pool infos
 		int level= (*it)->level;
-		RangeInfo &info= *getInfo(*it);
+		RangeInfo &info= *RangeInfo::get(*it);
 		if ( info.domainID < 0 )
 			continue;
 		const PoolInfos &poolInfos= levelPoolInfos[level];
 	//	build pool infos for the level (if neccesary), fill info's accelerators
 		if ( poolInfos.empty() ) 
-			buildPoolInfos4aLevel(level,zoom), ASSERT( !poolInfos.empty() );
+			buildPoolInfos4aLevel(level), ASSERT( !poolInfos.empty() );
 		info.decAccel.pool= &getDomainData
 			( **it, pools, poolInfos, info.domainID, zoom, info.decAccel.domBlock );
 	//	adjust domain's block if the range isn't regular

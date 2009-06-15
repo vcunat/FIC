@@ -253,7 +253,7 @@ struct ISquareRanges::RangeNode: public Block {
 		float bestSE; ///< the best square error found until now
 	};
 
-	/// \todo Encoders can store their data here, !not deleted! 
+	/// Encoders can store their data here, deleted in ::~RangeNode
 	mutable EncoderData *encoderData;
 	/// The smallest integer such that the block fits into square with side of length 2^level
 	int level;
@@ -266,6 +266,7 @@ protected:
 	RangeNode(const Block &block,int level_)
 	: Block(block), encoderData(0), level(level_) {}
 	
+	/** Only deletes ::encoderData */
 	~RangeNode()
 		{ delete encoderData; }
 }; // ISquareRanges::RangeNode struct
@@ -282,7 +283,7 @@ struct ISquareDomains: public Interface<ISquareDomains> {
 
 	/** Initializes the pools for given PlaneBlock, assumes settings are OK */
 	virtual void initPools(const PlaneBlock &planeBlock) =0;
-	/** Prepares domains in already initialized pools (and fills summers, etc.\ ) */
+	/** Prepares domains in already initialized pools (and invalidates summers, etc.\ ) */
 	virtual void fillPixelsInPools(PlaneBlock &planeBlock) =0;
 
 	/** Returns a reference to internal list of domain pools */

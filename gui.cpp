@@ -402,7 +402,9 @@ SettingsDialog::SettingsDialog( ImageViewer *parent, IRoot *settingsHolder )
 void SettingsDialog::initialize() {
 	QTreeWidgetItem *treeRoot= treeWidget->topLevelItem(0);
 	ASSERT( treeRoot && settings && setBox );
-	clearContainer( treeRoot->takeChildren() );
+	
+	clearQtContainer( treeRoot->takeChildren() );
+	
 	settings->adjustSettings(-1,treeRoot,setBox);
 	treeWidget->setCurrentItem(treeRoot);
 	treeWidget->expandAll();
@@ -413,7 +415,7 @@ void SettingsDialog::currentItemChanged(QTreeWidgetItem *curItem,QTreeWidgetItem
 	Module *curMod= static_cast<Module*>( curItem->data(0,Qt::UserRole).value<void*>() );
 	ASSERT(curMod);
 //	clear the settings box and make the module fill it
-	clearContainer( setBox->children() );
+	clearQtContainer( setBox->children() );
 	setBox->setTitle( tr("%1 module settings") .arg(curMod->info().name) );
 	curMod->adjustSettings(-1,0,setBox);
 }
@@ -548,7 +550,7 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 			if ( newId == setItem.m->info().id )
 				return;
 		//	replace the child module
-			clearContainer( myTree->takeChildren() );
+			clearQtContainer( myTree->takeChildren() );
 			delete setItem.m;
 			setItem.m= ModuleFactory::newModule(newId);
 			adjustSettings( -1, myTree, 0 );
@@ -632,7 +634,7 @@ void Module::settingsType2widget(QWidget *widget,const SettingTypeItem &typeItem
 		}
 	case ModuleCombo: {
 		const vector<int> &modules= *typeItem.type.data.compatIDs;
-		for_each( modules.begin(), modules.end(), ItemAdder(widget) );
+		for_each( modules, ItemAdder(widget) );
 		break;
 		}
 	case Combo:

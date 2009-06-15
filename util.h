@@ -75,6 +75,9 @@ template<int power,class R> struct Float2int {
 		{ return checkBoundsFunc( 0, convert(r), powers[power]-1 ); }
 };
 
+template<class C,class F> inline F for_each(C &container,F functor)
+	{ return for_each( container.begin(), container.end(), functor ); }
+
 /** Counts the number of '\n' characters in a C-string */
 inline int countEOLs(const char *s) {
 	int result= 0;
@@ -117,9 +120,10 @@ struct MultiDeleter {
 
 
 /** Deletes all pointers in a container (it has to support \c begin and \c end methods) */
-template<class C> void clearContainer(const C &container)
-	{ for_each( container.begin(), container.end(), SingleDeleter() ); }
-
+template<class C> inline void clearContainer(const C &container)
+	{ for_each( container, SingleDeleter() ); }	
+template<class C> inline void clearQtContainer(C container)
+	{ while (!container.isEmpty()) delete container.takeFirst(); }	
 
 template <class T,int bulkKb=64>
 class BulkAllocator {
@@ -134,7 +138,7 @@ public:
 	BulkAllocator(const BulkAllocator &DEBUG_ONLY(copy))
 		{ nextIndex=bulkCount; ASSERT(copy.pools.empty()); }
 	~BulkAllocator()
-		{ for_each( pools.begin(), pools.end(), MultiDeleter() ); }
+		{ for_each( pools, MultiDeleter() ); }
 
 	T* make() {
 	//	check for errors

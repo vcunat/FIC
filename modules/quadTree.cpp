@@ -38,7 +38,7 @@ void MQuadTree::encode(const PlaneBlock &toEncode) {
 void MQuadTree::writeData(ostream &file) {
 	ASSERT( !fringe.empty() && root );
 //	put in the stream the minimal and the maximal used level
-	NodeExtremes extremes= for_each( fringe.begin(), fringe.end(), NodeExtremes() );
+	NodeExtremes extremes= for_each( fringe, NodeExtremes() );
 	put<Uchar>(file,extremes.min-zoom);
 	put<Uchar>(file,extremes.max-zoom);
 //	put the tree structure in the stream

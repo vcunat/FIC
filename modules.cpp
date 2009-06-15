@@ -233,10 +233,8 @@ void ModuleFactory::initialize() {
 	Loki::TL::IterateTypes<Modules,Creator> gendata;
 	gendata( back_inserter(prototypes) );
 //	initialize the prototypes' settings and interconnections
-	for_each( prototypes.begin(), prototypes.end()
-	, mem_fun(&Module::createDefaultSettings) );
-	for_each( prototypes.begin(), prototypes.end()
-	, mem_fun(&Module::initDefaultModuleLinks) );
+	for_each( prototypes, mem_fun(&Module::createDefaultSettings) );
+	for_each( prototypes, mem_fun(&Module::initDefaultModuleLinks) );
 }
 void ModuleFactory::changeDefaultSettings(const Module &module) {
 //	get the right prototype

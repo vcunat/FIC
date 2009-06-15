@@ -146,8 +146,8 @@ void MStdDomains::fillPixelsInPools(PlaneBlock &planeBlock) {
 
 	}//	for (iterate over single-type intervals)
 
-//	we filled all pools, let's prepare the summers
-	for_each( pools.begin(), pools.end(), mem_fun_ref(&Pool::summers_makeValid) );
+//	(cancelled) we filled all pools, let's prepare the summers
+	//for_each( pools, mem_fun_ref(&Pool::summers_makeValid) );
 }//	::fillPixelsInPools
 
 namespace NOSPACE {

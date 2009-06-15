@@ -88,7 +88,7 @@ namespace NOSPACE {
 		}
 		
 		void operator()(const ISquareRanges::RangeNode *range) {
-			const MStdEncoder::RangeInfo &info= *MStdEncoder::getInfo(range);
+			const MStdEncoder::RangeInfo &info= *MStdEncoder::RangeInfo::get(range);
 		//	increment the counts of ranges on this rotation and level
 			++rotCounts[info.rotation+1];
 			++levelCounts.at(range->level);
@@ -159,7 +159,7 @@ QWidget* MStdEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 	
 	if ( pixmap.rect().contains(click) ) { // info about range clicked on
 		const RangeNode &range= *findRangeOnPoint( ranges, click );
-		const RangeInfo &info= *getInfo(&range);
+		const RangeInfo &info= *RangeInfo::get(&range);
 		
 		QString msg= QString("Quantized average: %1\nQuantized deviation: %2\n\n")
 			.arg((double)info.qrAvg) .arg((double)sqrt(info.qrDev2));
@@ -201,7 +201,7 @@ QWidget* MStdEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
 	} else { // provide general info
 		int maxLevel= 1 +log2ceil( max(planeBlock->width,planeBlock->height) );
 		RangeInfoAccumulator info( planeBlock->domains->getPools(), maxLevel );
-		info= for_each( ranges.begin(), ranges.end(), info );
+		info= for_each(ranges,info);
 		
 		{// create a label with various counts info
 			QString msg= "Range count: %1\nRotation counts: %2\nDomain pool counts: %3";
