@@ -23,13 +23,6 @@ namespace FieldMath {
 			transformer(*i1,*i2,*i3);
 		return transformer;
 	}
-	/** Analogous to ::transform2 */
-	template<class I1,class I2,class I3,class I4,class Transf>
-	Transf transform4( I1 i1, I1 iEnd1, I2 i2, I3 i3, I4 i4, Transf transformer ) {
-		for (; i1!=iEnd1; ++i1,++i2,++i3,++i4)
-			transformer(*i1,*i2,*i3,*i4);
-		return transformer;
-	}
 
 	/** Means b[i]=a[i]; Only meant for POD types */
 	template<class T> T* assign(const T *a,int length,T *b) {
@@ -70,54 +63,6 @@ namespace FieldMath {
 		return transform3( point, point+length, bounds, result
 			, MoveToBounds<T,CheckNaNs>() ) .sqrError;
 	}
-//	namespace NOSPACE {
-//		template<class T> struct Min {
-//			const T& operator()(const T &a,const T &b) const
-//				{ return min(a,b); }
-//		};
-//		template<class T> struct Max {
-//			const T& operator()(const T &a,const T &b) const
-//				{ return max(a,b); }
-//		};
-//	}
-//	/** Means b[i]=min(a[i],b[i]) */
-//	template<class T> T* min(const T *a,int length,T *b) {
-//		transform( a, a+length, b, b, Min<T>() );
-//		return b;
-//	}
-//	/** Means b[i]=max(a[i],b[i]) */
-//	template<class T> T* max(const T *a,int length,T *b) {
-//		transform( a, a+length, b, b, Max<T>() );
-//		return b;
-//	}
-
-//	/** Returns whether a[i]<=b[i] */
-//	template<class T> bool isOrdered(const T *a,const T *b,int length) {
-//		const T *aEnd=a+length;
-//		do {
-//			if ( *a++ > *b++ )
-//				return false;
-//		} while (a!=aEnd);
-//		return true;
-//	}
-	/*
-	namespace NOSPACE {
-		template<class T> struct Adder {
-			void operator()(const T &a,const T &b,T &c)
-				{ c=a+b; }
-		};
-		template<class T> struct Subtractor {
-			void operator()(const T &a,const T &b,T &c)
-				{ c=a-b; }
-		};
-	}
-	template<class T> T* add(const T *a,const T *b,int length,T *c) {
-		transform3( a, a+length, b, c, Adder<T>() );
-	}
-	template<class T> T* subtract(const T *a,const T *b,int length,T *c) {
-		transform3( a, a+length, b, c, Subtractor<T>() );
-	}
-	*/
 }
 
 template<class T> class KDBuilder;
