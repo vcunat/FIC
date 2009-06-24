@@ -103,8 +103,8 @@ namespace NOSPACE {
 }
 MSaupePredictor::OneRangePredictor::OneRangePredictor
 ( const NewPredictorData &data, int chunkSize_, const Tree &tree, int maxPredicts )
-: chunkSize(chunkSize_), predsRemain(maxPredicts)
-, firstChunk(true), allowRotations(data.allowRotations), isRegular(data.isRegular) 
+	: chunkSize(chunkSize_), predsRemain(maxPredicts)
+	, firstChunk(true), allowRotations(data.allowRotations), isRegular(data.isRegular) 
 {
 //	compute some accelerators, allocate space for normalized range (+rotations,inversion)
 	int rotationCount= allowRotations ? 8 : 1;

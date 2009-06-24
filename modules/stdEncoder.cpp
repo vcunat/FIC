@@ -419,7 +419,7 @@ float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 //	store the important info and return the error
 	range.encoderData= info.initRangeInfo( /*rangeInfoAlloc.make()*/ new RangeInfo );
 	return info.best.error;
-}
+} // ::findBestSE method
 
 void MStdEncoder::buildPoolInfos4aLevel(int level) {
 //	get the real maximum domain count (divide by the number of rotations)
@@ -571,7 +571,7 @@ void MStdEncoder::writeData(ostream &file,int phase) {
 		default:
 			ASSERT(false);
 	}
-}
+} // ::writeData method
 void MStdEncoder::readData(istream &file,int phase) {
 	typedef RangeList::const_iterator RLcIterator;
 	ASSERT( moduleCodec(true) && moduleCodec(false) );
@@ -673,7 +673,7 @@ void MStdEncoder::readData(istream &file,int phase) {
 		default:
 			ASSERT(false);
 	}
-}
+} // ::readData method
 
 void MStdEncoder::decodeAct( DecodeAct action, int count ) {
 //	do some checks
@@ -706,16 +706,15 @@ void MStdEncoder::decodeAct( DecodeAct action, int count ) {
 				info.decAccel.pool->summers_makeValid();
 				info.decAccel.pool->getSums(info.decAccel.domBlock).unpack(dSum,d2Sum);
 				Real pixCount= (*it)->size();
-
+			//	find out the coefficients and handle constant blocks
 				Real linCoeff= (info.inverted ? -pixCount : pixCount)
 					* sqrt( info.qrDev2 / ( pixCount*d2Sum - sqr(dSum) ) );
-
 				if ( !isnormal(linCoeff) || !linCoeff ) {
 					planeBlock->pixels.fillSubMatrix( **it, info.qrAvg );
 					continue;
 				}
 				Real constCoeff= info.qrAvg - linCoeff*dSum/pixCount;
-
+			//	map the nonconstant blocks
 				using namespace MatrixWalkers;
 				MulAddCopyChecked<Real> oper( linCoeff, constCoeff, 0, 1 );
 				walkOperateCheckRotate( Checked<SReal>(planeBlock->pixels, **it), oper
@@ -723,8 +722,8 @@ void MStdEncoder::decodeAct( DecodeAct action, int count ) {
 			}
 		} while (--count);
 		break;
-	}
-}
+	} // switch (action)
+} // ::decodeAct method
 
 void MStdEncoder::initRangeInfoAccelerators() {
 //	get references that are the same for all range blocks

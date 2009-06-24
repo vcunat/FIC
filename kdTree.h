@@ -31,12 +31,13 @@ namespace FieldMath {
 		return transformer;
 	}
 
-	/** Means b[i]=a[i]; */
+	/** Means b[i]=a[i]; Only meant for POD types */
 	template<class T> T* assign(const T *a,int length,T *b) {
-		//copy(a,a+length,b);
-
-		memcpy(b,a,length*sizeof(T));
-
+	#ifndef NDEBUG
+		copy( a, a+length, b );				// debugging version uses STL's copy
+	#else
+		memcpy( b, a, length*sizeof(T) );	// release version uses C's memory-copy (faster)
+	#endif
 		return b;
 	}
 

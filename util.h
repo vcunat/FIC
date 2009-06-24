@@ -122,6 +122,7 @@ struct MultiDeleter {
 /** Deletes all pointers in a container (it has to support \c begin and \c end methods) */
 template<class C> inline void clearContainer(const C &container)
 	{ for_each( container, SingleDeleter() ); }	
+/** Clears a QList of pointers (and deletes the pointers) */
 template<class C> inline void clearQtContainer(C container)
 	{ while (!container.isEmpty()) delete container.takeFirst(); }	
 
