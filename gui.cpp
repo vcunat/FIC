@@ -1,3 +1,5 @@
+#include <sstream> // needed for ::load and ::rezoom
+
 #include "gui.h"
 #include "modules/colorModel.h"	//	using color coefficients for RGB->gray conversion
 

@@ -1,8 +1,6 @@
 #ifndef MODULES_HEADER_
 #define MODULES_HEADER_
 
-#include "util.h"
-
 //	Forwards for all classes visible outside this header
 class Module;
 class ModuleFactory;

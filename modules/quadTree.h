@@ -1,7 +1,7 @@
 #ifndef QUADTREE_HEADER_
 #define QUADTREE_HEADER_
 
-#include "../interfaces.h"
+#include "../headers.h"
 
 //	forwards from "fileUtils.h"
 class BitWriter;

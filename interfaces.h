@@ -1,9 +1,6 @@
 #ifndef INTERFACES_HEADER_
 #define INTERFACES_HEADER_
 
-#include "modules.h"
-#include "matrixUtil.h"
-
 /* Forwards for interfaces */
 struct IRoot;
 struct IQuality2SE;

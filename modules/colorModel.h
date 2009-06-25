@@ -1,7 +1,7 @@
 #ifndef COLORMODEL_HEADER_
 #define COLORMODEL_HEADER_
 
-#include "../interfaces.h"
+#include "../headers.h"
 #include "../fileUtil.h"
 
 #include <QColor>

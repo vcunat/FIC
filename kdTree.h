@@ -1,8 +1,6 @@
 #ifndef KDTREE_HEADER_
 #define KDTREE_HEADER_
 
-#include "util.h"
-
 namespace NOSPACE {
 	using namespace std;
 }

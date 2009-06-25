@@ -1,7 +1,7 @@
 #ifndef NOPREDICTOR_HEADER_
 #define NOPREDICTOR_HEADER_
 
-#include "../interfaces.h"
+#include "../headers.h"
 
 /** Predictor that doesn't predict, just tries all the domains */
 class NoPredictor: public IStdEncPredictor {

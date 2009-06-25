@@ -1,9 +1,6 @@
 #ifndef UTIL_HEADER_
 #define UTIL_HEADER_
 
-#include "headers.h"
-#include "debug.h"
-
 /// \file
 
 /** Field containing 2^i on i-th position, defined in modules.cpp */
@@ -84,15 +81,6 @@ inline int countEOLs(const char *s) {
 	for (; *s; ++s)
 		if (*s=='\n')
 			++result;
-	return result;
-}
-
-/** Converts any type to std::string via std::stringstream */
-template<class T> inline std::string toString(const T &what) {
-	std::stringstream stream;
-	stream << what;
-	std::string result;
-	stream >> result;
 	return result;
 }
 

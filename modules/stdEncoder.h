@@ -1,7 +1,7 @@
 #ifndef STDENCODER_HEADER_
 #define STDENCODER_HEADER_
 
-#include "../interfaces.h"
+#include "../headers.h"
 
 /// \ingroup modules
 /** Standard square encoder - uses affine color transformation

@@ -1,7 +1,7 @@
 #ifndef SQUAREPIXELS_HEADER_
 #define SQUAREPIXELS_HEADER_
 
-#include "../interfaces.h"
+#include "../headers.h"
 #include "../fileUtil.h"
 
 /// \ingroup modules

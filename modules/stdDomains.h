@@ -1,7 +1,7 @@
 #ifndef STDDOMAINS_HEADER_
 #define STDDOMAINS_HEADER_
 
-#include "../interfaces.h"
+#include "../headers.h"
 
 /// \ingroup modules
 /** Standard domain-pool generator. Available settings:

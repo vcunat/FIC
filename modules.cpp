@@ -1,4 +1,6 @@
-#include "interfaces.h"
+#include <typeinfo> // needed for FerrisLoki/DataGenerators.h
+
+#include "headers.h"
 
 #include "modules/root.h"
 #include "modules/colorModel.h"
@@ -11,7 +13,6 @@
 #include "modules/saupePredictor.h"
 #include "modules/noPredictor.h"
 
-#include "util.h"
 #include "fileUtil.h"
 
 #include "FerrisLoki/DataGenerators.h"

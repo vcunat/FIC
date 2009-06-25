@@ -1,3 +1,5 @@
+#include <memory> // auto_ptr
+
 #include "stdEncoder.h"
 #include "../fileUtil.h"
 

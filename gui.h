@@ -1,7 +1,7 @@
 #ifndef GUI_HEADER_
 #define GUI_HEADER_
 
-#include "interfaces.h"
+#include "headers.h"
 
 #include <QAction>
 #include <QApplication>

@@ -1,7 +1,7 @@
 #ifndef SAUPEPREDICTOR_HEADER_
 #define SAUPEPREDICTOR_HEADER_
 
-#include "../interfaces.h"
+#include "../headers.h"
 #include "../kdTree.h"
 
 /** Predictor for MStdEncoder based on a theorem proven in Saupe's work */

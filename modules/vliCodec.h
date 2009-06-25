@@ -1,7 +1,7 @@
 #ifndef VLICODEC_HEADER_
 #define VLICODEC_HEADER_
 
-#include "../interfaces.h"
+#include "../headers.h"
 #include "../fileUtil.h"
 
 class VLI;

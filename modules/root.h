@@ -1,7 +1,7 @@
 #ifndef ROOT_HEADER_
 #define ROOT_HEADER_
 
-#include "../interfaces.h"
+#include "../headers.h"
 
 #include <QThread> // ::idealThreadCount
 

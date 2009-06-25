@@ -2,34 +2,36 @@
 	#define NDEBUG
 #endif
 
-/* Standard C++ includes */
-#include <algorithm>
-#include <cmath>
-//#include <cstdlib>	// size_t
-#include <cstring>		// memcpy
-#include <exception>
-#include <fstream>
-#include <functional>
+/* Standard C++ includes used almost everywhere */
+#include <algorithm>	// many functions concerning iterators
+#include <cmath>		// maths functions - sqrt, isnan, ...
+#include <fstream>		// streams
 #include <limits>		// numeric_limits
-#include <memory>
-#include <sstream>		// c++ conversions through streams
-#include <typeinfo>
-#include <vector>
+#include <vector>		// std::vector
 
-#include "FerrisLoki/static_check.h"
 
-/* Qt forwards */
+/* Qt forwards, pointers to these types are needed for some methods */
 class QImage;
 class QGroupBox;
 class QTreeWidgetItem;
 class QWidget;
-#ifndef NDEBUG
+#ifndef NDEBUG // needed for Module::debugModule prototypes
 	class QPixmap;
 	class QPoint;
 #endif
 
+
+/* Some type shortcuts */
 typedef unsigned char	Uchar;
 typedef unsigned short	Uint16;
 typedef unsigned int	Uint32;
 typedef ptrdiff_t		PtrInt;
 typedef size_t			Uint;
+
+
+/* Headers used almost everywhere */
+#include "debug.h"
+#include "util.h"
+#include "matrixUtil.h"
+#include "modules.h"
+#include "interfaces.h"

@@ -1,9 +1,6 @@
 #ifndef MATRIXUTIL_HEADER_
 #define MATRIXUTIL_HEADER_
 
-#include "debug.h"
-
-
 /** A simple structure representing a rectangle */
 struct Block {
 	short x0, y0, xend, yend;
