@@ -200,7 +200,8 @@ public:
 			return result;
 		}
 	protected:
-		/** Divides the top nodes until there's a leaf on the top */
+		/** Divides the top nodes until there's a leaf on the top
+		 *	assumes it's safe to discard nodes further than \p maxSE */
 		template<bool CheckNaNs> void makeTopLeaf(T maxSE);
 
 	}; // PointHeap class
@@ -244,8 +245,7 @@ void KDTree<T>::PointHeap::makeTopLeaf(T maxSE) {
 	//	create a new heap-node, allocate it's data and assign index of the other child
 		HeapNode newHNode;
 		newHNode.data= allocator.makeField(kd.length+1);
-		newHNode.getSE()= newSE;
-		
+		newHNode.getSE()= newSE;	
 		newHNode.nodeIndex= heapRoot.nodeIndex-goRight+!goRight;
 	//	the nearest point of the new heap-node only differs in one coordinate
 		FieldMath::assign( heapRoot.getNearest(), kd.length, newHNode.getNearest() );
@@ -264,12 +264,13 @@ void KDTree<T>::PointHeap::makeTopLeaf(T maxSE) {
 	while ( it++ != heap.end() );
 } // KDTree<T>::PointHeap::makeTopLeaf<CheckNaNs>() method
 
-
+/** Derived type used to construct KDTree instances (::makeTree static method) */
 template<class T> class KDBuilder: public KDTree<T> {
 public:
 	typedef KDTree<T> Tree;
 	typedef T BoundsPair[2];
 	typedef typename Tree::Bounds Bounds;
+	/** Type for a method that chooses which coordinate to split */
 	typedef int (KDBuilder::*CoordChooser)
 		(int nodeIndex,int *beginIDs,int *endIDs,int depthLeft) const;
 protected:
@@ -290,7 +291,7 @@ protected:
 		if (count>1)
 			buildNode(1,dataIDs,dataIDs+count,depth);
 		delete[] chooserTmp;
-		DEBUG_ONLY( chooserTmp= 0; )
+		DEBUG_ONLY( chooserTmp= 0; data= 0; )
 	}
 
 	/** Creates bounds containing one value */
@@ -307,8 +308,8 @@ protected:
 				bounds[1]= val;
 		}
 	};
-	/** Computes the bounding box of #count vectors with length #length stored in #data.
-	 *	The vectors in #data are stored linearly, /p boundsRes should be preallocated */
+	/** Computes the bounding box of ::count vectors with length ::length stored in ::data.
+	 *	The vectors in ::data are stored linearly, \p boundsRes should be preallocated */
 	void getBounds(Bounds boundsRes) const {
 		using namespace FieldMath;
 		ASSERT(length>0);
@@ -322,8 +323,8 @@ protected:
 			transform2( nowData, nowData+length, boundsRes, BoundsExpander() );
 		}
 	}
-	/** Like #getBounds, but it only works on vectors with indices from [\p beginIDs;\p endIDs)
-	 *	instead of [0;#count), \p boundsRes should be preallocated to store the result */
+	/** Like ::getBounds, but it only works on vectors with indices from [\p beginIDs;\p endIDs)
+	 *	instead of [0;::count), \p boundsRes should be preallocated to store the result */
 	void getBounds(const int *beginIDs,const int *endIDs,Bounds boundsRes) const {
 		using namespace FieldMath;
 		ASSERT(endIDs>beginIDs);
@@ -342,6 +343,14 @@ protected:
 	void buildNode(int nodeIndex,int *beginIDs,int *endIDs,int depthLeft);
 
 public:
+	/** Builds a KDTree from \p count vectors of length \p length stored in \p data,
+	 *	splitting the nodes by \p chooser CoordChooser */
+	static Tree* makeTree(const T *data,int length,int count,CoordChooser chooser) {
+		KDBuilder builder(data,length,count,chooser);
+	//	moving only the necesarry data (pointers) into a new copy
+		return new Tree(builder);
+	}
+	
 	/** CoordChooser choosing the longest coordinate of the bounding box of the current interval */
 	int choosePrecise(int nodeIndex,int *beginIDs,int *endIDs,int /*depthLeft*/) const;
 	/** CoordChooser choosing the coordinate only according to the depth */
@@ -350,20 +359,15 @@ public:
 	/** CoordChooser choosing a random coordinate */
 	int chooseRand(int /*nodeIndex*/,int* /*beginIDs*/,int* /*endIDs*/,int /*depthLeft*/) const
 		{ return rand()%length; }
+	/** CoordChooser - like ::choosePrecise, but doesn't compute the real bounding box,
+	 *	only approximates it by splitting the parent's box (a little less accurate, but much faster) */
 	int chooseApprox(int nodeIndex,int* /*beginIDs*/,int* /*endIDs*/,int depthLeft) const;
-
-	static Tree* makeTree(const T *data,int length,int count,CoordChooser chooser) {
-		KDBuilder builder(data,length,count,chooser);
-	//	moving only the necesarry data (pointers) into a new copy
-		return new Tree(builder);
-	}
 }; // KDBuilder class
 
 
 
 namespace NOSPACE {
-	/** Finds the longest coordinate of a bounding box,
-	 *	only to be used in a for_each call in KDBuilder<T>::choosePrecise */
+	/** Finds the longest coordinate of a bounding box,	only to be used in for_each calls */
 	template<class T> struct MaxDiffCoord {
 		typedef typename KDBuilder<T>::BoundsPair BoundsPair;
 
@@ -392,18 +396,19 @@ template<class T> int KDBuilder<T>
 //	temporary storage for computed bounding box
 	BoundsPair boundsStorage[length];
 	const BoundsPair *localBounds;
-
+//	find out the bounding box
 	if ( nodeIndex>1 ) { // compute the bounding box
 		localBounds= boundsStorage;
 		getBounds( beginIDs, endIDs, boundsStorage );
 	} else // we are in the root -> we can use already computed bounds
-		localBounds= bounds;
+		localBounds= this->bounds;
 //	find and return the longest coordinate
 	MaxDiffCoord<T> mdc= for_each
 		( localBounds+1, localBounds+length, MaxDiffCoord<T>(localBounds[0]) );
 	ASSERT( mdc.nextIndex == length );
 	return mdc.bestIndex;
 }
+
 template<class T> int KDBuilder<T>::chooseApprox(int nodeIndex,int*,int*,int) const {
 	using namespace FieldMath;
 	ASSERT(nodeIndex>0);
@@ -420,8 +425,8 @@ template<class T> int KDBuilder<T>::chooseApprox(int nodeIndex,int*,int*,int) co
 		const typename Tree::Node &parent= nodes[nodeIndex/2];
 		Bounds parentBounds= myBounds-length;
 		if (nodeIndex%2) {	// I'm the right son -> bounds on this level not initialized
-			assign( parentBounds, length, myBounds );
-			myBounds[parent.coord][0]= parent.threshold; // adjusting the lower bound
+			assign( parentBounds, length, myBounds );		// copying parent bounds
+			myBounds[parent.coord][0]= parent.threshold;	// adjusting the lower bound
 		} else // I'm the left son
 			if ( nodeIndex+1 < count ) { // almost the same as brother -> only adjust the coordinate
 				myBounds[parent.coord][0]= parentBounds[parent.coord][0];
@@ -441,8 +446,8 @@ template<class T> int KDBuilder<T>::chooseApprox(int nodeIndex,int*,int*,int) co
 namespace NOSPACE {
 	/** Compares vectors (given by their indices) according to a given coordinate */
 	template<class T> class IndexComparator {
-		const T *data;
-		int length;
+		const T *data;	///< pointer to the right coordinate of the first vector (of index 0)
+		int length;		///< length of the vectors in ::data
 	public:
 		IndexComparator(const T *data_,int length_,int index_)
 		: data(data_+index_), length(length_) {}
@@ -456,16 +461,17 @@ template<class T> void KDBuilder<T>
 //	check we've got at least one vector and the depth&count are adequate to each other
 	ASSERT( count>=2 && powers[depthLeft-1]<count && count<=powers[depthLeft] );
 	--depthLeft;
+//	find out where to split - how many items should be on the left to have the heap-shape
 	bool shallowRight= ( count <= powers[depthLeft]+powers[depthLeft-1] );
 	int *middle= shallowRight
 		? endIDs-powers[depthLeft-1]
 		: beginIDs+powers[depthLeft];
-//	find out the dividing coordinate and find the median in this coordinate
+//	find out the dividing coordinate and find the "median" in this coordinate
 	int coord= (this->*chooser)(nodeIndex,beginIDs,endIDs,depthLeft);
 	nth_element( beginIDs, middle , endIDs, IndexComparator<T>(data,length,coord) );
 //	fill the node's data (dividing coordinate and its threshold)
 	nodes[nodeIndex].coord= coord;
-	nodes[nodeIndex].threshold= data[*middle*length+coord];
+	nodes[nodeIndex].threshold= data[*middle*length+coord]; // min. value of the right son
 //	recurse on both halves (if needed; fall-through switch)
 	switch (count) {
 	default: //	we've got enough nodes - build both subtrees (fall through)
