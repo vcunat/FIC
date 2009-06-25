@@ -187,8 +187,8 @@ MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 		ASSERT( 0<=bestInfo.index && bestInfo.index<heapCount );
 		PointHeap &bestHeap= *heaps[bestInfo.index];
 		it->domainID= isRegular
-			? bestHeap.popLeaf<false>()
-			: bestHeap.popLeaf<true>();
+			? bestHeap.popLeaf<false>(maxNormalizedSE)
+			: bestHeap.popLeaf<true>(maxNormalizedSE);
 		it->rotation= allowRotations ? bestInfo.index%8 : 0; // modulo - for the case of inversion
 	//	check for emptying the heap
 		if ( !bestHeap.isEmpty() ) {

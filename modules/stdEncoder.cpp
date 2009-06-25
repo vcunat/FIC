@@ -200,7 +200,7 @@ public:
 	EncodingInfo()
 	: selectedProc(0) {}
 
-	/** Initializes a RangeInfo object from #this */
+	/** Initializes a RangeInfo object from \p this */
 	RangeInfo* initRangeInfo(RangeInfo *ri) const {
 		ri->bestSE=		best.error;
 		ri->domainID=	best.domainID;

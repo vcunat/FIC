@@ -35,12 +35,16 @@ namespace FieldMath {
 	}
 
 	namespace NOSPACE {
+		/** A helper transforming structure, only to be used in ::moveToBounds_copy */
 		template<class T,bool CheckNaNs> struct MoveToBounds {
-			T sqrError;
+			T sqrError; ///< square error accumulated so far
 
+			/** Only sets ::sqrError to zero */
 			MoveToBounds()
 			: sqrError(0) {}
 
+			/** Moves one coordinate of a point (in \p point) to a bounding box
+			 *	(in \p bounds) accumulating ::sqrError and storing result (in \p result) */
 			void operator()(const T &point,const T bounds[2],T &result) {
 				if ( CheckNaNs && isNaN(point) )
 					return;
@@ -66,7 +70,7 @@ namespace FieldMath {
 }
 
 template<class T> class KDBuilder;
-/** A generic KD-tree */
+/** A generic static KD-tree \todo */
 template<class T> class KDTree {
 public:
 	friend class KDBuilder<T>;
@@ -75,32 +79,44 @@ protected:
 	/** Represents one node of the KD-tree */
 	struct Node {
 		int coord;	///< The coordinate along which the tree splits in this node
-		T threshold;///< The threshold of the split (left[#coord] <= #threshold <= right[#coord])
+		T threshold;/**< The threshold of the split
+					 *	 (left[::coord] <= ::threshold <= right[::coord]) */
 	};
 	typedef T (*Bounds)[2];
 
 public:
-	const int depth			///  The depth of the tree = ::log2ceil(#count)
-	, length				///	 The length of the vectors
-	, count;				///< The number of the vectors
+	const int depth	///  The depth of the tree = ::log2ceil(::count)
+	, length		///	 The length of the vectors
+	, count;		///< The number of the vectors
 protected:
-	Node *nodes;	///< The array of the tree-nodes
+	Node *nodes;	///< The array of the tree-nodes (heap-like topology of the tree)
 	int *dataIDs;	///< Data IDs for children of "leaf" nodes
 	Bounds bounds;	///< The bounding box for all the data
 
-	/** Builds a new KD-tree from \p count_ vectors of \p length_ elements stored in \data */
+	/** Prepares to build a new KD-tree from \p count_ vectors of \p length_ elements */
 	KDTree(int length_,int count_)
 	: depth( log2ceil(count_) ), length(length_), count(count_)
 	, nodes( new Node[count_] ), dataIDs( new int[count_] ), bounds( new T[length_][2] ) {
 	}
 
-	/** Copy constructor with swapping (or rather moving) semantics */
+	/** Copy constructor with moving semantics (destroys its argument) */
 	KDTree(KDTree &other)
 	: depth(other.depth), length(other.length), count(other.count)
 	, nodes(other.nodes), dataIDs(other.dataIDs), bounds(other.bounds) {
 		other.nodes= 0;
 		other.dataIDs= 0;
 		other.bounds= 0;
+	}
+	
+	/** Takes an index of a "leaf" node (past the end of ::nodes) 
+	 *	and returns the appropriate data ID */
+	int leafID2dataID(int leafID) const {
+		ASSERT( count<=leafID && leafID<2*count );
+		int index= leafID-powers[depth];
+		if (index<0)
+			index+= count; // it is on the shallower side of the tree
+		ASSERT( 0<=index && index<count );
+		return dataIDs[index];
 	}
 
 public:
@@ -111,26 +127,17 @@ public:
 		delete[] dataIDs;
 		delete[] bounds;
 	}
-	/** Takes an index of "leaf" (nonexistent) node and returns the appropriate data ID */
-	int leafID2dataID(int leafID) const {
-		ASSERT( count<=leafID && leafID<2*count );
-		int index= leafID-powers[depth];
-		if (index<0)
-			index+= count;
-		ASSERT( 0<=index && index<count );
-		return dataIDs[index];
-	}
 
 	/** Manages a heap from nodes of a KDTree.
-	 *	It returns vectors (their indices) in the order according to distance (SE)
-	 *	from a given fixed point. It can return a lower bound of the SEs of the remaining
+	 *	It returns vectors (their indices) in the order of ascending distance (SE)
+	 *	from a given fixed point. It can compute a lower bound of the SEs of the remaining
 	 *	vectors at any time. */
 	class PointHeap {
-		/** One element of the heap representing a node in the KDTree */
+		/** One element of the ::heap representing a node in the KDTree ::kd */
 		struct HeapNode {
-			int nodeIndex;	///< Index of the node in #kd
-			T *data;		///< Stores the SE and the coordinates of the nearest point
-
+			int nodeIndex;	///< Index of the node in ::kd
+			T *data;		/**< Stores the SE and the coordinates of the nearest point 
+							 *	 (to this node's bounding box) */
 			/** No-init constructor */
 			HeapNode() {}
 			/** Initializes the members from the parameters */
@@ -143,7 +150,7 @@ public:
 			/** Returns pointer to the nearest point to this node's bounding box */
 			T* getNearest()		{ return data+1; }
 		};
-		/** Defines the order of #heap - ascending according to #getSE */
+		/** Defines the order of ::heap - ascending according to ::getSE */
 		struct HeapOrder {
 			bool operator()(const HeapNode &a,const HeapNode &b)
 				{ return a.getSE() > b.getSE(); }
@@ -154,8 +161,8 @@ public:
 		vector<HeapNode> heap;		///< The current heap of the tree nodes
 		BulkAllocator<T> allocator;	///< The allocator for HeapNode::data
 	public:
-		/** Build the heap from the KDTree \p tree and vector \p point_
-		 *	(they've got to remain valid until destruction) */
+		/** Builds the heap from a KDTree \p tree and vector \p point_
+		 *	(they've got to remain valid until the destruction of this instance) */
 		PointHeap(const KDTree &tree,const T *point_,bool checkNaNs)
 		: kd(tree), point(point_) {
 			ASSERT(point);
@@ -181,29 +188,30 @@ public:
 			return heap[0].getSE();
 		}
 
-		/** Removes a leaf, returns the matching vector's index */
-		template<bool CheckNaNs> int popLeaf() {
+		/** Removes a leaf, returns the matching vector's index,
+		 *	assumes it's safe to discard nodes further than \p maxSE */
+		template<bool CheckNaNs> int popLeaf(T maxSE) {
 		//	ensure a leaf is on the top of the heap and get its ID
-			makeTopLeaf<CheckNaNs>();
+			makeTopLeaf<CheckNaNs>(maxSE);
 			int result= kd.leafID2dataID( heap.front().nodeIndex );
-		//	remove the top from the heap (no need to free the memory - #allocator)
+		//	remove the top from the heap (no need to free the memory - ::allocator)
 			pop_heap( heap.begin(), heap.end(), HeapOrder() );
 			heap.pop_back();
 			return result;
 		}
 	protected:
 		/** Divides the top nodes until there's a leaf on the top */
-		template<bool CheckNaNs> void makeTopLeaf();
+		template<bool CheckNaNs> void makeTopLeaf(T maxSE);
 
 	}; // PointHeap class
 }; // KDTree class
 
 
 template<class T> template<bool CheckNaNs>
-void KDTree<T>::PointHeap::makeTopLeaf() {
+void KDTree<T>::PointHeap::makeTopLeaf(T maxSE) {
 	ASSERT( !isEmpty() );
 //	exit if there's a leaf on the top already
-	if ( !(heap[0].nodeIndex<kd.count) )
+	if ( heap[0].nodeIndex >= kd.count )
 		return;
 	PtrInt oldHeapSize= heap.size();
 	HeapNode heapRoot= heap[0]; // making a local working copy of the top of the heap
@@ -214,43 +222,39 @@ void KDTree<T>::PointHeap::makeTopLeaf() {
 	//		one of them will have the same SE (replaces its parent on the top),
 	//		the other one can have higher SE (push_back-ed on the heap)
 
-	//	create a new heap-node and allocate it's data
+		bool validCoord= !CheckNaNs || !isNaN(point[node.coord]);
+	//	the higher SE can be computed from the parent heap-node
+		T newSE;
+		bool goRight; // will the heapRoot represent the right child or the left one?
+		if (validCoord) {
+			Real oldDiff= Real(point[node.coord]) - heapRoot.getNearest()[node.coord];
+			Real newDiff= Real(point[node.coord]) - node.threshold;
+			goRight= newDiff>0;
+			newSE= heapRoot.getSE() - sqr(oldDiff) + sqr(newDiff);
+			ASSERT( newSE >= heapRoot.getSE() );
+		} else {
+			newSE= heapRoot.getSE();
+			goRight= false; // both boolean values are possible 
+		}
+	//	the root will represent its closer child - neither nearest point nor SE changes
+		heapRoot.nodeIndex= heapRoot.nodeIndex*2 + goRight;
+	//	if the new SE is too high, continue (omit the child with this big SE)
+		if (newSE>maxSE)	
+			continue;
+	//	create a new heap-node, allocate it's data and assign index of the other child
 		HeapNode newHNode;
 		newHNode.data= allocator.makeField(kd.length+1);
-	//	assign index of the left child for both the heap-nodes (for now)
-		newHNode.nodeIndex= (heapRoot.nodeIndex*= 2);
+		newHNode.getSE()= newSE;
+		
+		newHNode.nodeIndex= heapRoot.nodeIndex-goRight+!goRight;
 	//	the nearest point of the new heap-node only differs in one coordinate
 		FieldMath::assign( heapRoot.getNearest(), kd.length, newHNode.getNearest() );
-
-		if ( !CheckNaNs || !isNaN(point[node.coord]) ) { // valid coordinate -> normal processing
+		if (validCoord)
 			newHNode.getNearest()[node.coord]= node.threshold;
-
-		//	the SE of the child heap-nodes can be computed from the parent heap-node
-			Real oldDistance= Real(point[node.coord]) - heapRoot.getNearest()[node.coord];
-			Real newDistance= Real(point[node.coord]) - node.threshold;
-			newHNode.getSE()= heapRoot.getSE() - sqr(oldDistance) + sqr(newDistance);
-			ASSERT( newHNode.getSE() >= heapRoot.getSE() );
-		/*	another way to do this, according to: A^2-B^2 = (A-B)*(A+B)
-			Real nearestInCoord= heapRoot.getNearest()[node.coord];
-			newHNode.getSE()= heapRoot.getSE() + (nearestInCoord-node.threshold)
-				* ( ldexp((Real)point[node.coord],1) - nearestInCoord - node.threshold );
-		*/
-		//	correct the nodeIndex of the new children
-			if ( newDistance <= 0 )
-			//	the point is in the left part -> the left child will be on the top
-				++newHNode.nodeIndex;
-			else
-			//	the point is in the right part -> the right child will be on the top
-				++heapRoot.nodeIndex;
-
-		} else  { // the coordinate doesn't have any effect
-			newHNode.getSE()= heapRoot.getSE();
-			++newHNode.nodeIndex;
-		}
-
 	//	add the new node to the back, restore the heap-property later
 		heap.push_back(newHNode);
-	} while ( heapRoot.nodeIndex<kd.count );
+		
+	} while ( heapRoot.nodeIndex < kd.count );
 
 	heap[0]= heapRoot; // restoring the working copy of the heap's top node
 //	restore the heap-property on the added nodes
@@ -350,6 +354,7 @@ public:
 
 	static Tree* makeTree(const T *data,int length,int count,CoordChooser chooser) {
 		KDBuilder builder(data,length,count,chooser);
+	//	moving only the necesarry data (pointers) into a new copy
 		return new Tree(builder);
 	}
 }; // KDBuilder class
@@ -357,16 +362,20 @@ public:
 
 
 namespace NOSPACE {
-	/** Finds the longest coordinate of a bounding box */
+	/** Finds the longest coordinate of a bounding box,
+	 *	only to be used in a for_each call in KDBuilder<T>::choosePrecise */
 	template<class T> struct MaxDiffCoord {
 		typedef typename KDBuilder<T>::BoundsPair BoundsPair;
 
-		T maxDiff;
-		int bestIndex, nextIndex;
+		T maxDiff; 		///< the maximal difference value
+		int bestIndex	///  the index where ::maxDiff occured
+		, nextIndex;	///< next index to be checked
 
+		/** Initializes from the 0-th index value */
 		MaxDiffCoord(const BoundsPair& bounds0)
 		: maxDiff(bounds0[1]-bounds0[0]), bestIndex(0), nextIndex(1) {}
 
+		/** To be called successively for indices from 1-st on */
 		void operator()(const BoundsPair& bounds_i) {
 			T diff= bounds_i[1]-bounds_i[0];
 			if (diff>maxDiff) {
