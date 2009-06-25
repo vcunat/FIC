@@ -12,18 +12,16 @@ IStdEncPredictor::IOneRangePredictor* MSaupePredictor
 	if (!tree)
 		tree= levelTrees[level]= createTree(data);
 	ASSERT(tree);
-
+//	get the max. number of domains to predict and create the predictor
 	int maxPredicts= (int)ceil(maxPredCoeff()*tree->count);
 	if (maxPredicts<=0)
 		maxPredicts= 1;
-
 	OneRangePredictor *result= 
-		new OneRangePredictor(data,settingsInt(ChunkSize),*tree,maxPredicts);
-
-
-	#ifndef NDEBUG
-	maxpred+= tree->count*(data.allowRotations?8:1)*(data.allowInversion?2:1);
-	result->predicted= &predicted;
+		new OneRangePredictor( data, settingsInt(ChunkSize), *tree, maxPredicts );
+		
+	#ifndef NDEBUG // collecting debugging stats
+		maxpred+= tree->count*(data.allowRotations?8:1)*(data.allowInversion?2:1);
+		result->predicted= &predicted;
 	#endif
 
 	return result;
@@ -56,14 +54,14 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 			//	compute the average and standard deviation (data needed for normalization)
 				Real sum, sum2;
 				pool.getSums(x0,y0,x0+sideLength,y0+sideLength).unpack(sum,sum2);
+				Real avg= ldexp(sum,-2*level);
 			//	the same as  = 1 / sqrt( sum2 - sqr(sum)/pixelCount  ) );
 				Real multiply= 1 / sqrt( sum2 - sqr(ldexp(sum,-level)) );
 				if ( !finite(multiply) )  
 					multiply= 1; // it would be better not to add the domains into the tree
-			//	if inversion is allowed and the first pixel is below zero then invert the block
-				//if ( data.allowInversion && *domPixNow < 0 )
-				//	multiply= -multiply;
-				Real avg= ldexp(sum,-2*level);
+			//	if inversion is allowed and the first pixel is below average, then invert the block
+				if ( data.allowInversion && *domPixNow < avg )
+					multiply= -multiply;
 				MatrixWalkers::AddMulCopy<Real> oper( -avg, multiply  );
 			//	copy every column of the domain's pixels (and normalize them on the way)
 				using namespace FieldMath;
@@ -85,6 +83,7 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 }
 
 namespace NOSPACE {
+	/** Transformer performing an affine function */
 	template<class T> struct AddMulCopyTo2nd {
 		T toAdd, toMul;
 
@@ -95,7 +94,7 @@ namespace NOSPACE {
 			{ res= (f+toAdd)*toMul; }
 		void innerEnd() const {}
 	};
-
+	/** Transformer performing sign change */
 	struct SignChanger {
 		template<class R1,class R2> void operator()(R1 in,R2 &out) const
 			{ out= -in; }

@@ -9,7 +9,7 @@ struct MQuadTree::NodeExtremes {
 	int min, max;
 
 	NodeExtremes()
-	: min( numeric_limits<int>::max() ), max( numeric_limits<int>::min() ) {}
+	: min( numeric_limits<int>::infinity() ), max( -numeric_limits<int>::infinity() ) {}
 	void operator()(const MQuadTree::RangeNode *node) {
 		int now= node->level;
 		if (now<min)

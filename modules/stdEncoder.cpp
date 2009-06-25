@@ -176,7 +176,7 @@ namespace NOSPACE {
 
 		/** Only initializes ::error to the maximum float value */
 		BestInfo()
-		: Prediction(), error( numeric_limits<float>::max() ) {}
+		: Prediction(), error( numeric_limits<float>::infinity() ) {}
 		/** Only returns reference to *this typed as IStdEncPredictor::Prediciton */
 		IStdEncPredictor::Prediction& prediction() 
 			{ return *this; }
@@ -389,7 +389,7 @@ float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 		: plSet->moduleQ2SE->rangeSE( plSet->quality, range.size() );
 	ASSERT(info.targetSE>=0);
 	if (allowHigherSE)
-		info.best.error= numeric_limits<float>::max();
+		info.best.error= numeric_limits<float>::infinity();
 	info.selectExactCompareProc();
 
 	{ // a goto-skippable block

@@ -1,6 +1,10 @@
 #ifndef KDTREE_HEADER_
 #define KDTREE_HEADER_
 
+#ifdef NDEBUG
+	#include <cstring> // memcpy
+#endif
+
 namespace NOSPACE {
 	using namespace std;
 }
