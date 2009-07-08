@@ -279,7 +279,7 @@ bool MStdEncoder::EncodingInfo::exactCompareProc( Prediction prediction ) {
 
 //	compute the sum of products of pixels
 	Real rdSum= walkOperateCheckRotate
-	( Checked<const SReal>(stable.rangePixels, *stable.rangeBlock), RDSummer<Real,SReal>()
+	( Checked<const SReal>(stable.rangePixels->pixels, *stable.rangeBlock), RDSummer<Real,SReal>()
 	, pool.pixels, domBlock, prediction.rotation ) .result();
 
 	Real nRDs_RsDs= stable.pixCount*rdSum - stable.rSum*dSum;
@@ -337,7 +337,7 @@ float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	EncodingInfo info;
 
 	info.stable.rangeBlock=		&range;
-	info.stable.rangePixels=	planeBlock->pixels;
+	info.stable.rangePixels=	planeBlock;
 	info.stable.pools=			&planeBlock->domains->getPools();
 
 	ASSERT( range.level < (int)levelPoolInfos.size() );

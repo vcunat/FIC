@@ -1,4 +1,5 @@
 #include "saupePredictor.h"
+#include "stdDomains.h" // because of HalfShrinker
 using namespace std;
 
 IStdEncPredictor::IOneRangePredictor* MSaupePredictor
@@ -27,62 +28,179 @@ IStdEncPredictor::IOneRangePredictor* MSaupePredictor
 	return result;
 }
 
+namespace MatrixWalkers {
+	/** Creates a Checked structure to walk a linear array as a matrix */
+	template<class T,class I> Checked<T,I> makeLinearizer(T* start,I inCount,I outCount) {
+		return Checked<T,I>
+			( MatrixSlice<T,I>::makeRaw(start,inCount), Block(0,0,outCount,inCount) );
+	}
+	
+	/** Walker that iterates over rectangles in a matrix and returns their sums,
+	 *	to be constructed by ::makeSumWalker */
+	template < class SumT, class PixT, class I >
+	struct SumWalker {
+		SummedMatrix<SumT,PixT,I> matrix;
+		I width, height, y0;//, xEnd, yEnd;
+		I x, y;
+		
+		//bool outerCond()	{ return x!=xEnd; }
+		void outerStep()	{ x+= width; }
+		
+		void innerInit()	{ y= y0; }
+		//bool innerCond()	{ return y!=yEnd; }
+		void innerStep()	{ y+= height; }
+		
+		SumT get()			{ return matrix.getValueSum(x,y,x+width,y+height); }
+	};
+	/** Constructs a square SumWalker on \p matrix starting on [\p x0,\p y0], iterating
+	 *	over squares of level (\p inLevel-\p outLevel) and covering a square of level \p outLevel */
+	template < class SumT, class PixT, class I >
+	SumWalker<SumT,PixT,I> makeSumWalker
+	( const SummedMatrix<SumT,PixT,I> &matrix, I x0, I y0, I inLevel, I outLevel ) {
+		ASSERT( x0>=0 && y0>=0 && inLevel>=0 && outLevel>=0 && inLevel>=outLevel );
+		SumWalker<SumT,PixT,I> result;
+		result.matrix= matrix;
+		result.width= result.height= powers[inLevel-outLevel];
+		result.y0= y0;
+		//result.xEnd= x0+powers[inLevel];
+		//result.yEnd= y0+powers[inLevel];
+		result.x= x0;
+		DEBUG_ONLY( result.y= numeric_limits<I>::max(); )
+		return result;
+	}
+	
+	/** Similar to HalfShrinker, but instead of multiplying the sums with 0.25
+	 *	it uses an arbitrary number */
+	template<class T,class I=PtrInt,class R=Real>
+	struct HalfShrinkerMul: public HalfShrinker<T,I> { ROTBASE_INHERIT
+		R toMul;
+		
+		HalfShrinkerMul( TMatrix matrix, R toMul_, I x0=0, I y0=0 )
+		: HalfShrinker<T,I>(matrix,x0,y0), toMul(toMul_) {}
+		
+		T get() { 
+			TMatrix &c= current;
+			T *cs= c.start;
+			return toMul * ( cs[0] + cs[1] + cs[c.colSkip] + cs[c.colSkip+1] );
+		}
+	};
+} // MatrixWalkers namespace
+namespace NOSPACE {
+	typedef MSaupePredictor::KDReal KDReal;
+	/** The common part of ::refineDomain and ::refineRange. It does the actual shrinking
+	 *	(if needed). \p multiply parameter would normalize pixels, not sums. */
+	inline static void refineBlock( const SummedPixels &pixMatrix, int x0, int y0
+	, int predWidth, int predHeight, Real multiply, Real avg
+	, int realLevel, int predLevel, SReal *pixelResult ) {
+		using namespace MatrixWalkers;
+	//	adjust the multiplication coefficients for normalizing from sums of values
+		int levelDiff= realLevel-predLevel;
+		if (levelDiff)
+			multiply= ldexp(multiply,-2*levelDiff);
+		ASSERT( finite(multiply) && finite(avg) );
+	//	construct the operator and the walker on the result
+		AddMulCopy<Real> oper( -avg, multiply );
+		Checked<KDReal> linWalker= makeLinearizer(pixelResult,predWidth,predHeight);
+	//	decide the shrinking method
+		if (levelDiff==0)		// no shrinking
+			walkOperate( linWalker, Rotation_0<SReal>(pixMatrix.pixels,x0,y0), oper );
+		else if (levelDiff==1)	// shrinking by groups of four
+			walkOperate( linWalker
+				, HalfShrinkerMul<SReal>(pixMatrix.pixels,multiply,x0,y0), oper );
+		else // levelDiff>=2	// shrinking by bigger groups - using the summer
+			walkOperate( linWalker
+				, makeSumWalker(pixMatrix,x0,y0,realLevel,predLevel), oper );
+	}
+}
+void MSaupePredictor::refineDomain( const SummedPixels &pixMatrix, int x0, int y0
+, bool allowInversion, int realLevel, int predLevel, SReal *pixelResult ) {
+//	compute the average and standard deviation (data needed for normalization)
+	int realSide= powers[realLevel];
+	Real sum, sum2;
+	pixMatrix.getSums(x0,y0,x0+realSide,y0+realSide).unpack(sum,sum2);
+	Real avg= ldexp(sum,-2*realLevel); // means avg= sum / (2^realLevel)^2
+//	the same as  = 1 / sqrt( sum2 - sqr(sum)/pixelCount  ) );
+	Real multiply= 1 / sqrt( sum2 - sqr(ldexp(sum,-realLevel)) );
+	if ( !finite(multiply) )
+		multiply= 1; // it would be better not to add the domains into the tree
+//	if inversion is allowed and the first pixel is below average, then invert the block
+	if ( allowInversion && pixMatrix.pixels[x0][y0] < avg )
+		multiply= -multiply;
+//	do the actual work
+	int predSide= powers[predLevel];
+	refineBlock( pixMatrix, x0, y0, predSide, predSide, multiply, avg
+	, realLevel, predLevel, pixelResult );
+}
+void MSaupePredictor::refineRange
+( const NewPredictorData &data, int predLevel, SReal *pixelResult ) {
+	const ISquareRanges::RangeNode &rb= *data.rangeBlock;
+	Real avg, multiply;
+	if ( data.isRegular || predLevel==rb.level ) { // no cropping of the block
+	//	compute the average and standard deviation (data needed for normalization)
+		avg= data.rSum/data.pixCount;
+		multiply= ( data.isRegular ? powers[rb.level] : sqrt(data.pixCount) ) / data.rnDev;
+	} else { // the block needs cropping
+	//	crop the range block so it doesn't contain parts of shrinked pixels
+		int mask= powers[rb.level-predLevel]-1;
+		int adjWidth= rb.width() & mask;
+		int adjHeight= rb.height() & mask;
+		int pixCount= adjWidth*adjHeight;
+		if (pixCount==0)
+			return;
+	//	compute the coefficients needed for normalization, assertion tests in ::refineBlock
+		Real sum, sum2;
+		data.rangePixels->getSums( rb.x0, rb.y0, rb.x0+adjWidth, rb.y0+adjHeight )
+			.unpack(sum,sum2);
+		avg= sum/pixCount;
+		multiply= 1 / sqrt( sum2 - sqr(sum)/pixCount );
+	}
+//	do the actual work
+	int levelDiff= rb.level-predLevel;
+	refineBlock( *data.rangePixels, rb.x0, rb.y0
+		, rShift(rb.width(),levelDiff), rShift(rb.height(),levelDiff)
+		, multiply, avg, rb.level, predLevel, pixelResult );
+}
+
 MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data) {
 //	compute some accelerators
 	const ISquareEncoder::LevelPoolInfos::value_type &poolInfos= *data.poolInfos;
-	int domainCount= poolInfos.back().indexBegin;
-	int level= data.rangeBlock->level;
-	int sideLength= powers[level];
-	int pixelCount= powers[2*level];
-//	create space for temporary domain pixels
-	KDReal *domPix= new KDReal[ domainCount * pixelCount ];
-//	init domain-blocks' from every pool
+	const int domainCount= poolInfos.back().indexBegin
+	, realLevel= data.rangeBlock->level
+	, predLevel= getPredLevel(realLevel)
+	, realSide= powers[realLevel]
+	, predPixCount= powers[2*predLevel];
+	ASSERT(realLevel>=predLevel);
+//	create space for temporary domain pixels, can be too big to be on the stack
+	KDReal *domPix= new KDReal[ domainCount * predPixCount ];
+//	init domain-blocks from every pool
 	KDReal *domPixNow= domPix;
 	int poolCount= data.pools->size();
 	for (int poolID=0; poolID<poolCount; ++poolID) {
 	//	check we are on the place we want to be; get the current pool, density, etc.
-		ASSERT( domPixNow-domPix == poolInfos[poolID].indexBegin*pixelCount );
+		ASSERT( domPixNow-domPix == poolInfos[poolID].indexBegin*predPixCount );
 		const ISquareDomains::Pool &pool= (*data.pools)[poolID];
 		int density= poolInfos[poolID].density;
 		if (!density) // no domains in this pool for this level
 			continue;
-		int poolXend= density*getCountForDensity( pool.width, density, sideLength );
-		int poolYend= density*getCountForDensity( pool.height, density, sideLength );
+		int poolXend= density*getCountForDensity( pool.width, density, realSide );
+		int poolYend= density*getCountForDensity( pool.height, density, realSide );
 	//	handle the domain block on [x0,y0] (for each in the pool)
 		for (int x0=0; x0<poolXend; x0+=density)
 			for (int y0=0; y0<poolYend; y0+=density) {
-			//	compute the average and standard deviation (data needed for normalization)
-				Real sum, sum2;
-				pool.getSums(x0,y0,x0+sideLength,y0+sideLength).unpack(sum,sum2);
-				Real avg= ldexp(sum,-2*level);
-			//	the same as  = 1 / sqrt( sum2 - sqr(sum)/pixelCount  ) );
-				Real multiply= 1 / sqrt( sum2 - sqr(ldexp(sum,-level)) );
-				if ( !finite(multiply) )  
-					multiply= 1; // it would be better not to add the domains into the tree
-			//	if inversion is allowed and the first pixel is below average, then invert the block
-				if ( data.allowInversion && *domPixNow < avg )
-					multiply= -multiply;
-				MatrixWalkers::AddMulCopy<Real> oper( -avg, multiply  );
-			//	copy every column of the domain's pixels (and normalize them on the way)
-				using namespace FieldMath;
-				KDReal *linCol= domPixNow;
-				KDReal *linColEnd= domPixNow+pixelCount;
-				for (int x=x0; linCol!=linColEnd; ++x,linCol+=sideLength)
-					transform2( linCol, linCol+sideLength, pool.pixels[x]+y0, oper );
-			//	move to the data of the next domain
-				domPixNow= linColEnd;
+				refineDomain( pool, x0, y0, data.allowInversion, realLevel, predLevel, domPixNow );
+				domPixNow+= predPixCount;
 			}
 	}
-	ASSERT( domPixNow-domPix == domainCount*pixelCount ); // check we are just at the end
+	ASSERT( domPixNow-domPix == domainCount*predPixCount ); // check we are just at the end
 //	create the tree from obtained data
 	Tree *result= Tree::Builder
-		::makeTree( domPix, pixelCount, domainCount, &Tree::Builder::chooseApprox );
+		::makeTree( domPix, predPixCount, domainCount, &Tree::Builder::chooseApprox );
 //	clean up temporaries, return the tree
 	delete[] domPix;
 	return result;
 }
 
-namespace NOSPACE {
+namespace MatrixWalkers {
 	/** Transformer performing an affine function */
 	template<class T> struct AddMulCopyTo2nd {
 		T toAdd, toMul;
@@ -94,10 +212,15 @@ namespace NOSPACE {
 			{ res= (f+toAdd)*toMul; }
 		void innerEnd() const {}
 	};
+	/** A simple assigning operator - assigns its second argument into the first one */
+	struct Assigner: public OperatorBase {
+		template<class R1,class R2> void operator()(const R1 &src,R2 &dest) const
+			{ dest= src; }
+	};
 	/** Transformer performing sign change */
 	struct SignChanger {
-		template<class R1,class R2> void operator()(R1 in,R2 &out) const
-			{ out= -in; }
+		template<class R1,class R2> void operator()(R1 src,R2 &dest) const
+			{ dest= -src; }
 	};
 }
 MSaupePredictor::OneRangePredictor::OneRangePredictor
@@ -108,34 +231,45 @@ MSaupePredictor::OneRangePredictor::OneRangePredictor
 //	compute some accelerators, allocate space for normalized range (+rotations,inversion)
 	int rotationCount= allowRotations ? 8 : 1;
 	heapCount= rotationCount * (data.allowInversion ? 2 : 1);
-	points= new KDReal[tree.length*heapCount];
+	points= new KDReal[tree.length*heapCount];	
+	
 //	if the block isn't regular, fill the space with NaNs (to be left on unused places)
 	if (!isRegular)
-		fill( points, points+tree.length*heapCount, numeric_limits<KDReal>::quiet_NaN() );
-//	compute normalizing transformation and initialize a normalizator object
-	Real multiply= sqrt(data.pixCount) / data.rnDev;
-	AddMulCopyTo2nd<Real> colorNorm( -data.rSum/data.pixCount, multiply );
+		fill( points, points+tree.length, numeric_limits<KDReal>::quiet_NaN() );
+	
+//	find out the prediction level (the level of the size) and the size of prediction sides
+	int predLevel= log2ceil(tree.length)/2;
+	int predSideLen= powers[predLevel];
+	ASSERT( powers[2*predLevel] == tree.length );
 //	compute SE-normalizing accelerator
-	errorNorm.initialize(data);
-	{
-		int sideLength= powers[data.rangeBlock->level];
-		Block localBlock(0,0,sideLength,sideLength);
-	//	create normalized rotations
-		for (int rot=0; rot<rotationCount; ++rot) {
-		//	fake the matrix for this rotation
-			MatrixSlice<KDReal> currRangeMatrix;
-			currRangeMatrix.allocate( sideLength, sideLength, points+rot*tree.length );
-		//	fill it with normalized data
-			using namespace MatrixWalkers;
-			walkOperateCheckRotate( Checked<const SReal>(data.rangePixels,*data.rangeBlock)
-			, colorNorm, currRangeMatrix, localBlock, rot );
+	errorNorm.initialize(data,predLevel);
+	
+	refineRange( data, predLevel, points );
+
+//	if rotations are allowed, rotate the refined block
+	if (allowRotations) {
+		using namespace MatrixWalkers;
+	//	create walker for the refined (and not rotated) block
+		Checked<KDReal> refBlockWalker= makeLinearizer( points, predSideLen, predSideLen );
+		
+		MatrixSlice<KDReal> rotMatrix= MatrixSlice<KDReal>::makeRaw(points,predSideLen);
+		Block shiftedBlock( 0, 0, predSideLen, predSideLen );
+		
+		for (int rot=1; rot<rotationCount; ++rot) {
+			rotMatrix.start+= tree.length; // shifting the matrix to the next rotation
+			walkOperateCheckRotate
+				( refBlockWalker, Assigner(), rotMatrix, shiftedBlock, rot );
 		}
+		ASSERT( rotMatrix.start == points+tree.length*(rotationCount-1) );
 	}
+
 //	create inverse of the rotations if needed
 	if (data.allowInversion) {
 		KDReal *pointsMiddle= points+tree.length*rotationCount;
-		FieldMath::transform2( points, pointsMiddle, pointsMiddle, SignChanger() );
+		FieldMath::transform2
+			( points, pointsMiddle, pointsMiddle, MatrixWalkers::SignChanger() );
 	}
+	
 //	create all the heaps and initialize their infos (and make a heap of the infos)
 	heaps.reserve(heapCount);
 	infoHeap.reserve(heapCount);

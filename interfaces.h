@@ -389,7 +389,7 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 
 struct IStdEncPredictor::NewPredictorData {
 	const ISquareRanges::RangeNode *rangeBlock;	///< Pointer to the range block
-	CSMatrix rangePixels;						///< Pointer to range's pixels
+	const SummedPixels *rangePixels;			///< Pointer to range's pixels
 	const ISquareDomains::PoolList *pools;		///< Pointer to the domain pools
 	const ISquareEncoder::LevelPoolInfos::value_type *poolInfos;
 		///< Pointer to LevelPoolInfos for all pools (for this level)

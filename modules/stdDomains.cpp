@@ -5,6 +5,38 @@ enum { MinDomSize=8, MinRngSize=4 };
 
 using namespace std;
 
+
+/** Implementations of shrinking routines by using MatrixWalkers */
+namespace NOSPACE {
+	using namespace MatrixWalkers;
+	/** Performs a simple 50\%^2 image shrink (dimensions belong to the destination)
+	 *	\relates MStdDomains */
+	void shrinkToHalf( CSMatrix src, SMatrix dest, int width, int height ) {
+		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
+		, HalfShrinker<const SReal>(src), ReverseAssigner() );
+	}
+	/** Performs a simple 33\%x66\% image horizontal shrink
+	 *	(dimensions belong to the destination) \relates MStdDomains */
+	void shrinkHorizontally( CSMatrix src, SMatrix dest, int width, int height ) {
+		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
+		, HorizShrinker<const SReal>(src), ReverseAssigner() );
+	}
+	/** Performs a simple 66\%x33\% image vertical shrink
+	 *	(dimensions belong to the destination) \relates MStdDomains */
+	void shrinkVertically( CSMatrix src, SMatrix dest, int width, int height ) {
+		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
+		, VertShrinker<const SReal>(src), ReverseAssigner() );
+	}
+	/** Performs 50\% shrink with 45-degree anticlockwise rotation
+	 *	(\p side - the length of the destination square; 
+	 *	\p sx0, \p sy0 - the top-left of the enclosing source square) \relates MStdDomains */
+	void shrinkToDiamond( CSMatrix src, SMatrix dest, int side ) {
+		walkOperate( Checked<SReal>(dest,Block(0,0,side,side))
+		, DiamShrinker<const SReal>(src,side), ReverseAssigner() );
+	}//	shrinkToDiamond
+}
+
+
 namespace NOSPACE {
 	/** Pool ordering according to Pool::type (primary key) and Pool::level (secondary) */
 	struct PoolTypeLevelComparator {
@@ -78,11 +110,6 @@ namespace NOSPACE {
 			&& rShift<int>(src->width,zoom+1) == rShift<int>(dest->width,zoom)
 			&& rShift<int>(src->height,zoom+1) == rShift<int>(dest->height,zoom);
 	}
-//	forwards, implemeted and described at the end of the file
-	static void shrinkToHalf		( CSMatrix src, SMatrix dest, int width, int height );
-	static void shrinkHorizontally	( CSMatrix src, SMatrix dest, int width, int height );
-	static void shrinkVertically	( CSMatrix src, SMatrix dest, int width, int height );
-	static void shrinkToDiamond		( CSMatrix src, SMatrix dest, int side );
 }
 void MStdDomains::fillPixelsInPools(PlaneBlock &planeBlock) {
 	ASSERT( !pools.empty() ); // assuming initPools has already been called
@@ -260,141 +287,4 @@ void MStdDomains::readSettings(istream &file) {
 	int setLength= info().setLength;
 	for (int i=0; i<setLength; ++i)
 		settingsInt(i)= get<Uchar>(file);
-}
-
-
-
-
-
-namespace MatrixWalkers {
-	struct ReverseAssigner: public OperatorBase {
-		template<class R1,class R2> void operator()(R1 &dest,R2 src) const { dest= src; }
-	};
-
-	template<class T,class I=PtrInt>
-	struct HalfShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
-		typedef Rotation_0<T,I> Base;
-		
-		HalfShrinker(TMatrix matrix)
-		: Base( matrix, Block(0,0,0,0) ) {}
-
-		T get() {
-			TMatrix &c= current;
-			T *cs= c.start;
-			return ldexp( cs[0] + cs[1] + cs[c.colSkip] + cs[c.colSkip+1], -2 ); 
-		}
-		void outerStep() { Base::outerStep(); Base::outerStep(); }
-		void innerStep() { Base::innerStep(); Base::innerStep(); }
-	};
-	
-	template<class T,class I=PtrInt>
-	struct HorizShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
-		typedef Rotation_0<T,I> Base;
-		
-		bool addHalf; ///< Adds half a pixel to the current position
-		
-		HorizShrinker(TMatrix matrix)
-		: Base( matrix, Block(0,0,0,0) ), addHalf(false) {}
-
-		T get() {
-			Real groups[2]; // groups[0]= sum of a full line, groups[1]= sum of a half line
-			T *cs= current.start;
-			groups[addHalf]= cs[0] + cs[current.colSkip] + cs[current.colSkip*2];
-			++cs;
-			groups[!addHalf]= cs[0] + cs[current.colSkip] + cs[current.colSkip*2];
-			return (ldexp(groups[0],1)+groups[1]) * Real(1/9);
-		}
-		void innerStep() {
-		//	do a 1.5-pixel step
-			Base::innerStep();
-			if (addHalf)
-				Base::innerStep();
-			addHalf= !addHalf;
-		}
-		void outerStep() {
-			for (int i=0; i<3; ++i)
-				Base::outerStep();
-		}
-	};
-	
-	template<class T,class I=PtrInt>
-	struct VertShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
-		typedef Rotation_0<T,I> Base;
-		
-		bool addHalf; ///< Adds half a pixel to the current position
-		
-		VertShrinker(TMatrix matrix)
-		: Base( matrix, Block(0,0,0,0) ) {}
-
-		T get() { 
-			Real groups[2]; // groups[0]= sum of a full line, groups[1]= sum of a half line
-			T *cs= current.start;
-			groups[addHalf]= cs[0] + cs[1] + cs[2];
-			cs+= current.colSkip;
-			groups[!addHalf]= cs[0] + cs[1] + cs[2];
-			return (ldexp(groups[0],1)+groups[1]) * Real(1/9);
-		}
-		void innerStep() { 
-			for (int i=0; i<3; ++i)
-				Base::innerStep(); 
-		}
-		void outerStep() {
-		//	do a 1.5-pixel step
-			Base::outerStep();
-			if (addHalf)
-				Base::outerStep();
-			addHalf= !addHalf;
-		}
-	};
-	
-	template<class T,class I=PtrInt> 
-	struct DiamShrinker: public Rotation_0<T,I> { ROTBASE_INHERIT
-		typedef Rotation_0<T,I> Base;
-		
-		DiamShrinker(TMatrix matrix,I side)
-		: Base( matrix, Block(side-1,0,0,0) ) {} // the diamond begins on top-middle
-
-		T get() {
-			TMatrix &c= current;
-			T *cs= c.start;
-			return ldexp( cs[0] + cs[1] + cs[c.colSkip] + cs[c.colSkip+1], -2 ); 
-		}
-		void outerStep() { lastStart+= current.colSkip+1; }
-		void innerStep() { current.start+= 1-current.colSkip; }
-	};
-}//	MatrixWalkers namespace
-
-
-/** Implementations of forward-declared functions */
-namespace NOSPACE {
-	using namespace MatrixWalkers;
-
-	/** Performs a simple 50\%^2 image shrink (dimensions belong to the destination)
-	 *	\relates MStdDomains */
-	void shrinkToHalf( CSMatrix src, SMatrix dest, int width, int height ) {
-		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
-		, HalfShrinker<const SReal>(src), ReverseAssigner() );
-	}
-	
-	/** Performs a simple 33\%x66\% image horizontal shrink
-	 *	(dimensions belong to the destination) \relates MStdDomains */
-	void shrinkHorizontally( CSMatrix src, SMatrix dest, int width, int height ) {
-		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
-		, HorizShrinker<const SReal>(src), ReverseAssigner() );
-	}
-	
-	/** Performs a simple 66\%x33\% image vertical shrink
-	 *	(dimensions belong to the destination) \relates MStdDomains */
-	void shrinkVertically( CSMatrix src, SMatrix dest, int width, int height ) {
-		walkOperate( Checked<SReal>(dest,Block(0,0,width,height))
-		, VertShrinker<const SReal>(src), ReverseAssigner() );
-	}
-	
-	/** Performs 50\% shrink with 45-degree anticlockwise rotation
-	 *	(\p side - the length of the destination square; 
-	 *	\p sx0, \p sy0 - the top-left of the enclosing source square) \relates MStdDomains */
-	void shrinkToDiamond( CSMatrix src, SMatrix dest, int side ) {
-		walkOperate( Checked<SReal>(dest,Block(0,0,side,side))
-		, DiamShrinker<const SReal>(src,side), ReverseAssigner() );
-	}//	shrinkToDiamond
 }

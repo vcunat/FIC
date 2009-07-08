@@ -33,7 +33,7 @@ public:
 protected:
 //	Module's data
 	std::vector<Tree*> levelTrees; ///< The predicting Tree for every level (can be missing)
-	#ifndef NDEBUG
+	#ifndef NDEBUG // the stats about the domain counts predicted
 	long predicted, maxpred;
 	#endif
 
@@ -42,6 +42,7 @@ protected:
 	#ifndef NDEBUG
 	MSaupePredictor(): predicted(0), maxpred(0) {}
 	#endif
+	/** Only call ::cleanUp */
 	~MSaupePredictor() { cleanUp(); }
 
 public:
@@ -56,8 +57,19 @@ public:
 ///	@}
 
 protected:
+	/** Computes the level for predictions based on the actual level */
+	int getPredLevel(int /*realLevel*/) const 
+		{ return 2;	}
+
 	/** Builds a new tree for one level of range blocks using passed domain blocks */
 	Tree* createTree(const NewPredictorData &data);
+
+	/** Normalizes and possibly shrinks a domain block */
+	static void refineDomain( const SummedPixels &pixMatrix, int x0, int y0
+		, bool allowInversion, int realLevel, int predLevel, SReal *pixelResult );
+	/** Normalizes and possibly shrinks a range block */
+	static void refineRange
+		( const NewPredictorData &data, int predLevel, SReal *pixelResult );
 
 
 protected:
@@ -79,12 +91,14 @@ protected:
 				{ return bestError>other.bestError; }
 		};
 
+		/** A convertor from SE in regular space to SE in normalized space */
 		class SEnormalizator {
 			Real errorAccel; ///< Accelerator for conversion of SEs to the real values
 		public:
 			/** Initializes the normalizator for a range block, needed to call ::normSE */
-			void initialize(const NewPredictorData &data) {
-				errorAccel= data.pixCount / data.rnDev2;
+			void initialize(const NewPredictorData &data,int predLevel) {
+				int shift= 2 * (predLevel - data.rangeBlock->level);
+				errorAccel= ldexp( data.pixCount/data.rnDev2, shift );
 			}
 			/** Computes normalized-tree-error from real SE (::initialize has been called) */
 			Real normSE(Real error) const {
@@ -112,7 +126,7 @@ protected:
 	protected:
 		/** Creates a new predictor for a range block (prepares tree-heaps, etc.) */
 		OneRangePredictor( const NewPredictorData &data, int chunkSize_
-		, const Tree &tree, int maxPredicts );
+			, const Tree &tree, int maxPredicts );
 	public:
 	/**	\name IOneRangePredictor interface
 	 *	@{ */

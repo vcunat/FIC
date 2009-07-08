@@ -30,8 +30,13 @@ template<class T,class I=PtrInt> struct MatrixSlice {
 	/** Initializes an empty slice */
 	MatrixSlice(): start(0) {}
 
-	/** Creates a shallow copy (deleting one destroys all copies) */
-	MatrixSlice(const MatrixSlice &m): start(m.start), colSkip(m.colSkip) {}
+	/** Creates an instance with pre-filled member fields */
+	static MatrixSlice makeRaw(T *start,I colSkip) {
+		MatrixSlice result;
+		result.start= start;
+		result.colSkip= colSkip;
+		return result;
+	}
 
 	/** Converts to a matrix of constant objects (shallow copy) */
 	operator Const() const {
@@ -104,22 +109,11 @@ template<class T,class I=PtrInt> struct MatrixSlice {
 
 /** MatrixSummer objects store partial sums of a matrix, allowing quick computation
  *	of sum of any rectangle in the matrix. It's parametrized by "type of the result",
- *	"type of the input" and "indexing type" (defaults to Int) */
+ *	"type of the input" and "indexing type" (defaults to Int). Uses shallow copying. */
 template<class T,class I=PtrInt> struct MatrixSummer {
 	typedef T Result;
 
 	MatrixSlice<T,I> sums; ///< Internal matrix containing precomputed partial sums
-
-#ifndef NDEBUG
-	/** Creates an empty summer */
-	MatrixSummer() {}
-	/** Only empty objects are allowed to be copied (assertion) */
-	MatrixSummer( const MatrixSummer &other )
-		{ ASSERT( !other.isValid() ); }
-	/** Only empty objects are allowed to be assigned (assertion) */
-	MatrixSummer& operator=( const MatrixSummer &other )
-		{ ASSERT( !other.isValid() && !isValid() ); return *this; }
-#endif
 
 	/** Returns whether the object is filled with data */
 	bool isValid()	const	{ return sums.isValid(); }
@@ -129,7 +123,7 @@ template<class T,class I=PtrInt> struct MatrixSummer {
 	/** Computes the sum of a rectangle (in constant time) */
 	Result getSum(I x0,I y0,I xend,I yend) const {
 		ASSERT( sums.isValid() );
-		return sums[xend][yend] -sums[x0][yend] -sums[xend][y0] +sums[x0][y0];
+		return sums[xend][yend] -(sums[x0][yend]+sums[xend][y0]) +sums[x0][y0];
 	}
 	/** A shortcut to get the sum of a block */
 	Result getSum(const Block &b) const 
@@ -193,15 +187,15 @@ template<class Num> struct DoubleNum {
 template< class SumT, class PixT, class I=PtrInt >
 struct SummedMatrix {
 	typedef DoubleNum<SumT> BSumRes;
-	typedef MatrixSummer<BSumRes> BSummer;
+	typedef MatrixSummer<BSumRes,I> BSummer;
 	
-	I width						///  The width of #pixels
-	, height;					///< The height of #pixels
+	I width						///  The width of ::pixels
+	, height;					///< The height of ::pixels
 	MatrixSlice<PixT> pixels;	///< The matrix of pixels
-	BSummer summer;				///< Summer for values and squares of #pixels
+	BSummer summer;				///< Summer for values and squares of ::pixels
 	bool sumsValid;				///< Indicates whether the summer values are valid
 	
-	/** Sets the size of #pixels, optionally allocates memory */
+	/** Sets the size of ::pixels, optionally allocates memory */
 	void setSize( I width_, I height_ ) {
 		free();
 		width= width_;
@@ -232,11 +226,16 @@ struct SummedMatrix {
 	/** A shortcut for getting sums of a block */
 	BSumRes getSums(const Block &block) const 
 		{ return getSums( block.x0, block.y0, block.xend, block.yend ); }	
-	/** Gets both sums of a nonempty rectangle in #pixels, the summer isn't validated */
+	/** Gets both sums of a nonempty rectangle in ::pixels, the summer isn't validated */
 	BSumRes getSums( I x0, I y0, I xend, I yend ) const {
 		ASSERT( sumsValid && x0>=0 && y0>=0 && xend>x0 && yend>y0 
 			&& xend<=width && yend<=height );
 		return summer.getSum(x0,y0,xend,yend);
+	}
+	/** Gets only the sum of values (not the sum of squares) */
+	SumT getValueSum( I x0, I y0, I xend, I yend ) const {
+		/// \todo quicker version
+		return getSums(x0,y0,xend,yend).value;
 	}
 }; // SummedPixels template struct
 
@@ -249,8 +248,8 @@ namespace MatrixWalkers {
 	/** Iterates two matrix iterators and performs an action.
 	 *	The loop is controled by the first iterator (\p checked) 
 	 *	and on every corresponding pair (a,b) \p oper(a,b) is invoked. Returns \p oper. */
-	template < class Check, class Unchecked, class Operator >
-	Operator walkOperate( Check checked, Unchecked unchecked, Operator oper ) {
+	template < class Checked, class Unchecked, class Operator >
+	Operator walkOperate( Checked checked, Unchecked unchecked, Operator oper ) {
 	//	outer cycle start - to be always run at least once
 		ASSERT( checked.outerCond() );
 		do {
@@ -302,9 +301,12 @@ namespace MatrixWalkers {
 		using RotBase<T,I>::lastStart;
 
 	/** No rotation: x->, y-> */
-	template<class T,class I> struct Rotation_0: public RotBase<T,I> { ROTBASE_INHERIT
+	template<class T,class I=PtrInt> struct Rotation_0: public RotBase<T,I> { ROTBASE_INHERIT
 		Rotation_0( TMatrix matrix, const Block &block )
 		: RotBase<T,I>( matrix, block.x0, block.y0 ) {}
+		
+		explicit Rotation_0( TMatrix matrix, I x0=0, I y0=0 )
+		: RotBase<T,I>( matrix, x0, y0 ) {}
 
 		void outerStep() { lastStart+= current.colSkip; }
 		void innerStep() { ++current.start; }
@@ -341,6 +343,9 @@ namespace MatrixWalkers {
 	template<class T,class I> struct Rotation_0_T: public RotBase<T,I> { ROTBASE_INHERIT
 		Rotation_0_T( TMatrix matrix, const Block &block )
 		: RotBase<T,I>( matrix, block.x0, block.y0 ) {}
+		
+		explicit Rotation_0_T( TMatrix matrix, I x0=0, I y0=0 )
+		: RotBase<T,I>( matrix, x0, y0 ) {}
 
 		void outerStep() { ++lastStart; }
 		void innerStep() { current.start+= current.colSkip; }
@@ -374,7 +379,8 @@ namespace MatrixWalkers {
 	};
 
 	
-	/** A flavour of walkOperate() choosing the right Rotation_* iterator based on \p rotation */
+	/** A flavour of walkOperate() choosing the right Rotation_* iterator
+	 *	based on \p rotation and constructing it from \p pixels2 and \p block2 */
 	template<class Check,class U,class Operator> 
 	inline Operator walkOperateCheckRotate( Check checked, Operator oper
 	, MatrixSlice<U> pixels2, const Block &block2, char rotation) {
