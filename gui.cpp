@@ -277,7 +277,7 @@ void ImageViewer::save() {
     QFileInfo finfo(lastPath.path());
     QString fname= finfo.dir().filePath( finfo.completeBaseName() + tr(".fic") );
 	fname= QFileDialog::getSaveFileName
-	( this, tr("Save encoded image"), fname, tr("FIC images (*.fic)") );
+		( this, tr("Save encoded image"), fname, tr("FIC images (*.fic)") );
 	if (fname.isEmpty())
 		return;
 	lastPath.setPath(fname);
@@ -286,7 +286,7 @@ void ImageViewer::save() {
 }
 void ImageViewer::load() {
 	QString fname= QFileDialog::getOpenFileName
-	( this, tr("Load encoded image"), lastDir(), tr("FIC images (*.fic)") );
+		( this, tr("Load encoded image"), lastDir(), tr("FIC images (*.fic)") );
 	if (fname.isEmpty())
 		return;
 	lastPath.setPath(fname);

@@ -12,14 +12,14 @@ namespace NOSPACE {
 /** Routines for computing with T[length] number fields */
 namespace FieldMath {
 	/** Calls transformer(x,y) for every x from [i1;iEnd1) and corresponding y from [i2;?) */
-	template<class I1,class I2,class Transf>
+	template<class I1,class I2,class Transf> inline
 	Transf transform2( I1 i1, I1 iEnd1, I2 i2, Transf transformer ) {
 		for (; i1!=iEnd1; ++i1,++i2)
 			transformer(*i1,*i2);
 		return transformer;
 	}
 	/** Analogous to ::transform2 */
-	template<class I1,class I2,class I3,class Transf>
+	template<class I1,class I2,class I3,class Transf> inline
 	Transf transform3( I1 i1, I1 iEnd1, I2 i2, I3 i3, Transf transformer ) {
 		for (; i1!=iEnd1; ++i1,++i2,++i3)
 			transformer(*i1,*i2,*i3);
@@ -27,7 +27,7 @@ namespace FieldMath {
 	}
 
 	/** Means b[i]=a[i]; Only meant for POD types */
-	template<class T> T* assign(const T *a,int length,T *b) {
+	template<class T> inline T* assign(const T *a,int length,T *b) {
 	#ifndef NDEBUG
 		copy( a, a+length, b );				// debugging version uses STL's copy
 	#else
@@ -64,7 +64,7 @@ namespace FieldMath {
 	}
 	/** Copy_moves a vector (\p point) to the nearest point (\p result)
 	 *	within bounds (\p bounds) and returns SE (distance^2) */
-	template<class T,bool CheckNaNs>
+	template<class T,bool CheckNaNs> inline
 	T moveToBounds_copy(const T *point,const T (*bounds)[2],int length,T *result) {
 		return transform3( point, point+length, bounds, result
 			, MoveToBounds<T,CheckNaNs>() ) .sqrError;

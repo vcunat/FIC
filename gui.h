@@ -40,10 +40,10 @@ class ImageViewer: public QMainWindow { Q_OBJECT
 	
 	static const int AutoIterationCount= 10;
 
-	IRoot *modules_settings		///  Module tree holding current settings
-	, *modules_encoding;		///< Module tree that's currently encoding or the last one
-	int zoom;					///< The current zoom, see IRoot::fromStream
-	std::string encData;		///< String containing (if nonempty) the last encoded/decoded data
+	IRoot *modules_settings	///  Module tree holding current settings
+	, *modules_encoding;	///< Module tree that's currently encoding or the last one
+	int zoom;				///< The current zoom, see IRoot::fromStream
+	std::string encData;	///< String containing (if nonempty) the last encoded/decoded data
 
 	QTranslator translator;	///< The application's only translator
 	QLabel *imageLabel; 	///< A pointer to the label showing images
@@ -104,10 +104,8 @@ private:
 /** A simple wrapper around QObject::connect that asserts successfulness of the connection */
 inline void aConnect( const QObject *sender, const char *signal, const QObject *receiver
 , const char *slot, Qt::ConnectionType type=Qt::AutoCompatConnection ) {
-	#ifndef NDEBUG
-		bool result=
-	#endif
-	QObject::connect(sender,signal,receiver,slot,type);
+	DEBUG_ONLY(	bool result= )
+		QObject::connect(sender,signal,receiver,slot,type);
 	ASSERT(result);
 }
 
