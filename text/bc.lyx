@@ -1282,7 +1282,11 @@ Podobným způsobem, jako byly konstantní koeficienty barevných zobrazení
 \begin_inset space ~
 \end_inset
 
-části 
+části
+\begin_inset space ~
+\end_inset
+
+
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "Chyba_zobrazení/Upravená"
@@ -1307,7 +1311,11 @@ Například v
 \begin_inset space ~
 \end_inset
 
-článku 
+článku
+\begin_inset space ~
+\end_inset
+
+
 \begin_inset CommandInset citation
 LatexCommand cite
 key "HuQK07"
@@ -1378,6 +1386,13 @@ této části jsou shrnuty nejvýznamnější výsledky a zajímavé návrhy pro
 
 \begin_layout Subsection
 Zrychlení komprese
+\begin_inset CommandInset label
+LatexCommand label
+name "Články/Zrychlení"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -2039,7 +2054,11 @@ Nejjednodušší možnost je věnovat se tomuto problému až při dekódování
  Hranice bloků jsou vždy známé, takže je možné vyhlazovat výsledný obrázek
  jen na jejich okrajích.
  Vizuálního zlepšení lze dosáhnout už použitím jednoduchých nebo vážených
- průměrů 
+ průměrů
+\begin_inset space ~
+\end_inset
+
+
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Aoue04,Fish95"
@@ -2851,7 +2870,7 @@ původní nahrávce nebyly.
 \end_layout
 
 \begin_layout Chapter
-Chyba zobrazení mezi bloky 
+Chyba zobrazení mezi bloky
 \begin_inset CommandInset label
 LatexCommand label
 name "Chyba_zobrazení"
@@ -3027,7 +3046,7 @@ rozsahu nula až nekonečno, kde nekonečno odpovídá nulové odchylce.
 
 \begin_layout Standard
 \begin_inset Formula \[
-\mathrm{PSNR}=-20\log_{10}\frac{\mathrm{RMSE}}{M},\mbox{\quad kde hodnoty pixelů jsou z\, rozsahu 0--\ensuremath{M}}\]
+\mathrm{PSNR}=-20\log_{10}\frac{\mathrm{RMSE}}{M},\mbox{\quad kde hodnoty pixelů jsou z\, rozsahu 0--\ensuremath{M}}.\]
 
 \end_inset
 
@@ -3048,7 +3067,7 @@ name "Chyba_zobrazení/Klasická"
 \begin_layout Standard
 Při klasické fraktální kompresi je chyba zobrazení dána
 \begin_inset Formula \[
-\mathrm{SE}=\sum_{i=1}^{n}\left(ud_{i}+v-r_{i}\right)^{2}\]
+\mathrm{SE}=\sum_{i=1}^{n}\left(ud_{i}+v-r_{i}\right)^{2},\]
 
 \end_inset
 
@@ -3096,22 +3115,24 @@ sum jsou dále vynechány, protože jsou vždy stejné a zbytečně by výpočty
 
 lze spočítat obecné optimální hodnoty koeficientů
 \begin_inset Formula \[
-\hat{u}=\frac{n\sum r_{i}d_{i}-\left(\sum d_{i}\right)\left(\sum r_{i}\right)}{n\sum d_{i}^{2}-\left(\sum d_{i}\right)^{2}},\qquad\hat{v}=\frac{\left(\sum d_{i}^{2}\right)\left(\sum r_{i}\right)-\left(\sum d_{i}\right)\left(\sum r_{i}d_{i}\right)}{n\sum d_{i}^{2}-\left(\sum d_{i}\right)^{2}}\]
+\hat{u}=\frac{n\sum r_{i}d_{i}-\left(\sum d_{i}\right)\left(\sum r_{i}\right)}{n\sum d_{i}^{2}-\left(\sum d_{i}\right)^{2}},\qquad\hat{v}=\frac{\left(\sum d_{i}^{2}\right)\left(\sum r_{i}\right)-\left(\sum d_{i}\right)\left(\sum r_{i}d_{i}\right)}{n\sum d_{i}^{2}-\left(\sum d_{i}\right)^{2}}.\]
 
 \end_inset
 
 Jmenovatele jsou nulové právě když má zdrojový blok konstantní barvu, což
- je případ vyloučený například i proto, že chyba zobrazení nemůže být lepší
- než s
+ je případ, který můžeme vyloučit například proto, že při něm chyba zobrazení
+ nemůže být lepší než s
 \begin_inset space ~
 \end_inset
 
 libovoným jiným zdrojovým blokem.
  Díky tomu, že matice druhých parciálních derivací
 \begin_inset Formula \[
-\left(\begin{array}{cc}
+{\displaystyle \left(\begin{array}{cc}
+\frac{\partial^{2}\mathrm{SE}}{\partial u^{2}} & \frac{\partial^{2}\mathrm{SE}}{\partial u\,\partial v}\\
+\frac{\partial^{2}\mathrm{SE}}{\partial u\,\partial v} & \frac{\partial^{2}\mathrm{SE}}{\partial v^{2}}\end{array}\right)=\left(\begin{array}{cc}
 2\sum d_{i}^{2} & 2\sum d_{i}\\
-2\sum d_{i} & 2n\end{array}\right)\]
+2\sum d_{i} & 2n\end{array}\right)}\]
 
 \end_inset
 
@@ -3124,7 +3145,7 @@ jediné minimum.
  Zpětným dosazením optimálních parametrů do vzorce pro chybu a úpravou získáme
  optimální chybu
 \begin_inset Formula \[
-\widehat{SE}=\frac{\left(\sum r_{i}d_{i}\right)\left[2\left(\sum d_{i}\right)\left(\sum r_{i}\right)-n\sum r_{i}d_{i}\right]-\left(\sum d_{i}^{2}\right)\left(\sum d_{i}\right)^{2}}{n\sum d_{i}^{2}-\left(\sum d_{i}\right)^{2}}+\sum r_{i}^{2}\]
+\widehat{SE}=\frac{\left(\sum r_{i}d_{i}\right)\left[2\left(\sum d_{i}\right)\left(\sum r_{i}\right)-n\sum r_{i}d_{i}\right]-\left(\sum d_{i}^{2}\right)\left(\sum d_{i}\right)^{2}}{n\sum d_{i}^{2}-\left(\sum d_{i}\right)^{2}}+\sum r_{i}^{2}.\]
 
 \end_inset
 
@@ -3198,7 +3219,7 @@ těchto uložených hodnot a ze stavu zdrojového bloku v
 předchozí iteraci.
  Nová definice koeficientů je
 \begin_inset Formula \[
-\bar{u}=\pm\frac{\sqrt{n\sum r_{i}^{2}-\left(\sum r_{i}\right)^{2}}}{\sqrt{n\sum\bar{d}_{i}^{2}-\left(\sum\bar{d_{i}}\right)^{2}}},\qquad\bar{v}=\frac{1}{n}\sum r_{i}-\frac{\bar{u}}{n}\sum\bar{d}_{i}\]
+\bar{u}=\pm\frac{\sqrt{n\sum r_{i}^{2}-\left(\sum r_{i}\right)^{2}}}{\sqrt{n\sum\bar{d}_{i}^{2}-\left(\sum\bar{d_{i}}\right)^{2}}},\qquad\bar{v}=\frac{1}{n}\sum r_{i}-\frac{\bar{u}}{n}\sum\bar{d}_{i},\]
 
 \end_inset
 
@@ -3358,7 +3379,7 @@ Pokud
 
 ), pak 
 \begin_inset Formula \[
-{\displaystyle \frac{u}{\bar{u}}\rightarrow\pm\frac{q_{d,r}}{s_{d}^{2}}\frac{s_{d}}{s_{r}}=\pm\frac{q_{d,r}}{s_{d}s_{r}}}=\pm\rho_{d,r}\]
+{\displaystyle \frac{u}{\bar{u}}\rightarrow\pm\frac{q_{d,r}}{s_{d}^{2}}\frac{s_{d}}{s_{r}}=\pm\frac{q_{d,r}}{s_{d}s_{r}}}=\pm\rho_{d,r}.\]
 
 \end_inset
 
@@ -3405,13 +3426,13 @@ toho je zřejmé, že cílový obrázek bude pevným bodem i takto pozměněnéh
 \end_layout
 
 \begin_layout Standard
-Nová čtvercová chyba lze vyjádřit jako
-\begin_inset Formula \[
-\mathrm{\overline{SE}}\;=\;\sum_{i=1}^{n}\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}\]
+Novou čtvercovou chybu lze vyjádřit jako
+\begin_inset Formula \begin{equation}
+\mathrm{\overline{SE}}\;=\;\sum_{i=1}^{n}\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}.\label{eq:vzorec}\end{equation}
 
 \end_inset
 
-po postupném dosazení 
+Po postupném dosazení 
 \begin_inset Formula $\bar{v}=\frac{1}{n}\sum r_{i}-\frac{\bar{u}}{n}\sum\bar{d}_{i}$
 \end_inset
 
@@ -3423,7 +3444,7 @@ po postupném dosazení
 \begin_inset Formula \begin{multline*}
 \mathrm{\overline{SE}}\;=\;\sum_{i=1}^{n}\left[\bar{u}\left(\bar{d}_{i}-\frac{1}{n}\sum\bar{d}_{j}\right)-\left(r_{i}-\frac{1}{n}\sum r_{j}\right)\right]^{2}\;=\\
 =\;{\textstyle \bar{u}^{2}{\displaystyle \sum_{i=1}^{n}}\left(\bar{d}_{i}-\frac{\sum\bar{d}_{j}}{n}\right)^{2}-2\bar{u}{\displaystyle \sum_{i=1}^{n}}\left(\bar{d}_{i}-\frac{\sum\bar{d}_{j}}{n}\right)\left(r_{i}-\frac{\sum r_{j}}{n}\right)+{\displaystyle \sum_{i=1}^{n}}\left(r_{i}-\frac{\sum r_{j}}{n}\right)^{2}\;=}\\
-{\displaystyle =\; n\bar{u}^{2}s_{\bar{d}}^{2}-2n\bar{u}q_{\bar{d},r}+ns_{r}^{2}\;=\; n\frac{s_{r}^{2}}{s_{\bar{d}}^{2}}s_{\bar{d}}^{2}\mp2n\frac{s_{r}}{s_{\bar{d}}}q_{\bar{d},r}+ns_{r}^{2}\;=\;2n\left(s_{r}^{2}\mp\frac{s_{r}}{s_{\bar{d}}}q_{\bar{d},r}\right)}\end{multline*}
+{\displaystyle =\; n\bar{u}^{2}s_{\bar{d}}^{2}-2n\bar{u}q_{\bar{d},r}+ns_{r}^{2}\;=\; n\frac{s_{r}^{2}}{s_{\bar{d}}^{2}}s_{\bar{d}}^{2}\mp2n\frac{s_{r}}{s_{\bar{d}}}q_{\bar{d},r}+ns_{r}^{2}\;=\;2n\left(s_{r}^{2}\mp\frac{s_{r}}{s_{\bar{d}}}q_{\bar{d},r}\right)}.\end{multline*}
 
 \end_inset
 
@@ -3437,7 +3458,7 @@ Protože
 
 , lze výraz upravit na 
 \begin_inset Formula \[
-\mathrm{\overline{SE}}\;=\;2ns_{r}^{2}\left(1-\frac{\left|q_{\bar{d},r}\right|}{s_{\bar{d}}s_{r}}\right)\;=\;2ns_{r}^{2}\left(1-\left|\rho_{\bar{d},r}\right|\right)\]
+\mathrm{\overline{SE}}\;=\;2ns_{r}^{2}\left(1-\frac{\left|q_{\bar{d},r}\right|}{s_{\bar{d}}s_{r}}\right)\;=\;2ns_{r}^{2}\left(1-\left|\rho_{\bar{d},r}\right|\right).\]
 
 \end_inset
 
@@ -3449,12 +3470,12 @@ Protože
 \end_layout
 
 \begin_layout Standard
-Původní optimální čtvercová chyba lze přepsat do tvaru:
+Původní optimální čtvercovou chybu lze přepsat do tvaru:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula \[
-\mathrm{\widehat{SE}}\;=\; n\frac{s_{d}^{2}s_{r}^{2}-q_{d,r}^{2}}{s_{d}^{2}}\;=\; ns_{r}^{2}\left(1-\rho_{d,r}^{2}\right)\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)\left(1+\left|\rho_{d,r}\right|\right)\]
+\mathrm{\widehat{SE}}\;=\; n\frac{s_{d}^{2}s_{r}^{2}-q_{d,r}^{2}}{s_{d}^{2}}\;=\; ns_{r}^{2}\left(1-\rho_{d,r}^{2}\right)\;=\; ns_{r}^{2}\left(1-\left|\rho_{d,r}\right|\right)\left(1+\left|\rho_{d,r}\right|\right).\]
 
 \end_inset
 
@@ -3489,7 +3510,7 @@ Pro vzájemně dobře zobrazitelné bloky
 \end_layout
 
 \begin_layout Section
-Penalizace vysokého lineárního koeficientu 
+Penalizace vysokého lineárního koeficientu
 \begin_inset CommandInset label
 LatexCommand label
 name "Chyba_zobrazení/Penalizace"
@@ -3507,10 +3528,10 @@ Výše zmíněnou úpravou barevných zobrazení bylo sníženo riziko divergenc
 \end_inset
 
 intervalu 
-\begin_inset Formula $\left[0;1\right]$
+\begin_inset Formula $\left\langle 0,1\right\rangle $
 \end_inset
 
- a cílové bloky mají vždy správnou průměrnou hodnotu, nemůžou se obrazy
+ a cílové bloky mají vždy správnou průměrnou hodnotu, nemohou se obrazy
  zobrazení od původního obrázku příliš lišit (v
 \begin_inset space ~
 \end_inset
@@ -3540,18 +3561,14 @@ Proto je zde navržena následující penalizace, která zvyšuje odhadovanou
 \end_inset
 
 závislosti na jeho lineárním koeficientu.
- Pokud ve vzorci pro chybu z
-\begin_inset space ~
-\end_inset
-
-
+ Pokud vyjdeme ze vzorce pro chybu (
 \begin_inset CommandInset ref
-LatexCommand ref
-reference "Chyba_zobrazení/Upravená"
+LatexCommand vref
+reference "eq:vzorec"
 
 \end_inset
 
- přičteme k
+) a přičteme k
 \begin_inset space ~
 \end_inset
 
@@ -3561,7 +3578,7 @@ hodnotám zdrojového bloku odchylku
 
 , dostaneme
 \begin_inset Formula \[
-\mathrm{\widetilde{SE}}\;=\;\sum_{i=1}^{n}\left[\bar{u}\left(\bar{d}_{i}+\epsilon_{i}\right)+\bar{v}\right]^{2}\;=\;\sum_{i=1}^{n}\left[\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}+\left(\bar{u}\bar{d}_{i}+\bar{v}\right)\bar{u}\epsilon_{i}+\bar{u}^{2}\epsilon_{i}^{2}\right]\]
+\mathrm{\widetilde{SE}}\;=\;\sum_{i=1}^{n}\left[\bar{u}\left(\bar{d}_{i}+\epsilon_{i}\right)+\bar{v}\right]^{2}\;=\;\sum_{i=1}^{n}\left[\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}+\left(\bar{u}\bar{d}_{i}+\bar{v}\right)\bar{u}\epsilon_{i}+\bar{u}^{2}\epsilon_{i}^{2}\right].\]
 
 \end_inset
 
@@ -3569,9 +3586,9 @@ Když označíme původní odchylku
 \begin_inset Formula $e_{i}=\bar{u}\bar{d}_{i}+\bar{v}$
 \end_inset
 
-
+, pak
 \begin_inset Formula \[
-\mathrm{\widetilde{SE}}\;=\;{\textstyle \sum}e_{i}^{2}+\bar{u}{\textstyle \sum}e_{i}\epsilon_{i}+\bar{u}^{2}{\textstyle \sum}\epsilon_{i}^{2}\]
+\mathrm{\widetilde{SE}}\;=\;{\textstyle \sum}e_{i}^{2}+\bar{u}{\textstyle \sum}e_{i}\epsilon_{i}+\bar{u}^{2}{\textstyle \sum}\epsilon_{i}^{2}.\]
 
 \end_inset
 
@@ -3579,7 +3596,18 @@ První suma je zřejmě rovna původní chybě
 \begin_inset Formula $\mathrm{\overline{SE}}$
 \end_inset
 
-.
+ (vzorec
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:vzorec"
+
+\end_inset
+
+).
  Hodnota druhé sumy je závislá na korelaci odchylek způsobených nepřesností
  zobrazení a odchylek ve zdrojovém bloku.
  Lze snadno ukázat, že 
@@ -3620,7 +3648,25 @@ Za předpokladu, že chyby
 \begin_inset Formula $\epsilon_{i}$
 \end_inset
 
- nejsou korelované, vyjde nulová očekávaná hodnota druhé sumy.
+ nejsou korelované, vyjde nulová očekávaná hodnota
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+spojení 
+\emph on
+očekávaná hodnota
+\emph default
+ (nebo také 
+\emph on
+střední hodnota
+\emph default
+) je zde používáno ve smyslu teorie pravděpodobnosti a statistiky
+\end_layout
+
+\end_inset
+
+ druhé sumy.
 \end_layout
 
 \begin_layout Standard
@@ -3631,12 +3677,11 @@ Třetí suma odpovídá odchylce zmenšeného zdrojového bloku.
 
  a poměr velikostí zdrojového bloku po zmenšení a před zmenšením označíme
  
-\begin_inset Formula $\alpha\in\left(0;1\right)$
+\begin_inset Formula $\alpha\in\left(0,1\right)$
 \end_inset
 
-.
- Pak lze očekávat, že se bude odchylka zdrojového bloku před zmenšením pohybovat
- okolo 
+, pak lze očekávat, že se bude odchylka zdrojového bloku před zmenšením
+ pohybovat okolo 
 \begin_inset Formula $\frac{\mathrm{SE'}}{\alpha}$
 \end_inset
 
@@ -3674,8 +3719,8 @@ nekorelovanými odchylkami, pak očekávaná čtvercová chyba zmenšeného zdro
 \end_layout
 
 \begin_layout Standard
-Celém odvození penalizace lze analogicky provést i pro klasický model zobrazován
-í (v
+Celé odvození penalizace lze analogicky provést i pro klasický model zobrazování
+ (viz
 \begin_inset space ~
 \end_inset
 
@@ -3783,8 +3828,8 @@ key "Qt"
 \end_layout
 
 \begin_layout Standard
-Díky použitým prostředkům by měl celý program být přenositelný na mnoho
- systémů.
+Díky použitým prostředkům by měl být celý program snadno přenositelný (na
+ úrovni zdrojového kódu).
  Vývoj a ladění probíhaly na GNU/Linux, s
 \begin_inset space ~
 \end_inset
@@ -3808,7 +3853,7 @@ Modularizace
 Oddělení modulů do jednotlivých dynamických knihoven by zde nepřineslo významný
  užitek, takže byla zvolena kompilace celého programu do jednoho spustitelného
  souboru.
- Přes to jsou zde minimalizovány vzájemné závislosti mezi moduly.
+ Přesto jsou zde minimalizovány vzájemné závislosti mezi moduly.
 \end_layout
 
 \begin_layout Standard
@@ -4047,10 +4092,6 @@ IRoot
 \begin_layout Standard
 Rozhraní pro kořenový modul je navrženo jako jediný přístupový bod pro GUI
  ke kompresi a dekompresi.
-\begin_inset VSpace defskip
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard
@@ -4131,13 +4172,6 @@ Stream
 false
 \family default
  a stav stromu se nezmění.
-\end_layout
-
-\begin_layout Standard
-\begin_inset VSpace defskip
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard
@@ -4705,8 +4739,12 @@ Data všech
 \emph on
 úkolů
 \emph default
- jsou ukládána po fázích, což umožňuje implementaci progresivního dekódování,
- přestože pro něj momentálně není v
+ jsou ukládána po fázích, což umožňuje přidat v
+\begin_inset space ~
+\end_inset
+
+budoucnu implementaci progresivního dekódování, přestože pro něj momentálně
+ není v
 \begin_inset space ~
 \end_inset
 
@@ -5223,7 +5261,7 @@ reference "Implementace/Zobrazování"
 \end_layout
 
 \begin_layout Section
-Výběr množiny zrojových bloků
+Výběr množiny zdrojových bloků
 \begin_inset CommandInset label
 LatexCommand label
 name "Implementace/Domény"
@@ -5271,7 +5309,11 @@ těchto matic a pro každou
 \emph on
 úroveň
 \emph default
- bloku je rozhraním poskytnut rozestup - počet pixelů, o
+ bloku je rozhraním poskytnut rozestup
+\begin_inset space ~
+\end_inset
+
+--- počet pixelů, o
 \begin_inset space ~
 \end_inset
 
@@ -5381,7 +5423,11 @@ obou směrech na polovinu pomocí průměrování hodnot pixelů po čtveřicíc
 \end_inset
 
 praxi dobré výsledky.
- Další způsoby zmenšování jsou inspirovány především článkem 
+ Další způsoby zmenšování jsou inspirovány především článkem
+\begin_inset space ~
+\end_inset
+
+
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Aoue04"
@@ -5426,7 +5472,7 @@ druhém směru na
 
 .
 \begin_inset Foot
-status collapsed
+status open
 
 \begin_layout Plain Layout
 Ve starší implementaci projektu probíhalo zmenšování pouze v
@@ -5717,8 +5763,8 @@ Rozhraní obsahuje metody pro inicializaci před (de)kompresí
 , pro hledání optimálního zobrazení do daného cílového bloku, pro dokončení
  komprese a pro provádění dekódovacích akcí (vyčištění obrázku nebo iterování
  zobrazení).
- Dále jsou zde metody pro uložení a nahrátí nastavení, pro zjištění počtu
- ukládacích fází a pro uložení nebo nahrátí dat jednotlivých fází (význam
+ Dále jsou zde metody pro uložení a nahrání nastavení, pro zjištění počtu
+ ukládacích fází a pro uložení nebo nahrání dat jednotlivých fází (význam
  fází je vysvětlen v
 \begin_inset space ~
 \end_inset
@@ -5733,7 +5779,7 @@ reference "Implementace/IShapeTransformer"
 ).
 \end_layout
 
-\begin_layout Paragraph
+\begin_layout Subsubsection
 MStdEncoder
 \end_layout
 
@@ -5875,7 +5921,11 @@ konstantním čase.
 \begin_inset space ~
 \end_inset
 
-části 
+části
+\begin_inset space ~
+\end_inset
+
+
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "Implementace/Matice"
