@@ -4,7 +4,12 @@
 #include "../headers.h"
 #include "../kdTree.h"
 
-/** Predictor for MStdEncoder based on a theorem proven in Saupe's work */
+/// \ingroup modules
+/** Predictor for MStdEncoder based on a theorem proven in Saupe's work.
+ *	It resizes the blocks to 4x4 and normalizes them.
+ *	Domains for every level are stored in a KDTree instance and searched. 
+ *	The user can set the size of returned chunks of the blocks
+ *	and the maximal part of domains returned. */
 class MSaupePredictor: public IStdEncPredictor {
 	DECLARE_debugModule;
 
@@ -15,17 +20,17 @@ class MSaupePredictor: public IStdEncPredictor {
 		desc:	"The number of predicted domains in a chunk",
 		type:	settingInt(1,8,32)
 	}, {
-		label:	"Max. predictions (%)",
-		desc:	"The maximal percentage of domains predicted for a range block",
-		type:	settingFloat(0,5,100)
+		label:	"Max. predicted part",
+		desc:	"The maximal part of domains predicted for a range block",
+		type:	settingInt(-10,-5,0,IntLog2)
 	} )
 
 protected:
 	/** Indices for settings */
-	enum Settings { ChunkSize, MaxPredPercent };
+	enum Settings { ChunkSize, MaxPredPart };
 
 	/**  maxPredCoeff() * "the number of domains" == "max. number of predictions" */
-	Real maxPredCoeff()	{ return settings[MaxPredPercent].val.f / Real(100); }
+	Real maxPredCoeff()	{ return ldexp( Real(1), settingsInt(MaxPredPart) ); }
 
 public:
 	typedef float KDReal;		///< The floating point type used in the KD-tree
@@ -59,7 +64,7 @@ public:
 protected:
 	/** Computes the level for predictions based on the actual level */
 	int getPredLevel(int /*realLevel*/) const 
-		{ return 2;	}
+		{ return 2; }
 
 	/** Builds a new tree for one level of range blocks using passed domain blocks */
 	Tree* createTree(const NewPredictorData &data);
@@ -99,6 +104,7 @@ protected:
 			void initialize(const NewPredictorData &data,int predLevel) {
 				int shift= 2 * (predLevel - data.rangeBlock->level);
 				errorAccel= ldexp( data.pixCount/data.rnDev2, shift );
+				//errorAccel= data.pixCount/data.rnDev2;
 			}
 			/** Computes normalized-tree-error from real SE (::initialize has been called) */
 			Real normSE(Real error) const {

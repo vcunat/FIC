@@ -370,8 +370,7 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 	typedef std::vector<Prediction> Predictions;
 
 	/** %Interface for objects that predict domains for a concrete range block */
-	class IOneRangePredictor {
-	public:
+	struct IOneRangePredictor {
 		/** Virtual destructor needed for safe deletion of derived classes */
 		virtual ~IOneRangePredictor() {}
 		/** Makes several predictions at once, returns \p store reference */
@@ -383,7 +382,7 @@ struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 
 	/** Creates a predictor (passing the ownership) for a range block */
 	virtual IOneRangePredictor* newPredictor(const NewPredictorData &data) =0;
-	/** Releases common resources (called when encoding is complete) */
+	/** Releases common resources (to be called when encoding is complete) */
 	virtual void cleanUp() =0;
 }; // IStdEncPredictor interface
 

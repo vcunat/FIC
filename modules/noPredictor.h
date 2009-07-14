@@ -4,9 +4,9 @@
 #include "../headers.h"
 
 /** Predictor that doesn't predict, just tries all the domains */
-class NoPredictor: public IStdEncPredictor {
+class MNoPredictor: public IStdEncPredictor {
 
-	DECLARE_TypeInfo_noSettings( NoPredictor, "brute force"
+	DECLARE_TypeInfo_noSettings( MNoPredictor, "brute force"
 	, "Doesn't predict, tries all possibilities." )
 
 public:
@@ -17,7 +17,7 @@ public:
 	void cleanUp() {} // nothing to clean up
 ///	@}
 
-private:
+protected:
 	/** Predictor class returned when calling #newPredictor
 	 *	- returns all domains in all rotations in one chunk */
 	class OneRangePredictor: public IOneRangePredictor {
@@ -41,8 +41,8 @@ private:
 			return store;
 		}
 	///	@}
-	}; // NoPredictor::OneRangePredictor class
+	}; // MNoPredictor::OneRangePredictor class
 
-}; // NoPredictor class
+}; // MNoPredictor class
 
 #endif

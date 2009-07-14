@@ -395,7 +395,7 @@ float MStdEncoder::findBestSE(const RangeNode &range,bool allowHigherSE) {
 	{ // a goto-skippable block
 	//	create and initialize a new predictor (in auto_ptr because of exceptions)
 		auto_ptr<IStdEncPredictor::IOneRangePredictor> predictor
-		( modulePredictor()->newPredictor(info.stable) );
+			( modulePredictor()->newPredictor(info.stable) );
 		typedef IStdEncPredictor::Predictions Predictions;
 		Predictions predicts;
 	

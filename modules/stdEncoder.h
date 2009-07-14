@@ -61,12 +61,12 @@ public:
 		label:	"Quantization steps for average",
 		desc:	"The number (a power of two) of possible range block\n"
 				"average color values (real average will be rounded)",
-		type:	settingInt(2,7,10,IntLog2)
+		type:	settingInt(2,8,10,IntLog2)
 	}, {
 		label:	"Quantization steps for deviation",
 		desc:	"The number (a power of two) of possible range block\n"
 				"standard color value deviations",
-		type:	settingInt(2,7,10,IntLog2)
+		type:	settingInt(2,6,10,IntLog2)
 	}, {
 		label:	"The codec for averages",
 		desc:	"The module that will code and decode\n"
