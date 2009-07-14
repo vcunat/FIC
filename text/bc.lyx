@@ -4187,6 +4187,17 @@ komprimovaném stavu do proudu bytů, pro provádění dekódovacích akcí (vy�
 
 \begin_layout Subsubsection
 MRoot
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubory 
+\family sans
+modules/root.*
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -4275,6 +4286,17 @@ velikosti cílového bloku a nastavení kvality spočítá odpovídající maxim
 
 \begin_layout Subsubsection
 MQuality2SE
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubor 
+\family sans
+modules/quality2SE.h
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -4384,6 +4406,17 @@ Metody rozhraní umožňují vytvoření jednobarevných obrázků pro dané par
 
 \begin_layout Subsubsection
 MColorModel
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubory 
+\family sans
+modules/colorModel.*
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -4418,6 +4451,17 @@ name "Implementace/Matice"
 \end_inset
 
 
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubor 
+\family sans
+matrixUtil.h
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -4757,6 +4801,17 @@ kořenovém modulu podpora.
 
 \begin_layout Subsubsection
 MSquarePixels
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubory 
+\family sans
+modules/squarePixels.*
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -5041,6 +5096,17 @@ name "Implementace/MQuadTree"
 \end_inset
 
 
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubory 
+\family sans
+modules/quadTree.*
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -5345,6 +5411,17 @@ maticích pro zdrojové bloky (ze stavu
 
 \begin_layout Subsubsection
 MStdDomains
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubory 
+\family sans
+modules/stdDomains.*
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -5781,6 +5858,17 @@ reference "Implementace/IShapeTransformer"
 
 \begin_layout Subsubsection
 MStdEncoder
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubory 
+\family sans
+modules/stdEncoder.*
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -6123,6 +6211,17 @@ uvolnění potenciální paměti alokované pro urychlení predikcí.
 
 \begin_layout Subsubsection
 MNoPredictor
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubor 
+\family sans
+modules/noPredictor.h
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -6137,6 +6236,17 @@ MNoPredictor
 
 \begin_layout Subsubsection
 MSaupePredictor
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubory 
+\family sans
+modules/saupePredictor.*
+\family default
+)
 \end_layout
 
 \begin_layout Standard
@@ -6619,6 +6729,17 @@ name "Implementace/KD-stromy"
 \end_inset
 
 
+\series medium
+\size small
+
+\begin_inset space \hfill{}
+\end_inset
+
+(soubor 
+\family sans
+kdTree.h
+\family default
+)
 \end_layout
 
 \begin_layout Chapter*
