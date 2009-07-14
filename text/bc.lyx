@@ -42,7 +42,7 @@ pdfkeywords={image compression,fractals}
 \usepackage{url}
 
 \usepackage{amsthm}
-\newtheorem*{veta}{Věta}
+\newtheorem{veta}{Věta}[chapter]
 \end_preamble
 \options notitlepage,12pt
 \use_default_options false
@@ -381,7 +381,7 @@ metrice
 
 , pak 
 \begin_inset Formula \[
-d\left(A,\lim_{n\rightarrow\infty}f^{n}\left(A\right)\right)\;\le\;\frac{1}{1-s}\, d\left(A,f\left(A\right)\right)\]
+d\left(A,\lim_{n\rightarrow\infty}f^{n}\left(A\right)\right)\;\le\;\frac{1}{1-s}\, d\left(A,f\left(A\right)\right).\]
 
 \end_inset
 
@@ -3852,7 +3852,7 @@ Modularizace
 \begin_layout Standard
 Oddělení modulů do jednotlivých dynamických knihoven by zde nepřineslo významný
  užitek, takže byla zvolena kompilace celého programu do jednoho spustitelného
- souboru.
+ souboru (kromě knihoven Qt).
  Přesto jsou zde minimalizovány vzájemné závislosti mezi moduly.
 \end_layout
 
@@ -6003,6 +6003,622 @@ nenulovou směrodatnou odchylkou
 
 --- vždy bit pro znaménko lineárního koeficientu a tři bity kódující otočení
  (jen pokud jsou potřeba) a index zdrojového bloku.
+\end_layout
+
+\begin_layout Section
+Predikce vhodných zdrojových bloků
+\begin_inset CommandInset label
+LatexCommand label
+name "Implementace/Predikce"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+V
+\begin_inset space ~
+\end_inset
+
+části
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Implementace/Zobrazování"
+
+\end_inset
+
+ je řešen přesný výpočet vhodnosti zobrazení mezi dvojicí bloků, ale provádět
+ ho pro každou možnost by bylo příliš zdlouhavé.
+ Je tedy nutné umět rychle odhadnout, které zdrojové bloky (a v
+\begin_inset space ~
+\end_inset
+
+jakých rotacích) je vhodné pro daný cílový blok zkoušet (možné přístupy
+ byly rozebrány v
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Články/Zrychlení"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Subsubsection
+IStdEncPredictor
+\end_layout
+
+\begin_layout Standard
+Každý modul s
+\begin_inset space ~
+\end_inset
+
+rozhraním 
+\family typewriter
+IStdEncPredictor
+\family default
+ slouží jako generátor prediktorů vhodných zdrojových bloků pro modul 
+\family typewriter
+MStd\SpecialChar \-
+Encoder
+\family default
+.
+ Definuje strukturu, která obsahuje všechny potřebné informace o
+\begin_inset space ~
+\end_inset
+
+daném cílovém bloku a nastavení komprese, včetně mnoha předpočítaných údajů.
+\end_layout
+
+\begin_layout Standard
+Po předání správně vyplněné instance této struktury do rozhraní je vytvořena
+ instance třídy s
+\begin_inset space ~
+\end_inset
+
+rozhraním 
+\family typewriter
+IStd\SpecialChar \-
+Enc\SpecialChar \-
+Pre\SpecialChar \-
+dic\SpecialChar \-
+tor::IOne\SpecialChar \-
+Range\SpecialChar \-
+Pre\SpecialChar \-
+dic\SpecialChar \-
+tor
+\family default
+, která postupně vrací vhodné zdrojové bloky (pro tento účel jsou různé
+ rotace bloku považovány za různé zdrojové bloky).
+ Bloky nejsou vraceny po jednom, ale v
+\begin_inset space ~
+\end_inset
+
+seznamech, aby se tak snížila režie spojená s
+\begin_inset space ~
+\end_inset
+
+voláním virtuální metody.
+ Je také předávána maximální akceptovaná čtvercová chyba, což ulehčuje prediktor
+u rozhodování, které bloky je bezpečné vynechat.
+\end_layout
+
+\begin_layout Standard
+Dále je definována metoda volaná po skončení všech predikčních požadavků.
+ Je určena k
+\begin_inset space ~
+\end_inset
+
+uvolnění potenciální paměti alokované pro urychlení predikcí.
+\end_layout
+
+\begin_layout Subsubsection
+MNoPredictor
+\end_layout
+
+\begin_layout Standard
+Modul 
+\family typewriter
+MNoPredictor
+\family default
+ je zcela triviální implementací rozhraní, která nedělá žádnou predikci
+ a vrací všechny možnosti.
+ Slouží hlavně pro vyhodnocení účinnosti ostatních implementací.
+\end_layout
+
+\begin_layout Subsubsection
+MSaupePredictor
+\end_layout
+
+\begin_layout Standard
+Modul 
+\family typewriter
+MSaupePredictor
+\family default
+ je založen na větě publikované v
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Saup95"
+
+\end_inset
+
+.
+ Zde je uvedena v
+\begin_inset space ~
+\end_inset
+
+mírně upravené podobě, která je bližší značení z
+\begin_inset space ~
+\end_inset
+
+částí
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "PIFS"
+
+\end_inset
+
+ a
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Chyba_zobrazení"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{veta}
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "Implementace/Predikce/Věta"
+
+\end_inset
+
+Nechť 
+\begin_inset Formula $n\ge2$
+\end_inset
+
+ a 
+\begin_inset Formula $X=\mathbb{R}^{n}\setminus\left\{ r\cdot\left(1,1,\ldots,1\right)\left|r\in\mathbb{R}\right.\right\} $
+\end_inset
+
+.
+ Definujme normalizační funkci 
+\begin_inset Formula $\Phi:X\rightarrow X$
+\end_inset
+
+ a funkci 
+\begin_inset Formula $D:X\times X\rightarrow\left\langle 0,\sqrt{2}\right\rangle $
+\end_inset
+
+
+ následovně:
+\begin_inset Formula \[
+\left(\Phi\left(x\right)\right)_{i}=\frac{x_{i}-\frac{1}{n}\sum_{j=1}^{n}x_{j}}{\sqrt{\frac{1}{n}\sum_{j=1}^{n}\left(x_{j}-\frac{1}{n}\sum_{k=1}^{n}x_{k}\right)^{2}}}\mbox{\; a}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+D\left(r,d\right)=\min\left\{ \ \left\Vert \Phi(r)-\Phi(d)\right\Vert ,\ \left\Vert -\Phi(r)-\Phi(d)\right\Vert \ \right\} \mbox{,}\]
+
+\end_inset
+
+
+\lang czech
+kde 
+\begin_inset Formula $\left\Vert .\right\Vert $
+\end_inset
+
+ značí eukleidovskou normu.
+\end_layout
+
+\begin_layout Standard
+
+Pak pro nejmenší čtvercovou chybu definovanou
+\begin_inset Formula \[
+E\left(r,d\right)=\min_{p,q\in\mathbb{R}}\sum_{i=1}^{n}\left(p\, d_{i}+q-r_{i}\right)^{2}\mbox{\quad platí}\]
+
+\end_inset
+
+
+\lang czech
+
+\begin_inset Formula \[
+E\left(r,d\right)=\left(\sum_{j=1}^{n}r_{i}\,\left(\Phi(r)\right)_{i}\right)g\left(D(r,d)\right)\mbox{,\quad kde }g(x)=x^{2}\left(1-\frac{x^{2}}{4}\right).\]
+
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{veta}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Pro každou velikost cílového bloku je tedy postavena datová struktura obsahující
+ všechny možné zdrojové bloky normalizované funkcí 
+\begin_inset Formula $\Phi$
+\end_inset
+
+, konkrétně je použita varianta statického KD-stromu popsaná v
+\begin_inset space ~
+\end_inset
+
+části
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Implementace/KD-stromy"
+
+\end_inset
+
+.
+ K
+\begin_inset space ~
+\end_inset
+
+danému bodu jsou vraceny prvky struktury v
+\begin_inset space ~
+\end_inset
+
+pořadí podle dolních odhadů na jejich vzdálenost od bodu.
+ Struktury jsou stavěny vždy až když je požadavek na jejich prohledávání,
+ jsou uloženy v
+\begin_inset space ~
+\end_inset
+
+modulu a sdíleny všemi prediktory vracenými modulem (struktury jsou statické).
+\end_layout
+
+\begin_layout Paragraph
+Vícenásobné prohledávání
+\end_layout
+
+\begin_layout Standard
+Z
+\begin_inset space ~
+\end_inset
+
+věty
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Implementace/Predikce/Věta"
+
+\end_inset
+
+ je zřejmé, že je potřeba vždy uvažovat dvě možnosti 
+\begin_inset Formula $\left\Vert \Phi(r_{i})-\Phi(d_{j})\right\Vert $
+\end_inset
+
+ a 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\left\Vert -\Phi(r_{i})-\Phi(d_{j})\right\Vert $
+\end_inset
+
+ (pokud jsou povolena zobrazení se zápornými lineárními koeficienty).
+ Jedna možnost řešení je, že struktura obsahuje vždy 
+\begin_inset Formula $\Phi(d_{j})$
+\end_inset
+
+ i 
+\begin_inset Formula $-\Phi(d_{j})$
+\end_inset
+
+ a je hledán nejbližší bod k
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\Phi(r_{i})$
+\end_inset
+
+.
+ V
+\begin_inset space ~
+\end_inset
+
+druhé možnosti obsahuje struktura pouze 
+\begin_inset Formula $\Phi(d_{j})$
+\end_inset
+
+, ale je v
+\begin_inset space ~
+\end_inset
+
+ní hledáno okolí 
+\begin_inset Formula $\Phi(r_{i})$
+\end_inset
+
+ a 
+\begin_inset Formula $-\Phi(r_{i})$
+\end_inset
+
+.
+ Analogicky lze dvěma způsoby řešit uvažování osmi vzájemných rotací (pokud
+ jsou povoleny uživatelem)
+\begin_inset space ~
+\end_inset
+
+--- buď je struktura postavena z
+\begin_inset space ~
+\end_inset
+
+osminásobného množství otočených bloků, nebo je nutné ji osminásobně prohledávat.
+ Kvůli úspoře paměti byla zde v
+\begin_inset space ~
+\end_inset
+
+obou případech zvolena varianta s
+\begin_inset space ~
+\end_inset
+
+menší strukturou a násobným prohledáváním.
+\end_layout
+
+\begin_layout Standard
+Vícenásobné prohledávání je realizováno tak, že jsou stavy všech prohledávání
+ udržovány v
+\begin_inset space ~
+\end_inset
+
+haldě (použita je generická
+\begin_inset space ~
+\end_inset
+
+STL implementace binární haldy) uspořádané podle příštího odhadu vzdálenosti
+ ve struktuře a prohledává se tedy vždy ta varianta, která je nejblíže hledanému
+ bodu (podle odhadu struktury).
+\end_layout
+
+\begin_layout Paragraph
+Omezení prohledávání
+\end_layout
+
+\begin_layout Standard
+Protože 
+\begin_inset Formula $\sum_{j=1}^{n}r\,\Phi(r)$
+\end_inset
+
+ je pro daný cílový blok konstantní a funkce 
+\begin_inset Formula $g(x)$
+\end_inset
+
+ je rostoucí na oboru hodnot funkce 
+\begin_inset Formula $D(r,d)$
+\end_inset
+
+, lze převést hledání optimálního zdrojového bloku na dvojici problémů hledání
+ nejbližšího bodu v
+\begin_inset space ~
+\end_inset
+
+pevně dané množině.
+\end_layout
+
+\begin_layout Standard
+Navíc pokud zvolíme limit 
+\begin_inset Formula $m$
+\end_inset
+
+ pro čtvercovou chybu, pak maximální přípustná čtvercová chyba v
+\begin_inset space ~
+\end_inset
+
+normalizovaném prostoru je rovna 
+\begin_inset Formula \[
+{\textstyle 2-2\sqrt{1-\frac{m}{\sum_{j=1}^{n}r_{i}\,\left(\Phi(r)\right)_{i}}}}\mbox{\quad(pokud existuje).}\]
+
+\end_inset
+
+Tento limit sám nemusí dostatečně zkrátit prohledávání prostoru, protože
+ téměř konstantní cílové bloky lze dobře aproximovat už konstantním blokem
+ a aproximace nekonstantním blokem není nikdy horší.
+ V
+\begin_inset space ~
+\end_inset
+
+takovém případě vyjde pod odmocninou záporné číslo.
+ Proto má uživatel možnost v
+\begin_inset space ~
+\end_inset
+
+modulu nastavit, jaká největší část zdrojových bloků může být predikována.
+\end_layout
+
+\begin_layout Paragraph
+Zmenšování bloků
+\end_layout
+
+\begin_layout Standard
+Pro účely predikce jsou bloky zmenšeny na velikost 
+\begin_inset Formula $4\times4$
+\end_inset
+
+, stejně jako v
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Saup95"
+
+\end_inset
+
+.
+ Už ze zmenšenin lze vzájemnou zobrazitelnost dobře odhadnout
+\begin_inset space ~
+\end_inset
+
+--- RMSE optimálního zobrazení mezi zmenšeninami je dolním odhadem na
+\begin_inset space ~
+\end_inset
+
+RMSE optimálního zobrazení v
+\begin_inset space ~
+\end_inset
+
+původním rozlišení a rovnost nastává, pokud v
+\begin_inset space ~
+\end_inset
+
+rámci zprůměrovaných skupin pixelů byly 
+\begin_inset Quotes gld
+\end_inset
+
+stejné vzájemné odchylky
+\begin_inset Quotes grd
+\end_inset
+
+ ve zdrojovém i cílovém bloku.
+ Díky spojitému charakteru běžných obrázků bývá tento odhad dostatečně blízko,
+ takže už podle něj lze většinu kandidátů bezpečně vyřadit (protože odhad
+ překročí maximální povolenou chybu).
+\end_layout
+
+\begin_layout Standard
+Navíc práce s
+\begin_inset space ~
+\end_inset
+
+velkými zdrojovými bloky by přinášela řadu problémů.
+ Jedním z
+\begin_inset space ~
+\end_inset
+
+důvodů je, že efektivita KD-stromů klesá s
+\begin_inset space ~
+\end_inset
+
+růstem počtu souřadnic.
+ Dalším důvodem je paměťová náročnost.
+ Pokud bychom pro účel stavby stromu uložili obrazy funkce 
+\begin_inset Formula $\Phi$
+\end_inset
+
+, potřebujeme už při velikosti 
+\begin_inset Formula $16\times16$
+\end_inset
+
+ pro každý blok 1
+\begin_inset space \thinspace{}
+\end_inset
+
+KB paměti.
+ Počty zdrojových bloků se běžně pohybují v
+\begin_inset space ~
+\end_inset
+
+řádu stovek tisíc, což dává neúnosnou spotřebu stovek megabytů paměti.
+ Alternativně by bylo možné uchovávat v
+\begin_inset space ~
+\end_inset
+
+paměti pouze koeficienty funkce 
+\begin_inset Formula $\Phi$
+\end_inset
+
+ (pro pevný blok je to afinní funkce) a počítat hodnotu na
+\begin_inset space ~
+\end_inset
+
+dané souřadnici normalizovaného bloku z
+\begin_inset space ~
+\end_inset
+
+původního obrázku jednotlivě při každém přístupu.
+ To by ale vedlo k
+\begin_inset space ~
+\end_inset
+
+mnohonásobnému zpomalení.
+\end_layout
+
+\begin_layout Standard
+Pro predikci by bylo možné použít i jiné způsoby snižování počtu dimenzí,
+ například výběr několika nejdůležitějších koeficientů dvourozměrné diskrétní
+ kosinové transformace bloku
+\begin_inset space ~
+\end_inset
+
+--- z
+\begin_inset space ~
+\end_inset
+
+použití transformace ve standardu JPEG je zřejmé, že je to velmi dobrý způsob
+ aproximace obrázku malým množstvím souřadnic.
+\end_layout
+
+\begin_layout Section
+KD-stromy
+\begin_inset CommandInset label
+LatexCommand label
+name "Implementace/KD-stromy"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Chapter*
