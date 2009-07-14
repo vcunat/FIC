@@ -30,13 +30,18 @@
 \author{\bcAuthor}
 \date{\today}
 
-\usepackage[ 
-pdfauthor={\bcAuthorEn}, 
-pdftitle={\bcTitleEn}, 
-pdfcreator={Lyx}, 
-pdfsubject={Fractal Image Compression}, 
-pdfkeywords={image compression,fractals} 
-]{hyperref}
+%\usepackage[ 
+%pdfauthor={\bcAuthorEn}, 
+%pdftitle={\bcTitleEn}, 
+%pdfcreator={Lyx}, 
+%pdfsubject={Fractal Image Compression}, 
+%pdfkeywords={image compression,fractals} 
+%]{hyperref}
+\hypersetup{pdftitle={\bcTitleEn},
+ pdfauthor={\bcAuthorEn},
+ pdfsubject={Fractal Image Compression},
+ pdfkeywords={image compression, fractals}}
+
 
 % url formátování, použito v referencích
 \usepackage{url}
@@ -60,7 +65,16 @@ pdfkeywords={image compression,fractals}
 \graphics default
 \paperfontsize default
 \spacing single
-\use_hyperref false
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks true
+\pdf_backref false
+\pdf_pdfusetitle true
 \papersize a4paper
 \use_geometry false
 \use_amsmath 1
@@ -4451,17 +4465,6 @@ name "Implementace/Matice"
 \end_inset
 
 
-\series medium
-\size small
-
-\begin_inset space \hfill{}
-\end_inset
-
-(soubor 
-\family sans
-matrixUtil.h
-\family default
-)
 \end_layout
 
 \begin_layout Standard
@@ -6396,17 +6399,9 @@ Pro každou velikost cílového bloku je tedy postavena datová struktura obsahu
 \begin_inset Formula $\Phi$
 \end_inset
 
-, konkrétně je použita varianta statického KD-stromu popsaná v
-\begin_inset space ~
-\end_inset
-
-části
-\begin_inset space ~
-\end_inset
-
-
+, konkrétně je použita varianta statického KD-stromu popsaná  
 \begin_inset CommandInset ref
-LatexCommand ref
+LatexCommand vpageref
 reference "Implementace/KD-stromy"
 
 \end_inset
@@ -6720,7 +6715,7 @@ použití transformace ve standardu JPEG je zřejmé, že je to velmi dobrý zp�
  aproximace obrázku malým množstvím souřadnic.
 \end_layout
 
-\begin_layout Section
+\begin_layout Subsubsection
 KD-stromy
 \begin_inset CommandInset label
 LatexCommand label
