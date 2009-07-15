@@ -12,7 +12,7 @@ class VLI {
 		int res= value/2;
 		return value%2 ? -res-1 : res ;
 	}
-	/** Returns the level of a non-negative integer depending on the setting of expAdd */
+	/** Returns the level of a non-negative integer depending on the setting of \p expAdd */
 	static int getLevel(int posValue,int expAdd)
 		{ return log2ceil(posValue+powers[expAdd]+1) -expAdd -1; }
 
@@ -63,7 +63,7 @@ public:
 		{ return fromPositive( getBase(level) +data ); }
 	int fromVLI(Type vli) const
 		{ return fromVLI(vli.level,vli.data); }
-};
+}; // VLI class
 
 
 

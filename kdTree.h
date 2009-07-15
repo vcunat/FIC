@@ -5,6 +5,12 @@
 	#include <cstring> // memcpy
 #endif
 
+/** \file
+ *	Contains a generic implementation of static KD-trees balanced into a heap-like shape.
+ *	The trees are represented by instances of KDTree class and built by a static method
+ *	KDBuilder::makeTree.
+*/
+
 namespace NOSPACE {
 	using namespace std;
 }
@@ -72,7 +78,8 @@ namespace FieldMath {
 }
 
 template<class T> class KDBuilder;
-/** A generic static KD-tree \todo */
+/** A generic static KD-tree. Construction is done by KDBuilder::makeTree static method.
+ *	The searching for nearest neighbours is performed by the PointHeap subclass. */
 template<class T> class KDTree {
 public:
 	friend class KDBuilder<T>;
@@ -130,7 +137,7 @@ public:
 		delete[] bounds;
 	}
 
-	/** Manages a heap from nodes of a KDTree.
+	/** Performs a nearest-neighbour search by managing a heap from nodes of a KDTree.
 	 *	It returns vectors (their indices) in the order of ascending distance (SE)
 	 *	from a given fixed point. It can compute a lower bound of the SEs of the remaining
 	 *	vectors at any time. */

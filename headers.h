@@ -1,3 +1,6 @@
+#ifndef HEADERS_HEADER_
+#define HEADERS_HEADER_
+
 #ifdef QT_NO_DEBUG
 	#define NDEBUG
 #endif
@@ -35,3 +38,5 @@ typedef size_t			Uint;
 #include "matrixUtil.h"
 #include "modules.h"
 #include "interfaces.h"
+
+#endif

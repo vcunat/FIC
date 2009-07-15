@@ -6,7 +6,8 @@
 
 class VLI;
 
-/** Variable-length-integer codec optimized for encoding little-changing sequences */
+/** Variable-length-integer codec optimized for encoding little-changing sequences.
+ *	It lets user choose the number of first-level symbols. */
 class MDifferentialVLICodec: public IIntCodec {
 
 	DECLARE_TypeInfo( MDifferentialVLICodec, "Differential VLI"
@@ -23,8 +24,8 @@ private:
 	enum Settings { VLIExponent };
 
 private:
-	int possib		/// the number of possibilities set by #setPossibilities
-	, lastSymbol;	///< the last encoded symbol (#possib/2 at the beginning)
+	int possib		/// the number of possibilities set by ::setPossibilities
+	, lastSymbol;	///< the last encoded symbol (::possib/2 at the beginning)
 public:
 /**	\name IIntCodec interface
  *	@{ */

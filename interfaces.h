@@ -356,7 +356,7 @@ struct ISquareEncoder: public Interface<ISquareEncoder> {
 
 
 
-/** Interface for domain-range mapping predictors for MStdEncoder */
+/** Interface for domain-range mapping predictor generator for MStdEncoder */
 struct IStdEncPredictor: public Interface<IStdEncPredictor> {
 	/** Contains information about one predicted domain block */
 	struct Prediction {
@@ -420,7 +420,7 @@ struct IStdEncPredictor::NewPredictorData {
 
 /** Integer sequences (de)coder interface */
 struct IIntCodec: public Interface<IIntCodec> {
-	/** Sets the number of possible symbols to work with from now on data: [0;possib-1] */
+	/** Sets the number of possible symbols to work with from now on data: [0,possib-1] */
 	virtual void setPossibilities(int possib) =0;
 	/** Codes data and sends them into a stream */
 	virtual void encode(std::vector<int> &data,std::ostream &file) =0;
