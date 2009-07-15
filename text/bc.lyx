@@ -6339,7 +6339,6 @@ Nechť
 \begin_inset Formula $D:X\times X\rightarrow\left\langle 0,\sqrt{2}\right\rangle $
 \end_inset
 
-
  následovně:
 \begin_inset Formula \[
 \left(\Phi\left(x\right)\right)_{i}=\frac{x_{i}-\frac{1}{n}\sum_{j=1}^{n}x_{j}}{\sqrt{\frac{1}{n}\sum_{j=1}^{n}\left(x_{j}-\frac{1}{n}\sum_{k=1}^{n}x_{k}\right)^{2}}}\mbox{\; a}\]
@@ -6352,8 +6351,6 @@ D\left(r,d\right)=\min\left\{ \ \left\Vert \Phi(r)-\Phi(d)\right\Vert ,\ \left\V
 
 \end_inset
 
-
-\lang czech
 kde 
 \begin_inset Formula $\left\Vert .\right\Vert $
 \end_inset
@@ -6362,7 +6359,6 @@ kde
 \end_layout
 
 \begin_layout Standard
-
 Pak pro nejmenší čtvercovou chybu definovanou
 \begin_inset Formula \[
 E\left(r,d\right)=\min_{p,q\in\mathbb{R}}\sum_{i=1}^{n}\left(p\, d_{i}+q-r_{i}\right)^{2}\mbox{\quad platí}\]
@@ -6370,10 +6366,8 @@ E\left(r,d\right)=\min_{p,q\in\mathbb{R}}\sum_{i=1}^{n}\left(p\, d_{i}+q-r_{i}\r
 \end_inset
 
 
-\lang czech
-
 \begin_inset Formula \[
-E\left(r,d\right)=\left(\sum_{j=1}^{n}r_{i}\,\left(\Phi(r)\right)_{i}\right)g\left(D(r,d)\right)\mbox{,\quad kde }g(x)=x^{2}\left(1-\frac{x^{2}}{4}\right).\]
+E\left(r,d\right)=\left(\sum_{i=1}^{n}\left(\Phi(r)\right)_{i}r_{i}\right)g\left(D(r,d)\right)\mbox{,\quad kde }g(x)=x^{2}\left(1-\frac{x^{2}}{4}\right).\]
 
 \end_inset
 
@@ -6399,7 +6393,7 @@ Pro každou velikost cílového bloku je tedy postavena datová struktura obsahu
 \begin_inset Formula $\Phi$
 \end_inset
 
-, konkrétně je použita varianta statického KD-stromu popsaná  
+, konkrétně je použita varianta statického KD-stromu popsaná 
 \begin_inset CommandInset ref
 LatexCommand vpageref
 reference "Implementace/KD-stromy"
@@ -6426,6 +6420,16 @@ modulu a sdíleny všemi prediktory vracenými modulem (struktury jsou statické
 
 \begin_layout Paragraph
 Vícenásobné prohledávání
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+indexování
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -6444,8 +6448,16 @@ reference "Implementace/Predikce/Věta"
 
 \end_inset
 
- je zřejmé, že je potřeba vždy uvažovat dvě možnosti 
-\begin_inset Formula $\left\Vert \Phi(r_{i})-\Phi(d_{j})\right\Vert $
+ je zřejmé, že je potřeba vždy pro dvojici bloků 
+\begin_inset Formula $r^{i}$
+\end_inset
+
+ a 
+\begin_inset Formula $d^{j}$
+\end_inset
+
+ uvažovat dvě možnosti 
+\begin_inset Formula $\left\Vert \Phi(r^{i})-\Phi(d^{j})\right\Vert $
 \end_inset
 
  a 
@@ -6458,16 +6470,16 @@ reference "Implementace/Predikce/Věta"
 \noun off
 \color none
 
-\begin_inset Formula $\left\Vert -\Phi(r_{i})-\Phi(d_{j})\right\Vert $
+\begin_inset Formula $\left\Vert -\Phi(r^{i})-\Phi(d^{j})\right\Vert $
 \end_inset
 
  (pokud jsou povolena zobrazení se zápornými lineárními koeficienty).
  Jedna možnost řešení je, že struktura obsahuje vždy 
-\begin_inset Formula $\Phi(d_{j})$
+\begin_inset Formula $\Phi(d^{j})$
 \end_inset
 
  i 
-\begin_inset Formula $-\Phi(d_{j})$
+\begin_inset Formula $-\Phi(d^{j})$
 \end_inset
 
  a je hledán nejbližší bod k
@@ -6475,7 +6487,7 @@ reference "Implementace/Predikce/Věta"
 \end_inset
 
 
-\begin_inset Formula $\Phi(r_{i})$
+\begin_inset Formula $\Phi(r^{i})$
 \end_inset
 
 .
@@ -6484,7 +6496,7 @@ reference "Implementace/Predikce/Věta"
 \end_inset
 
 druhé možnosti obsahuje struktura pouze 
-\begin_inset Formula $\Phi(d_{j})$
+\begin_inset Formula $\Phi(d^{j})$
 \end_inset
 
 , ale je v
@@ -6492,11 +6504,11 @@ druhé možnosti obsahuje struktura pouze
 \end_inset
 
 ní hledáno okolí 
-\begin_inset Formula $\Phi(r_{i})$
+\begin_inset Formula $\Phi(r^{i})$
 \end_inset
 
  a 
-\begin_inset Formula $-\Phi(r_{i})$
+\begin_inset Formula $-\Phi(r^{i})$
 \end_inset
 
 .
@@ -6541,11 +6553,11 @@ Omezení prohledávání
 \end_layout
 
 \begin_layout Standard
-Protože 
-\begin_inset Formula $\sum_{j=1}^{n}r\,\Phi(r)$
+Protože je součet 
+\begin_inset Formula $\sum_{i=1}^{n}\left(\Phi(r)\right)_{i}r_{i}$
 \end_inset
 
- je pro daný cílový blok konstantní a funkce 
+ pro daný cílový blok konstantní a funkce 
 \begin_inset Formula $g(x)$
 \end_inset
 
@@ -6572,7 +6584,7 @@ Navíc pokud zvolíme limit
 
 normalizovaném prostoru je rovna 
 \begin_inset Formula \[
-{\textstyle 2-2\sqrt{1-\frac{m}{\sum_{j=1}^{n}r_{i}\,\left(\Phi(r)\right)_{i}}}}\mbox{\quad(pokud existuje).}\]
+{\textstyle 2-2\sqrt{1-\frac{m}{\sum_{i=1}^{n}\left(\Phi(r)\right)_{i}r_{i}}}}\mbox{\quad(pokud existuje).}\]
 
 \end_inset
 
@@ -6735,6 +6747,366 @@ name "Implementace/KD-stromy"
 kdTree.h
 \family default
 )
+\end_layout
+
+\begin_layout Standard
+KD-strom je binární strom, který rekurzivně dělí spravovaný prostor v
+\begin_inset space ~
+\end_inset
+
+každém svém vrcholu podle hodnoty jedné ze souřadnic.
+ Tato struktura byla zvolena především pro svou jednoduchost a možnost paměťově
+ úsporné implementace.
+\end_layout
+
+\begin_layout Paragraph
+Reprezentace stromu
+\end_layout
+
+\begin_layout Standard
+Protože je strom statický a binární, lze jeho tvar volit stejně 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+,
+\end_layout
+
+\end_inset
+
+ jako pro binární haldy a ukládat jeho vrcholy v
+\begin_inset space ~
+\end_inset
+
+poli.
+ Je zvolena varianta, kde jsou všechny obsažené body až v
+\begin_inset space ~
+\end_inset
+
+listech.
+ Pro každý vnitřní vrchol pak stačí uložit jen souřadnici, podle které je
+ dělen podprostor vrcholu, a hodnotu, na které je hranice dělení.
+ Pro listy je pak uložen jen index bodu, kterému odpovídá.
+\end_layout
+
+\begin_layout Standard
+V
+\begin_inset space ~
+\end_inset
+
+klasických
+\begin_inset space ~
+\end_inset
+
+KD-stromech by byly uchovány také souřadnice všech obsažených bodů.
+ Ty by ale ovlivnily prohledávání až po dělení vrcholů nad listy, kdy už
+ je dolní odhad vzdálenosti blízko skutečnosti.
+ Zde navíc není nutné znát vzdálenosti přesně
+\begin_inset space ~
+\end_inset
+
+--- většinou se pracuje se zmenšeninami a přesné porovnání je stejně poté
+ provedeno jiným modulem.
+ Souřadnice všech bodů také zabírají mnoho místa, takže bylo zvoleno, že
+ budou využity pouze pro postavení stromu a pak zahozeny.
+ Tato volba pravděpodobně zhorší výkon struktury, ale alternativa zde není
+ implementována, takže míra jejího vlivu není známa (je to možnost rozšíření
+ v
+\begin_inset space ~
+\end_inset
+
+budoucnu).
+\end_layout
+
+\begin_layout Standard
+Část prostoru patřící jednotlivým vrcholům je definována rekurzivně.
+ Kořen reprezentuje hyperkvádr uložený ve stromě, který těsně obaluje všechny
+ body ve struktuře (minima a maxima každé ze souřadnic bodů ve struktuře).
+ Synové každého vrcholu si rozdělí jeho hyperkvádr podle nadroviny kolmé
+ na jednu ze souřadnic (souřadnice a mezní hodnota je ve vrcholu uložena).
+ V
+\begin_inset space ~
+\end_inset
+
+této implementaci patří body ležící na mezní nadrovině do obou podstromů,
+ aby bylo možné vždy volit libovolné velikosti podstromů a dosáhnout tak
+ tvaru odpovídajícímu binární haldě.
+\end_layout
+
+\begin_layout Paragraph
+Prohledávání stromu
+\end_layout
+
+\begin_layout Standard
+Hledání nejbližších bodů staví postupu typickém pro všechny podobné struktury.
+ Je udržována halda z
+\begin_inset space ~
+\end_inset
+
+vrcholů stromu uspořádaná podle vzdáleností podprostorů vrcholů stromu od
+ výchozího bodu (toho, k
+\begin_inset space ~
+\end_inset
+
+němuž hledáme nejbližší body).
+ Na začátku je v
+\begin_inset space ~
+\end_inset
+
+haldě jen kořen a pak se vždy odebere z
+\begin_inset space ~
+\end_inset
+
+haldy minimum a vloží se do ní synové obsaženého vrcholu stromu.
+ Pokud je ale v
+\begin_inset space ~
+\end_inset
+
+minimu haldy list stromu, je pouze poslán na výstup jako další z
+\begin_inset space ~
+\end_inset
+
+nejbližších bodů.
+\end_layout
+
+\begin_layout Standard
+Aby byla práce s
+\begin_inset space ~
+\end_inset
+
+haldou efektivní, jsou v
+\begin_inset space ~
+\end_inset
+
+každém prvku kromě čísla vrcholu stromu uloženy souřadnice bodu z
+\begin_inset space ~
+\end_inset
+
+části prostoru patřící vrcholu, který je nejblíže výchozímu bodu, a také
+ druhá mocnina jeho eukleidovské vzdálenosti od výchozího bodu (podle ní
+ je halda uspořádaná).
+ Umocnění vzdálenosti nepokazí uspořádání, protože je to pro nezáporná čísla
+ rostoucí funkce, a významně zjednoduší výpočty.
+ Tyto údaje lze při dělení na syny velmi snadno přepočítat, protože nejbližší
+ bod se může změnit jen v
+\begin_inset space ~
+\end_inset
+
+jedné souřadnici a druhá mocnina jeho vzdálenosti se tedy změní jen o
+\begin_inset space ~
+\end_inset
+
+rozdíl druhých mocnin rozdílů hodnoty výchozího bodu v
+\begin_inset space ~
+\end_inset
+
+té souřadnici od nové a původní hodnoty nejbližšího bodu.
+\end_layout
+
+\begin_layout Standard
+Při prohledávání lze navíc nastavit, že souřadnice výchozího bodu, které
+ obsahují speciální hodnotu NaN (
+\emph on
+not a number
+\emph default
+), budou při ignorovány.
+ To je modulem 
+\family typewriter
+MSaupe\SpecialChar \-
+Pre\SpecialChar \-
+dic\SpecialChar \-
+tor
+\family default
+ využito pro lepší predikci pro ořízlé cílové bloky, které jsou menší, protože
+ leží na okraji obrázku.
+\end_layout
+
+\begin_layout Paragraph
+Stavba stromu
+\end_layout
+
+\begin_layout Standard
+Strom je stavěn rekurzivně
+\begin_inset space ~
+\end_inset
+
+--- při stavbě vrcholu 
+\begin_inset Formula $v$
+\end_inset
+
+ je dán interval 
+\begin_inset Formula $b$
+\end_inset
+
+ v
+\begin_inset space ~
+\end_inset
+
+poli 
+\begin_inset Formula $p$
+\end_inset
+
+ obsahujícím indexy bodů, které mají být reprezentovány podstromem 
+\begin_inset Formula $v$
+\end_inset
+
+.
+ Nejprve je určeno, jaké počty bodů budou patřit synům vrcholu 
+\begin_inset Formula $v$
+\end_inset
+
+.
+ 
+\begin_inset Quotes gld
+\end_inset
+
+Haldový tvar
+\begin_inset Quotes grd
+\end_inset
+
+ je určen jednoznačně počtem listů, který zde odpovídá počtu bodů ve struktuře,
+ a navíc se tento tvar dědí
+\begin_inset space ~
+\end_inset
+
+--- pokud má podstrom nějakého vrcholu tvar haldy, pak ho mají i podstromy
+ jeho synů a tedy i všechny ostatní podstromy.
+\end_layout
+
+\begin_layout Standard
+Pak je určena souřadnice 
+\begin_inset Formula $i$
+\end_inset
+
+, podle které bude část prostoru patřící 
+\begin_inset Formula $v$
+\end_inset
+
+ dělena (metody rozebrány níže).
+ Podle ní se obsah pole 
+\begin_inset Formula $p$
+\end_inset
+
+ v
+\begin_inset space ~
+\end_inset
+
+intervalu 
+\begin_inset Formula $b$
+\end_inset
+
+ rozdělí na dvě části tak, aby jejich velikosti odpovídaly počtům bodů,
+ které budou patřit synům, a aby žádný bod levého syna měly neměl v
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $i$
+\end_inset
+
+-té souřadnici hodnotu větší než nějaký bod pravého syna.
+ To je provedeno pomocí generického algoritmu 
+\family typewriter
+nth_ele\SpecialChar \-
+ment
+\family default
+ obsaženého v
+\begin_inset space ~
+\end_inset
+
+STL, který najde k-tý nejmenší prvek a přeuspořádá ostatní prvky korektně
+ vzhledem k
+\begin_inset space ~
+\end_inset
+
+jeho pozici.
+ Pak se uloží hodnota souřadnice 
+\begin_inset Formula $i$
+\end_inset
+
+ na hranici do vrcholu 
+\begin_inset Formula $v$
+\end_inset
+
+ a rekurzivně se zkonstruují jeho synové (pokud na ně zbývá více než jeden
+ bod).
+\end_layout
+
+\begin_layout Standard
+Při stavbě je možno zvolit jeden z
+\begin_inset space ~
+\end_inset
+
+několika implementovaných způsobů volby souřadnice 
+\begin_inset Formula $i$
+\end_inset
+
+.
+ Jsou zde dva triviální algoritmy
+\begin_inset space ~
+\end_inset
+
+--- jeden cyklicky střídá souřadnice podle houbky a druhý je volí náhodně.
+ Modul 
+\family typewriter
+MSaupe\SpecialChar \-
+Pre\SpecialChar \-
+dic\SpecialChar \-
+tor
+\family default
+ používá lepší algoritmus, který volí tu souřadnici, ve které má část prostoru
+ patřící vrcholu 
+\begin_inset Formula $v$
+\end_inset
+
+ největší rozpětí.
+\end_layout
+
+\begin_layout Paragraph
+Korespondence se zdrojovým kódem
+\end_layout
+
+\begin_layout Standard
+Struktura stromu je reprezentována generickou třídou 
+\family typewriter
+KDTree
+\family default
+.
+ Prohledávání provádí její podtřída 
+\family typewriter
+Point\SpecialChar \-
+Heap
+\family default
+, která při konstrukci požaduje zadání výchozího bodu, instance prohledávaného
+ stromu a volbu zda se mají ignorovat některé souřadnice.
+ Pak na požadavek vrací indexy jednotlivých bodů nebo momentální odhad vzdálenos
+ti od výchozího bodu.
+\end_layout
+
+\begin_layout Standard
+Vytváření stromu provádí statická (ve smyslu objektové terminologie) metoda
+ 
+\family typewriter
+makeTree
+\family default
+ oddělené třídy 
+\family typewriter
+KDBuilder
+\family default
+.
+ Ta umožňuje také zvolit jednu z
+\begin_inset space ~
+\end_inset
+
+metod třídy 
+\family typewriter
+KDBuilder
+\family default
+, která bude použita pro volbu souřadnice 
+\begin_inset Formula $i$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Chapter*
