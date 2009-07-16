@@ -68,10 +68,10 @@ void MStdDomains::initPools(const PlaneBlock &planeBlock) {
 //	create the first set of domain pools for standard, horizontal and vertical domains
 	if ( settingsInt(DomPortion_Standard) )
 		pools.push_back(Pool( width/2, height/2, DomPortion_Standard, 1, 0.25, zoom ));
-	if ( settingsInt(DomPortion_Horiz) && width/3<MinDomSize )
-		pools.push_back(Pool( width/3, height*2/3, DomPortion_Horiz, 1, 2.0/9.0, zoom ));
-	if ( settingsInt(DomPortion_Vert) && height/3<MinDomSize )
-		pools.push_back(Pool( width*2/3, height/3, DomPortion_Vert, 1, 2.0/9.0, zoom ));
+	if ( settingsInt(DomPortion_Horiz) && width/3>=MinDomSize )
+		pools.push_back(Pool( width/3, height/3*2, DomPortion_Horiz, 1, 2.0/9.0, zoom ));
+	if ( settingsInt(DomPortion_Vert) && height/3>=MinDomSize )
+		pools.push_back(Pool( width/3*2, height/3, DomPortion_Vert, 1, 2.0/9.0, zoom ));
 //	create the first set of domain pools for diamond domains
 	if ( settingsInt(DomPortion_Diamond) ) {
 	//	get longer and shorter dimension
@@ -82,7 +82,7 @@ void MStdDomains::initPools(const PlaneBlock &planeBlock) {
 			int side= getDiamondSize( min(longer,shorter) );
 			ASSERT(side>=0);
 			if (side)
-				pools.push_back(Pool( side, side, DomPortion_Diamond, 1, 0.5f, zoom ));
+				pools.push_back(Pool( side, side, DomPortion_Diamond, 1, 0.5, zoom ));
 			else
 				break;
 		}

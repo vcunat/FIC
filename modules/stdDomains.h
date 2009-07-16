@@ -127,7 +127,7 @@ namespace MatrixWalkers {
 			groups[addHalf]= cs[0] + cs[current.colSkip] + cs[current.colSkip*2];
 			++cs;
 			groups[!addHalf]= cs[0] + cs[current.colSkip] + cs[current.colSkip*2];
-			return (ldexp(groups[0],1)+groups[1]) * Real(1/9);
+			return (ldexp(groups[0],1)+groups[1]) * Real(1.0/9.0);
 		}
 		void innerStep() {
 		//	do a 1.5-pixel step
@@ -149,7 +149,7 @@ namespace MatrixWalkers {
 		bool addHalf; ///< Adds half a pixel to the current position
 		
 		VertShrinker(TMatrix matrix)
-		: Base(matrix) {}
+		: Base(matrix), addHalf(false) {}
 
 		T get() { 
 			Real groups[2]; // groups[0]= sum of a full line, groups[1]= sum of a half line
@@ -157,7 +157,7 @@ namespace MatrixWalkers {
 			groups[addHalf]= cs[0] + cs[1] + cs[2];
 			cs+= current.colSkip;
 			groups[!addHalf]= cs[0] + cs[1] + cs[2];
-			return (ldexp(groups[0],1)+groups[1]) * Real(1/9);
+			return (ldexp(groups[0],1)+groups[1]) * Real(1.0/9.0);
 		}
 		void innerStep() { 
 			for (int i=0; i<3; ++i)
