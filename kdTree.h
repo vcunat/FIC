@@ -333,7 +333,7 @@ protected:
 		}
 	}
 	/** Like ::getBounds, but it only works on vectors with indices from [\p beginIDs;\p endIDs)
-	 *	instead of [0;::count), \p boundsRes should be preallocated to store the result */
+	 *	instead of [0,::count), \p boundsRes should be preallocated to store the result */
 	void getBounds(const int *beginIDs,const int *endIDs,Bounds boundsRes) const {
 		using namespace FieldMath;
 		ASSERT(endIDs>beginIDs);

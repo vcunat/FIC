@@ -9,7 +9,7 @@ using namespace std;
 
 /** Quantizing stuff used by MStdEncoder \relates MStdEncoder */
 namespace Quantizer {
-	/** Quantizes f that belongs to [0;possib/2^scale] into [0;possib-1] */
+	/** Quantizes f that belongs to [0,\p possib/2^\p scale] into [0,\p possib-1] */
 	inline int quantizeByPower(Real f,int scale,int possib) {
 		ASSERT( f>=0 && f<=possib/(Real)powers[scale] );
 		int result= (int)trunc(ldexp(f,scale));

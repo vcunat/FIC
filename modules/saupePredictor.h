@@ -22,7 +22,7 @@ class MSaupePredictor: public IStdEncPredictor {
 	}, {
 		label:	"Max. predicted part",
 		desc:	"The maximal part of domains predicted for a range block",
-		type:	settingInt(-10,-5,0,IntLog2)
+		type:	settingInt(-20,-10,0,IntLog2)
 	} )
 
 protected:

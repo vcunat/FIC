@@ -42,7 +42,7 @@ class MRoot: public IRoot {
 		desc:	"Maximum domain count for level 2 range blocks\n"
 				"(for this purpose are different rotations\n"
 				"of one domain counted as different domains)",
-		type:	settingInt(0,15,30,IntLog2)
+		type:	settingInt(0,18,30,IntLog2)
 	} )
 
 protected:

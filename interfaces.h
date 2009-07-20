@@ -21,7 +21,7 @@ namespace MTypes {
 	typedef SMatrix::Const CSMatrix;			///< Used for passing constant pixels
 	typedef std::vector<SMatrix> MatrixList;	///< A list of pixel matrices
 
-	enum DecodeAct { Clear, Iterate };			///< Possible decoding actions
+	enum DecodeAct { Clear, Iterate };			///< Possible decoding actions \todo name clash, etc.
 
 	struct PlaneBlock; // declared and described later in the file
 	
@@ -67,10 +67,14 @@ struct IRoot: public Interface<IRoot> {
 	 *	can load in bigger size: dimension == orig_dim*2^\p zoom */
 	virtual bool fromStream(std::istream &file,int zoom=0) =0;
 
-	/** Shorthand: saves an encoded image to a file - returns true on success */
-	bool toFile(const char *fileName) { 
+	/** Shorthand: saves an encoded image to a file - returns the number of bytes written
+	 *	or \p false on failure */
+	int toFile(const char *fileName) { 
 		std::ofstream file( fileName, ios_base::binary|ios_base::trunc|ios_base::out );
-		return toStream(file); 
+		if ( !toStream(file) )
+			return false;
+		else
+			return file.tellp();
 	}
 	/** Shorthand: loads image from a file - returns true on success, see ::fromStream */
 	bool fromFile(const char *fileName,int zoom=0) {

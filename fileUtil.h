@@ -3,7 +3,9 @@
 
 #include "headers.h"
 
+/** Stores a value in a stream, specialized for various types (portably) */
 template <class T> inline void put(std::ostream &os,T i);
+/** Reconstructs a value from a stream, see ::put function */
 template <class T> inline T get(std::istream &is);
 
 
@@ -48,10 +50,12 @@ template<> inline float get(std::istream &is) {
 	return result;
 }
 
+/** Converts a floating-point value from interval [0,1] to a bit sequence */
 inline int float01ToBits(Real f,int bitCount) {
 	int result= (int)std::ldexp(f,bitCount);
 	return result==powers[bitCount] ? result-1 : result;
 }
+/** Converts a bit sequnce to a floating-point value, the inverse to ::float01ToBits function */
 inline Real float01FromBits(int bits,int bitCount) {
 	return std::ldexp( Real(bits)+Real(0.5), -bitCount);
 }
@@ -117,6 +121,7 @@ public:
 	}
 };
 
+/** Reads a whole file into std::string (\p result), returns \p true on success */
 inline bool file2string(const char *name,std::string &result) {
 	using namespace std;
 	ifstream file( name, ios_base::binary|ios_base::in );
