@@ -1,4 +1,5 @@
 #include "headers.h"
+
 #ifndef NDEBUG
 
 #include "modules/root.h"
@@ -16,7 +17,10 @@
 
 using namespace std;
 
-int pos;
+int pos; ///< modified by STREAM_POS macro - stores the current position (to ease debugging)
+
+
+
 
 QWidget* MRoot::debugModule(QPixmap &pixmap,const QPoint &click) {
 //	create a new modeless dialog window	
@@ -264,14 +268,17 @@ QWidget* MQuadTree::debugModule(QPixmap &pixmap,const QPoint &click) {
 		planeBlock->summers_makeValid(); /// \todo only approximation
 		planeBlock->getSums(range).unpack(rSum,r2Sum);
 		float estSE= estimateSE(rSum,r2Sum,range.size(),range.level);
+		float realSE= range.encoderData->bestSE;
+		if (realSE==-1)
+			realSE= numeric_limits<float>::infinity();
 		
 		QString msg= QString("Level: %1\nRegular: %2\n"
 			"Top-left corner: %3 %4\nWidth: %5\nHeight: %6\n"
-			"Estimated SE: %7 - %8% of the encoded value")
+			"Estimated SE: %7 (%8% of the encoded value)")
 			.arg(range.level) .arg(range.isRegular())
 			.arg(range.x0) .arg(range.y0)
 			.arg(range.width()) .arg(range.height())
-			.arg(estSE) .arg(100*estSE/range.encoderData->bestSE);
+			.arg(estSE) .arg(100*estSE/realSE);
 		return new QLabel(msg);
 		
 	} else { // provide general info
