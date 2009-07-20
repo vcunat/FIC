@@ -1,23 +1,10 @@
 #include "colorModel.h"
+#include "../imageUtil.h"
 
 #include <QImage>
+
 using namespace std;
-
-const Real
-    MColorModel::YCbCrCoeffs[][4]= {
-        { 0.299,     0.587,     0.114,    0   },
-        {-0.168736, -0.331264,  0.5,      0.5 },
-        { 0.5,      -0.418688, -0.081312, 0.5 },
-
-        { 1,         1,         1,        0   },
-        { 0,        -0.34414,   1.772,   -0.5 },
-        { 1.402,    -0.71414,   0,       -0.5 }
-    },
-    MColorModel::RGBCoeffs[][4]= {
-        {1,0,0,0},{0,1,0,0},{0,0,1,0},
-        {1,0,0,0},{0,1,0,0},{0,0,1,0}
-    };
-
+using namespace Color;
 
 MColorModel::PlaneList MColorModel
 ::image2planes( const QImage &image, const PlaneSettings &prototype ) {
@@ -29,7 +16,7 @@ MColorModel::PlaneList MColorModel
 	const Real (*coeffs)[4]= ( settingsInt(ColorModel) ? YCbCrCoeffs : RGBCoeffs);
 	int planeCount= ownedPlanes.size();
 //	fill pixels in all planes
-	for (int i=0; i<planeCount; ++i) {
+	for (int i=0; i<planeCount; ++i) { /// \todo using walkers instead?
 		SMatrix pixels= ownedPlanes[i].pixels;
 	//	fill the pixels in this plane
 		for (int y=0; y<height; ++y) {
@@ -51,7 +38,7 @@ QImage MColorModel::planes2image() {
 	const PlaneSettings &firstSet= *ownedPlanes.front().settings;
 	QImage result( firstSet.width, firstSet.height, QImage::Format_RGB32 );
 
-	for (int y=0; y<firstSet.height; ++y) {
+	for (int y=0; y<firstSet.height; ++y) { /// \todo using walkers instead?
 		QRgb *line= (QRgb*)result.scanLine(y);
 		for (int x=0; x<firstSet.width; ++x) {
 			Real vals[3]= {

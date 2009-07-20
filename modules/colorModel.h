@@ -4,8 +4,6 @@
 #include "../headers.h"
 #include "../fileUtil.h"
 
-#include <QColor>
-
 /// \ingroup modules
 /** Simple color transformer for affine models. It currently supports RGB and YCbCr
  *	color models and allows to se quality multipliers for individual color channels. */
@@ -62,9 +60,6 @@ protected:
 	}
 	
 public:
-	static const Real RGBCoeffs[][4]	///  RGB color coefficients
-	, YCbCrCoeffs[][4];					///< YCbCr color coefficients
-
 /** \name IColorTransformer interface
  *	@{ */
 	PlaneList image2planes(const QImage &toEncode,const PlaneSettings &prototype);
@@ -79,28 +74,5 @@ protected:
 	 *	makes new matrices and adjusts encoding parameters */
 	PlaneList createPlanes(IRoot::Mode mode,const PlaneSettings &prototype);
 };
-
-
-/** Computes the amount of a color (coefficients as a parameter) in RGB \relates MColorModel */
-inline Real getColor( QRgb color, const Real *koefs ) {
-    return koefs[3] + std::ldexp( Real(0.5) + qRed(color)*Real(koefs[0])
-    	+ qGreen(color)*Real(koefs[1]) + qBlue(color)*Real(koefs[2]), -8 );
-}
-/** Converts color from a model (coefficients as a parameter) to RGB \relates MColorModel */
-inline QRgb getColor( const Real (*coeffs)[4], const Real *planes ) {
-	Real rgb[3]= {0,0,0};
-	for (int i=0; i<3; ++i) {
-		const Real *cLine= coeffs[i];
-		Real col= planes[i]+cLine[3];
-		for (int c=0; c<3; ++c)
-			rgb[c]+= col*cLine[c];
-	}
-	typedef Float2int<8,Real> Conv;
-	return qRgb( Conv::convertCheck(rgb[0]), Conv::convertCheck(rgb[1]), Conv::convertCheck(rgb[2]) );
-}
-/** Computes the gray level of a QRgb color in 0-255 interval \relates MColorModel */
-inline int getGray(QRgb color) {
-	return Float2int<8,Real>::convert( getColor( color, MColorModel::YCbCrCoeffs[0] ) );
-}
 
 #endif

@@ -122,19 +122,19 @@ class SettingsDialog: public QDialog { Q_OBJECT
 		ASSERT(result); 
 		return *result; 
 	}
-	/** Initializes the settings tree and group-box contents from #settings */
+	/** Initializes the settings tree and group-box contents from ::settings */
 	void initialize();
 private slots:
 	/** Changes the contents of the settings group-box when selecting in the settings tree */
 	void currentItemChanged(QTreeWidgetItem *current,QTreeWidgetItem *previous);
-	/** Adjusts the #settings when changed in the settings group-box */
+	/** Adjusts the ::settings when changed in the settings group-box */
 	void settingChanges(int which);
 	/** Handles loading and saving of the settings */
 	void loadSaveClick(QAbstractButton *button);
 public:
 	/** Initializes all the widgets in the dialog */
 	SettingsDialog(ImageViewer *parent,IRoot *settingsHolder);
-	/** Returns the edited #settings */
+	/** Returns the edited ::settings */
 	IRoot* getSettings() { return settings; }
 };
 
@@ -220,11 +220,9 @@ private:
 	/** Increase the progress by a value */
 	static void incProgress(int increment) { 
 		instance->progress+= increment;
+			//< a race can occur, but only affects progress display
 		instance->updateProgress= true;
 	}
-	///	\todo Should we provide a thread-safe version?
-	///	q_atomic_fetch_and_add_acquire_int(&instance->progress,increment);
-	///	instance->setValue((volatile int&)instance->progress);
 
 private slots:
 	/** Slot for catching cancel-pressed signal */

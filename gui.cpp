@@ -1,39 +1,14 @@
 #include <sstream> // needed for ::load and ::rezoom
 
 #include "gui.h"
-#include "modules/colorModel.h"	//	using color coefficients for RGB->gray conversion
+#include "imageUtil.h"	// Color::getPSNR function
+#include "fileUtil.h"	// file2string function
 
 using namespace std;
 
 ////	Non-member functions
-static vector<double> getColorPSNR(const QImage &a,const QImage &b) {
-	int width= a.width(), height= a.height();
-	int x, y;
-	QRgb *line1, *line2;
-	int sum, sumR, sumG, sumB;
-	sum= sumR= sumG= sumB= 0;
-	for (y=0; y<height; ++y) {
-		line1= (QRgb*)a.scanLine(y);
-		line2= (QRgb*)b.scanLine(y);
-		for (x=0; x<width; ++x) {
-			sum+= sqr( getGray(line1[x]) - getGray(line2[x]) );
-			sumR+= sqr( qRed(line1[x]) - qRed(line2[x]) );
-			sumG+= sqr( qGreen(line1[x]) - qGreen(line2[x]) );
-			sumB+= sqr( qBlue(line1[x]) - qBlue(line2[x]) );
-		}
-	}
-	vector<double> result(4);
-	result[0]= sumR;
-	result[1]= sumG;
-	result[2]= sumB;
-	result[3]= sum;
-	double mul= double(width*height) * double(sqr(255));
-	for (vector<double>::iterator it=result.begin(); it!=result.end(); ++it)
-		*it= 10.0 * log10(mul / *it);
-	return result;
-}
 static QString getPSNRmessage(const QImage &img1,const QImage &img2) {
-	vector<double> psnr= getColorPSNR(img1,img2);
+	vector<Real> psnr= Color::getPSNR(img1,img2);
 	return QObject::tr("gray PSNR: %3 dB\nR,G,B: %4,%5,%6 dB") .arg(psnr[3],0,'f',2)
 		.arg(psnr[0],0,'f',2) .arg(psnr[1],0,'f',2) .arg(psnr[2],0,'f',2);
 }
@@ -132,9 +107,9 @@ void ImageViewer::translateUi() {
 
 	A(settings,	"",			"Settings")
 	A(encode,	" ",		"Start encoding")
-	A(save,		"Ctrl+S",	"Save FIC...")
+	A(save,		"Ctrl+S",	"Save FCI...")
 
-	A(load,		"Ctrl+L", 	"Load FIC...")
+	A(load,		"Ctrl+L", 	"Load FCI...")
 	A(clear,	"Ctrl+C", 	"Clear image")
 	A(iterate,	"Ctrl+I",	"Iterate image")
 	A(zoomInc,	"Ctrl++",	"Increase zoom")
@@ -194,7 +169,7 @@ void ImageViewer::read() {
 void ImageViewer::write() {
 //	get the file name
 	QString fname= QFileDialog::getSaveFileName( this, tr("Write image file")
-	, lastDir(), tr("PNG images (*.png)\nAll files (*.*)") );
+		, lastDir(), tr("PNG images (*.png)\nAll files (*.*)") );
 	if (fname.isEmpty())
 		return;
 	lastPath.setPath(fname);
@@ -207,9 +182,8 @@ void ImageViewer::write() {
 }
 void ImageViewer::compare() {
 //	let the user choose a file
-	QString fname= QFileDialog::getOpenFileName
-	( this, tr("Compare to image"), lastDir()
-	, tr("PNG images (*.png)\nJFIF images (*.jpg *.jpeg)\nAll files (*.*)") );
+	QString fname= QFileDialog::getOpenFileName( this, tr("Compare to image"), lastDir()
+		, tr("PNG images (*.png)\nJFIF images (*.jpg *.jpeg)\nAll files (*.*)") );
 	if (fname.isEmpty())
 		return;
 	lastPath.setPath(fname);
@@ -221,10 +195,9 @@ void ImageViewer::compare() {
 		QMessageBox::information( this, tr("Error"), tr("Cannot open %1.").arg(fname) );
 		return;
 	}
-	if ( image.width()!=imageLabel->pixmap()->width()
-	|| image.height()!=imageLabel->pixmap()->height() ) {
+	if ( image.rect() != imageLabel->pixmap()->rect() ) {
 		QMessageBox::information
-		( this, tr("Error"), tr("Images don't have the same dimensions.").arg(fname) );
+			( this, tr("Error"), tr("Images don't have the same dimensions.").arg(fname) );
 		return;
 	}
 //	compute the PSNRs and display them
@@ -234,9 +207,9 @@ void ImageViewer::compare() {
 void ImageViewer::settings() {
 	IRoot *newSettings= modules_settings->clone();
 	SettingsDialog dialog(this,newSettings);
+	bool accepted= dialog.exec();
 	newSettings= dialog.getSettings();
-	if ( dialog.exec() )
-	//	the dialog wasn't cancelled -> swap with the current and new settings
+	if (accepted) // the dialog wasn't cancelled -> swap with the current and new settings
 		swap(newSettings,modules_settings);
 	delete newSettings;
 }
@@ -275,9 +248,9 @@ void ImageViewer::encDone() {
 void ImageViewer::save() {
 //	get a filename to suggest
     QFileInfo finfo(lastPath.path());
-    QString fname= finfo.dir().filePath( finfo.completeBaseName() + tr(".fic") );
+    QString fname= finfo.dir().filePath( finfo.completeBaseName() + tr(".fci") );
 	fname= QFileDialog::getSaveFileName
-		( this, tr("Save encoded image"), fname, tr("FIC images (*.fic)") );
+		( this, tr("Save encoded image"), fname, tr("Fractal-compressed images (*.fci)") );
 	if (fname.isEmpty())
 		return;
 	lastPath.setPath(fname);
@@ -286,7 +259,7 @@ void ImageViewer::save() {
 }
 void ImageViewer::load() {
 	QString fname= QFileDialog::getOpenFileName
-		( this, tr("Load encoded image"), lastDir(), tr("FIC images (*.fic)") );
+		( this, tr("Load encoded image"), lastDir(), tr("Fractal-compressed images (*.fci)") );
 	if (fname.isEmpty())
 		return;
 	lastPath.setPath(fname);
@@ -432,7 +405,7 @@ void SettingsDialog::loadSaveClick(QAbstractButton *button) {
 	case QDialogButtonBox::Open: { // open-button has been clicked
 	//	ask for the name to load from
 		QString fname= QFileDialog::getOpenFileName( this, tr("Load settings file")
-		, parentViewer().lastDir(), tr("FIC settings (*.fms)") );
+			, parentViewer().lastDir(), tr("Fractal compression settings (*.fcs)") );
 		if (fname.isEmpty())
 			return;
 	//	try to load the settings
@@ -443,20 +416,21 @@ void SettingsDialog::loadSaveClick(QAbstractButton *button) {
 			initialize();
 		} else {
 			QMessageBox::information( this, tr("Error")
-			, tr("Cannot load settings from %1.").arg(fname) );
+				, tr("Cannot load settings from %1.").arg(fname) );
 			delete newSettings;
 		}
 	}	break;
 	case QDialogButtonBox::Save: { // save-button has been clicked
 	//	ask for the name to save in
 		QString fname= QFileDialog::getSaveFileName( this, tr("Save settings file")
-		, parentViewer().lastDir(), tr("FIC settings (*.fms)") );
+			, parentViewer().lastDir()+"/settings.fcs"
+			, tr("Fractal compression settings (*.fcs)") );
 		if (fname.isEmpty())
 			return;
 	//	try to save the settings
 		if ( !settings->allSettingsToFile(fname.toStdString().c_str()) )
 			QMessageBox::information( this, tr("Error")
-			, tr("Cannot save settings into %1.").arg(fname) );
+				, tr("Cannot save settings into %1.").arg(fname) );
 	}	break;
 	default:
 		ASSERT(false);
@@ -486,8 +460,7 @@ namespace NOSPACE {
 	}
 }
 void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox) {
-	if (which<0) {
-	//	no change has really happened
+	if (which<0) { // no change has really happened
 		ASSERT(which==-1);
 		if (myTree) {
 		//	I should create the subtree -> store this-pointer as data
@@ -513,12 +486,14 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 		}
 		int setLength= info().setLength;
 		if ( setBox && setLength ) {
+		//	clear the group box
+			clearQtContainer( setBox->children() );
+			ASSERT( setBox->children().empty() );
 		//	fill the group-box
 			QGridLayout *layout= new QGridLayout(setBox);
 			setBox->setLayout(layout);
 			const SettingTypeItem *typeItem= info().setType;
-			for (int i=0; i<setLength; ++i,++typeItem) {
-			//	add a line - one option
+			for (int i=0; i<setLength; ++i,++typeItem) { // add a line - one option
 				QString desc(typeItem->desc);
 				QLabel *label= new QLabel( typeItem->label, setBox );
 				label->setToolTip(desc);
@@ -534,8 +509,8 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 				SignalChanger *changer= new SignalChanger(i,widget,typeItem->type.type);
 				aConnect( changer, SIGNAL(notify(int))			// assuming the setBox's
 				, setBox->parent(), SLOT(settingChanges(int)) ); // parent is SettingsDialog
-			}//	for loop
-		}//	filling the box
+			} // for loop
+		} // filling the box
 	} else {
 	//	which>=0... a setting has changed -> get the change from the widget
 		ASSERT( which < info().setLength );
