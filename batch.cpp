@@ -99,7 +99,7 @@ int batchRun(const vector<const char*> &names) {
 			FileClassifier::FileType inpType= types[inpStart];
 		//	find the end of input-file list
 			for (	confStart= inpStart+1;
-					confStart<length && types[confStart]==inpStart;
+					confStart<length && types[confStart]==inpType;
 					++confStart ) /* no body */;
 		//	find the end of config-file list
 			for (	outpStart= confStart;
