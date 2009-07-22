@@ -18,11 +18,11 @@ class MSaupePredictor: public IStdEncPredictor {
 	, {
 		label:	"Prediction chunk size",
 		desc:	"The number of predicted domains in a chunk",
-		type:	settingInt(1,8,32)
+		type:	settingInt(1,16,64)
 	}, {
 		label:	"Max. predicted part",
 		desc:	"The maximal part of domains predicted for a range block",
-		type:	settingInt(-20,-10,0,IntLog2)
+		type:	settingInt(-20,-8,0,IntLog2)
 	} )
 
 protected:

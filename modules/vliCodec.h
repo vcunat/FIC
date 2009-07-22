@@ -6,6 +6,7 @@
 
 class VLI;
 
+/// \ingroup modules
 /** Variable-length-integer codec optimized for encoding little-changing sequences.
  *	It lets user choose the number of first-level symbols. */
 class MDifferentialVLICodec: public IIntCodec {
@@ -16,7 +17,7 @@ class MDifferentialVLICodec: public IIntCodec {
 		label:	"First level symbols",
 		desc:	"The number of possibilities\n"
 				"that will occupy least space",
-		type:	settingInt(0,1,8,IntLog2)
+		type:	settingInt(0,0,8,IntLog2)
 	} )
 
 private:

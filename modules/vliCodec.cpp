@@ -27,8 +27,9 @@ public:
         int level, data;
     };
 
- /** VLI's settings (they're const, so it doesn't matter they're public) */
-    const int expAdd, maxLevel
+ /* VLI's settings (they're const, so it doesn't matter they're public) */
+    const int expAdd /// 2^::expAdd is the number of possibilities on the first level (level 0)
+    , maxLevel		 /// The highest possible level (in this settings)
     #ifndef NDEBUG
     , possib
     #endif
@@ -36,7 +37,7 @@ public:
 
 public:
 	/** Only initializes the settings */
-    VLI(int possibilities,int exponentAddition=1)
+    VLI(int possibilities,int exponentAddition)
     : expAdd(exponentAddition), maxLevel(getLevel( possibilities-1 , exponentAddition ))
     #ifndef NDEBUG
     , possib(possibilities)

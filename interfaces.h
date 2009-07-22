@@ -72,7 +72,7 @@ struct IRoot: public Interface<IRoot> {
 	int toFile(const char *fileName) { 
 		std::ofstream file( fileName, ios_base::binary|ios_base::trunc|ios_base::out );
 		if ( !toStream(file) )
-			return false;
+			return 0;
 		else
 			return file.tellp();
 	}
