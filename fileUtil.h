@@ -33,7 +33,7 @@ template<> inline void put(std::ostream &os,Uint32 i) {
     put<Uchar>(os,i%256);
 }
 template<> inline Uint32 get(std::istream &is) {
-	Uint16 res= 0;
+	Uint32 res= 0;
 	for (int i=0; i<4; ++i)
 		res= res*256+get<Uchar>(is);
 	return res;
@@ -76,7 +76,9 @@ public:
 		{ flush(); }
 	/** Puts bits */
 	void putBits(int val,int bits) {
-		ASSERT( bits>0 && 0<=val && val<powers[bits] );
+		ASSERT( bits>=0 && 0<=val && val<powers[bits] );
+		if (!bits)
+			return;
 		buffer+= powers[bufbits]*val;
 		bufbits+= bits;
 		while (bufbits>=8) {
@@ -105,7 +107,9 @@ public:
 	: buffer(0), bufbits(0), is(stream) {}
 	/** Reads bits */
 	int getBits(int bits) {
-		ASSERT(bits>0);
+		ASSERT(bits>=0);
+		if (!bits)
+			return 0;
 		while (bufbits<bits) {
 			buffer+= powers[bufbits]*Uchar(is.get());
 			bufbits+= 8;
