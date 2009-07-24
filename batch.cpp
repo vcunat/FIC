@@ -1,7 +1,8 @@
 #include "headers.h"
 #include "imageUtil.h"
 
-#include <iostream> // cout and cerr streams
+#include <iostream>	// cout and cerr streams
+#include <memory>	// auto_ptr (because of exceptions)
 
 #include <QDir>
 #include <QFileInfo>
@@ -17,7 +18,7 @@ inline QString tr(const char *str) { return QObject::tr(str); }
 
 /** Decodes a fractal image into a bitmap image */
 void decodeFile(const char *inpName,QString outName) {
-	IRoot *root= IRoot::compatiblePrototype().clone(Module::ShallowCopy);
+	auto_ptr<IRoot> root( IRoot::compatiblePrototype().clone(Module::ShallowCopy) );
 	if ( !root->fromFile(inpName) )
 		throw tr("Error while reading file \"%1\"") .arg(inpName);
 	root->decodeAct(MTypes::Clear);
@@ -37,9 +38,9 @@ void encodeFile(const char *inpName,QString outName,const char *confName=0) {
 	
 	QTime time;
 	time.start();
-//	configure the module tree
-	IRoot *root= IRoot::compatiblePrototype()
-		.clone( confName ? Module::ShallowCopy : Module::DeepCopy );
+//	configure the module tree, using auto_ptr to release memory on exception
+	Module::CloneMethod clMethod= confName ? Module::ShallowCopy : Module::DeepCopy;
+	auto_ptr<IRoot> root( IRoot::compatiblePrototype().clone(clMethod) );
 	if (confName) {
 		 if ( !root->allSettingsFromFile(confName) )
 		     throw tr("Error while reading configuration file \"%1\"") .arg(confName);
@@ -155,11 +156,8 @@ int batchRun(const vector<const char*> &names) {
 					break;
 				case FileClassifier::Directory: // the output is a directory					
 					for (int inputID=inpStart; inputID<confStart; ++inputID) {
-						QFileInfo inputInfo(names[inputID]);
-						if ( !inputInfo.isReadable() )
-							throw tr("Can't open file \"%1\"") .arg(names[inputID]);
-						QString outNameStart= names[outpStart] 
-							+ ( QDir::separator() + inputInfo.completeBaseName() );
+						QString outNameStart= names[outpStart] + ( QDir::separator() 
+							+ QFileInfo(names[inputID]).completeBaseName() );
 							
 						if (confStart==outpStart) // using default configuration
 							encodeFile( names[inputID], outNameStart+".fci" ); 
