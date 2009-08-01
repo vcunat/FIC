@@ -74,7 +74,7 @@
 \pdf_bookmarksopenlevel 1
 \pdf_breaklinks false
 \pdf_pdfborder true
-\pdf_colorlinks true
+\pdf_colorlinks false
 \pdf_backref false
 \pdf_pdfusetitle true
 \papersize a4paper
@@ -1376,6 +1376,13 @@ reference "Chyba_zobrazení/Penalizace"
 
 \begin_layout Section
 Nejčastější oblasti výzkumu
+\begin_inset CommandInset label
+LatexCommand label
+name "Články"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -7325,11 +7332,11 @@ Peppers
 \emph on
 Goldhill
 \emph default
- jsou ve fraktální kompresi často používané a mají rozměry 
+ jsou ve fraktální kompresi často používané a mají klasické rozměry 
 \begin_inset Formula $512\times512$
 \end_inset
 
-.
+ pixelů.
  Obrázky 
 \emph on
 Serrano
@@ -7350,15 +7357,260 @@ digitální umění
 \begin_inset Quotes grd
 \end_inset
 
-) a mají neobvyklé rozměry 
+) a mají i neobvyklé rozměry.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "Testování/Lena a Mandrill"
+
+\end_inset
+
+Testovací obrázky 
+\emph on
+Lena
+\emph default
+ a 
+\emph on
+Mandrill
+\emph default
+ (velikost 
+\begin_inset Formula $512\times512$
+\end_inset
+
+ pixelů)
+\end_layout
+
+\end_inset
+
+
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename lena.png
+	lyxscale 35
+	scale 35
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename mandrill.png
+	lyxscale 35
+	scale 35
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "Testování/Peppers a Goldhill"
+
+\end_inset
+
+Testovací obrázky 
+\emph on
+Peppers
+\emph default
+ a 
+\emph on
+Goldhill
+\emph default
+ (velikost 
+\begin_inset Formula $512\times512$
+\end_inset
+
+ pixelů)
+\end_layout
+
+\end_inset
+
+
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename peppers.png
+	lyxscale 35
+	scale 35
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename goldhill.png
+	lyxscale 35
+	scale 35
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "Testování/Serrano"
+
+\end_inset
+
+Testovací obrázek 
+\emph on
+Serrano 
+\emph default
+(velikost 
 \begin_inset Formula $629\times794$
 \end_inset
 
- a 
+ pixelů)
+\end_layout
+
+\end_inset
+
+
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename serrano.png
+	lyxscale 30
+	scale 30
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "Testování/Clegg"
+
+\end_inset
+
+Testovací obrázek 
+\emph on
+Clegg
+\emph default
+ (velikost 
 \begin_inset Formula $814\times880$
 \end_inset
 
-.
+ pixelů)
+\end_layout
+
+\end_inset
+
+
+\begin_inset VSpace defskip
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename clegg.png
+	lyxscale 30
+	scale 30
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -7627,6 +7879,12 @@ name "Testování/Penalizace/Tabulka"
 Testování účinností penalizace a omezení koeficientů
 \end_layout
 
+\end_inset
+
+
+\size footnotesize
+
+\begin_inset VSpace defskip
 \end_inset
 
 
@@ -11288,6 +11546,12 @@ name "Testování/Predikce/Tabulka"
 Testování účinnosti predikce
 \end_layout
 
+\end_inset
+
+
+\size footnotesize
+
+\begin_inset VSpace defskip
 \end_inset
 
 
@@ -14958,6 +15222,14 @@ key "Fish95,Saup95"
 \end_inset
 
 
+\size footnotesize
+
+\begin_inset VSpace defskip
+\end_inset
+
+
+\size default
+
 \begin_inset Box Frameless
 position "t"
 hor_pos "c"
@@ -15027,7 +15299,7 @@ PSNR
 \begin_layout Plain Layout
 Čas
 \begin_inset Foot
-status open
+status collapsed
 
 \begin_layout Plain Layout
 publikované doby komprese nejsou porovnatelné, protože byly získány na o
@@ -15347,10 +15619,6 @@ Zde předvedený
 
 \end_layout
 
-\begin_layout Plain Layout
-
-\end_layout
-
 \end_inset
 
 
@@ -15495,6 +15763,10 @@ name "Testování/Kódování/Tabulka"
 Testování účinnosti diferenčního kódování
 \end_layout
 
+\end_inset
+
+
+\begin_inset VSpace defskip
 \end_inset
 
 
@@ -17912,10 +18184,6 @@ sideways false
 status collapsed
 
 \begin_layout Plain Layout
-
-\end_layout
-
-\begin_layout Plain Layout
 \begin_inset Caption
 
 \begin_layout Plain Layout
@@ -17947,6 +18215,62 @@ Clegg
 \end_inset
 
 
+\end_layout
+
+\begin_layout Chapter
+Závěr
+\end_layout
+
+\begin_layout Standard
+V
+\begin_inset space ~
+\end_inset
+
+této práci byl představen modulární systém pro fraktální kompresi obrazu
+ umožňující efektivní implementaci vyměnitelných algoritmů s
+\begin_inset space ~
+\end_inset
+
+minimální zátěží technického kódu.
+ Pro tento systém byla implementována sada modulů provádějící většinou klasická
+ řešení jednotlivých části fraktální komprese.
+ Spolu s
+\begin_inset space ~
+\end_inset
+
+grafickým a dávkovým uživatelským rozhraním vznikl funkční celek vhodný
+ pro výzkum vlastností komprese.
+ Kromě použití známých metod byla navržena drobná vylepšení.
+ Jejich vliv a také celkový výsledek byly experimentálně vyhodnoceny a porovnány
+ se standardními metodami komprese.
+\end_layout
+
+\begin_layout Standard
+Implementace byla prováděna s
+\begin_inset space ~
+\end_inset
+
+ohledem na možnost snadného doplnění dalších algoritmů a jejich kombinování.
+ Mnoho možností dalšího rozšíření bylo diskutováno v
+\begin_inset space ~
+\end_inset
+
+části
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Články"
+
+\end_inset
+
+.
+ Mezi nejzajímavější patří horizontálně-vertikální dělení cílových bloků
+ a možnost aproximace cílových bloků pomocí více zdrojových bloků.
+ Dále by bylo vhodné vylepšit nebo nahradit implementovaný predikční modul,
+ jehož účinnost podle provedených testů není ideální.
 \end_layout
 
 \begin_layout Chapter*
