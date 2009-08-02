@@ -129,6 +129,13 @@ filename "bc_start.tex"
 
 \begin_layout Chapter
 Vývoj a principy fraktální komprese obrazu
+\begin_inset CommandInset label
+LatexCommand label
+name "Vývoj_a_principy"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -3441,7 +3448,7 @@ toho je zřejmé, že cílový obrázek bude pevným bodem i takto pozměněnéh
 \begin_layout Standard
 Novou čtvercovou chybu lze vyjádřit jako
 \begin_inset Formula \begin{equation}
-\mathrm{\overline{SE}}\;=\;\sum_{i=1}^{n}\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}.\label{eq:vzorec}\end{equation}
+\mathrm{\overline{SE}}\;=\;\sum_{i=1}^{n}\left(\bar{u}\bar{d}_{i}+\bar{v}\right)^{2}.\label{Chyba/SE_vzorec}\end{equation}
 
 \end_inset
 
@@ -3577,7 +3584,7 @@ závislosti na jeho lineárním koeficientu.
  Pokud vyjdeme ze vzorce pro chybu (
 \begin_inset CommandInset ref
 LatexCommand vref
-reference "eq:vzorec"
+reference "Chyba/SE_vzorec"
 
 \end_inset
 
@@ -3616,7 +3623,7 @@ První suma je zřejmě rovna původní chybě
 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "eq:vzorec"
+reference "Chyba/SE_vzorec"
 
 \end_inset
 
@@ -5990,7 +5997,7 @@ Codec
 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "Implementace/Kódování celočíselných řad"
+reference "Implementace/Kódování_celočíselných_řad"
 
 \end_inset
 
@@ -7138,7 +7145,7 @@ KDBuilder
 Kódování celočíselných řad
 \begin_inset CommandInset label
 LatexCommand label
-name "Implementace/Kódování celočíselných řad"
+name "Implementace/Kódování_celočíselných_řad"
 
 \end_inset
 
@@ -7372,7 +7379,7 @@ status collapsed
 \begin_layout Plain Layout
 \begin_inset CommandInset label
 LatexCommand label
-name "Testování/Lena a Mandrill"
+name "Testování/Lena_a_Mandrill"
 
 \end_inset
 
@@ -7440,7 +7447,7 @@ status collapsed
 \begin_layout Plain Layout
 \begin_inset CommandInset label
 LatexCommand label
-name "Testování/Peppers a Goldhill"
+name "Testování/Peppers_a_Goldhill"
 
 \end_inset
 
@@ -15288,7 +15295,7 @@ Komp.
 \begin_inset Text
 
 \begin_layout Plain Layout
-PSNR
+PSNR (dB)
 \end_layout
 
 \end_inset
@@ -15311,7 +15318,7 @@ mnoho let starším hardwaru (procesor MIPS R4000)
 
 \end_inset
 
-
+ (s)
 \end_layout
 
 \end_inset
@@ -15374,7 +15381,7 @@ Fisher
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15383,7 +15390,7 @@ Saupe
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15392,7 +15399,7 @@ Saupe
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15401,7 +15408,7 @@ Saupe
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15421,7 +15428,7 @@ Saupe
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15430,7 +15437,7 @@ Zde předvedený
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15439,7 +15446,7 @@ Zde předvedený
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15448,7 +15455,7 @@ Zde předvedený
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15517,7 +15524,7 @@ Fisher
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15526,7 +15533,7 @@ Saupe
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15535,7 +15542,7 @@ Saupe
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15544,7 +15551,7 @@ Saupe
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="top" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15564,7 +15571,7 @@ Saupe
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15573,7 +15580,7 @@ Zde předvedený
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15582,7 +15589,7 @@ Zde předvedený
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15591,7 +15598,7 @@ Zde předvedený
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -15661,7 +15668,7 @@ vzájemně blízkými po sobě jdoucími prvky
 
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "Implementace/Kódování celočíselných řad"
+reference "Implementace/Kódování_celočíselných_řad"
 
 \end_inset
 
