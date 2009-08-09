@@ -25,7 +25,7 @@ namespace Color {
 		QRgb *line1, *line2;
 		long sum, sumR, sumG, sumB;
 		sum= sumR= sumG= sumB= 0;
-		for (y=0; y<height; ++y) { /// \todo using walkers instead?
+		for (y=0; y<height; ++y) { // \todo using walkers instead?
 			line1= (QRgb*)a.scanLine(y);
 			line2= (QRgb*)b.scanLine(y);
 			for (x=0; x<width; ++x) {

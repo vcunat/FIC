@@ -46,7 +46,7 @@ public:
 		type:	settingFloat(0,0.25,4)
 	}, {
 		label:	"Take quantization errors into account",
-		desc:	"Selecting yes will result in slower but more precise encoding?",
+		desc:	"Selecting yes will result in slower but more precise encoding",
 		type:	settingCombo("no\nyes",1)
 	}, {
 		label:	"Maximum linear coefficient",

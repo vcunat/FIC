@@ -21,7 +21,8 @@ namespace MTypes {
 	typedef SMatrix::Const CSMatrix;			///< Used for passing constant pixels
 	typedef std::vector<SMatrix> MatrixList;	///< A list of pixel matrices
 
-	enum DecodeAct { Clear, Iterate };			///< Possible decoding actions \todo name clash, etc.
+	enum DecodeAct { Clear, Iterate };			///< Possible decoding actions
+												// \todo name clash, etc.
 
 	struct PlaneBlock; // declared and described later in the file
 	

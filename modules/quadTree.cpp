@@ -171,7 +171,7 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 		return false;
 	}
 
-///	\todo regular ranges optimization
+//	\todo regular ranges optimization
 	float maxSE= plSet.moduleQ2SE->rangeSE( plSet.quality, pixCount );
 	bool tryEncode= true;
 

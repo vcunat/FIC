@@ -18,7 +18,7 @@ public:
 ///	@}
 
 protected:
-	/** Predictor class returned when calling #newPredictor
+	/** Predictor class returned when calling ::newPredictor
 	 *	- returns all domains in all rotations in one chunk */
 	class OneRangePredictor: public IOneRangePredictor {
 		int domCount /// the domain count

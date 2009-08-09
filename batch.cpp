@@ -22,7 +22,7 @@ void decodeFile(const char *inpName,QString outName) {
 	if ( !root->fromFile(inpName) )
 		throw tr("Error while reading file \"%1\"") .arg(inpName);
 	root->decodeAct(MTypes::Clear);
-	root->decodeAct(MTypes::Iterate,10); ///< \todo constant 10
+	root->decodeAct(MTypes::Iterate,10); //< \todo constant 10
 	if ( !root->toImage().save(outName) )
 		throw tr("Error while writing file \"%1\"") .arg(outName);
 }
@@ -58,7 +58,7 @@ void encodeFile(const char *inpName,QString outName,const char *confName=0) {
 //	decode the image and measure the PSNR
 	time.restart();
 	root->decodeAct(MTypes::Clear);
-	root->decodeAct(MTypes::Iterate,10); ///< \todo constant 10
+	root->decodeAct(MTypes::Iterate,10); //< \todo constant 10
 	float decTime= time.elapsed()/1000.0;
 	vector<Real> psnr= Color::getPSNR( root->toImage(), image );
 //	output the information

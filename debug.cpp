@@ -265,7 +265,7 @@ QWidget* MQuadTree::debugModule(QPixmap &pixmap,const QPoint &click) {
 		const ISquareRanges::RangeNode &range= *findRangeOnPoint( fringe, click );
 		
 		Real rSum, r2Sum;
-		planeBlock->summers_makeValid(); /// \todo only approximation
+		planeBlock->summers_makeValid(); // \todo only approximation
 		planeBlock->getSums(range).unpack(rSum,r2Sum);
 		float estSE= estimateSE(rSum,r2Sum,range.size(),range.level);
 		float realSE= range.encoderData->bestSE;

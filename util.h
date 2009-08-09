@@ -20,6 +20,10 @@ template<typename T> inline T lShift(T i,T bits)
 /** Returns i/2^bits */
 template<typename T> inline T rShift(T i,T bits)
 	{ ASSERT(bits>=0 && i>=0); return i>>bits; }
+	
+/** This function is missing in earlier GCC versions, here implemented via exp2 and log2 */
+template<typename T> inline T exp10(T val) 
+	{ return exp2( val*log2(T(10)) ); }
 
 /** Returns ceil(log2(i)) */
 inline int log2ceil(int i) {

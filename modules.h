@@ -105,6 +105,7 @@ protected:
 	/** Cloning method, implemented in all modules via macros \return a new module
 	 *	\param method determines creation of a deep or a shallow copy (zeroed children) */
 	virtual Module* abstractClone(CloneMethod method) const =0;
+public: // public because of GCC-3 versions
 	/** Concrete cloning method - templated by the actual type of the module */
 	template<class M> M* concreteClone(CloneMethod method) const;
 	
@@ -217,7 +218,7 @@ public: \
 		static SettingTypeItem setType_[]= {SETTYPE_}; \
 		static TypeInfo info_= { \
 			id: ModuleFactory::getModuleID<CNAME_>(), \
-			name: NAME_, \
+			name:NAME_, \
 			desc: DESC_, \
 			setLength: sizeof(setType_)/sizeof(*setType_)-1, \
 			setType: setType_ \

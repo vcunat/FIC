@@ -12,9 +12,8 @@
 class MStdDomains: public ISquareDomains {
 	DECLARE_debugModule;
 
-	DECLARE_TypeInfo( MStdDomains, "Standard generator"
-	, "Creates domains of many types (standard, horizontal, vertical, diamond),\n"
-		"offers many adjustment possibilities"
+	DECLARE_TypeInfo( MStdDomains, "Standard domains generator"
+	, "Creates domain blocks of many types (standard, horizontal, vertical, diamond)"
 	, {
 		label:	"Per-level max-domain-count divisor",
 		desc:	"How many times will the maximum domain count\n"

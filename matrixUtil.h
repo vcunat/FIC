@@ -234,7 +234,7 @@ struct SummedMatrix {
 	}
 	/** Gets only the sum of values (not the sum of squares) */
 	SumT getValueSum( I x0, I y0, I xend, I yend ) const {
-		/// \todo quicker version
+		// \todo quicker version
 		return getSums(x0,y0,xend,yend).value;
 	}
 }; // SummedPixels template struct

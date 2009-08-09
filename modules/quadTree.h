@@ -29,7 +29,7 @@ class MQuadTree: public ISquareRanges {
 				"with bad quality and try to merge ranges with good quality",
 		type:	settingCombo("no\nyes",1)
 	} )
-	/// \todo better heuristics via changes in ISquareEncoder interface
+	// \todo better heuristics via changes in ISquareEncoder interface
 	
 protected:
 	class Node;	// forward declaration, derived from RangeNode
