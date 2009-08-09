@@ -45,7 +45,7 @@ class ImageViewer: public QMainWindow { Q_OBJECT
 	int zoom;				///< The current zoom, see IRoot::fromStream
 	std::string encData;	///< String containing (if nonempty) the last encoded/decoded data
 
-	QTranslator translator;	///< The application's only translator
+	QTranslator &translator;///< The application's only translator
 	QLabel *imageLabel; 	///< A pointer to the label showing images
 	
 	QDir lastPath;
@@ -54,11 +54,13 @@ class ImageViewer: public QMainWindow { Q_OBJECT
 	QAction
         readAct, writeAct, compareAct, exitAct,
         settingsAct, encodeAct, saveAct,
-        loadAct, clearAct, iterateAct, zoomIncAct, zoomDecAct;
+        loadAct, clearAct, iterateAct, zoomIncAct, zoomDecAct,
+        loadLangAct, useLangAct;
+        //aboutAct, aboutQtAct;
 ///	@}
 /**	\name Menus
  *	@{ */
-	QMenu imageMenu, compMenu, decompMenu;//, langMenu, helpMenu;
+	QMenu imageMenu, compMenu, decompMenu, langMenu;//, helpMenu;
 ///	@}
 	void createActions();	///< Creates all actions and connects them to correct slots
     void createMenus();		///< Creates the menu bar and fills it with actions
@@ -82,11 +84,15 @@ private slots:
 	void iterate();
 	void zoomInc();
 	void zoomDec();
+	void loadLang();
+	void useLang(bool use);
+	//void about();
+	//void aboutQt();
 ///	@}
 	void encDone();
 public:
 	/** Initializes the object to default settings */
-	ImageViewer(QApplication &app);
+	ImageViewer(QApplication &app,QTranslator &trans);
 	/** Only releases the modules */
 	virtual ~ImageViewer()
 		{ delete modules_settings; delete modules_encoding; }

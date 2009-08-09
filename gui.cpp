@@ -15,12 +15,13 @@ static QString getPSNRmessage(const QImage &img1,const QImage &img2) {
 
 
 ////	Public members
-ImageViewer::ImageViewer(QApplication &app)
+ImageViewer::ImageViewer(QApplication &app,QTranslator &trans)
 : modules_settings( IRoot::newCompatibleModule() ), modules_encoding(0)
-, zoom(0), lastPath(QDir::current().filePath("x"))
+, zoom(0), translator(trans), lastPath(QDir::current().filePath("x"))
 , readAct(this), writeAct(this), compareAct(this), exitAct(this)
 , settingsAct(this), encodeAct(this), saveAct(this)
-, loadAct(this), clearAct(this), iterateAct(this), zoomIncAct(this), zoomDecAct(this) {
+, loadAct(this), clearAct(this), iterateAct(this), zoomIncAct(this), zoomDecAct(this)
+, loadLangAct(this), useLangAct(this) {
 //	try to load guessed language translation
 	if ( translator.load( "lang-"+QLocale::system().name(), app.applicationDirPath() ) )
 		app.installTranslator(&translator);
@@ -38,8 +39,8 @@ ImageViewer::ImageViewer(QApplication &app)
 
 	createActions();
 	createMenus();
-	translateUi();
 	updateActions();
+	translateUi();
 
 	resize(800,600);
 }
@@ -51,6 +52,9 @@ void ImageViewer::createActions() {
 		aConnect( &name##Act, SIGNAL(triggered()), this, SLOT(name()) );
 	#define AS(name,signal) \
 		aConnect( &name##Act, SIGNAL(triggered()), this, SLOT(signal()) );
+	#define AT(name) \
+		aConnect( &name##Act, SIGNAL(toggled(bool)), this, SLOT(name(bool)) );
+		
 	A(read)
 	A(write)
 	A(compare)
@@ -65,9 +69,16 @@ void ImageViewer::createActions() {
 	A(iterate)
 	A(zoomInc)
 	A(zoomDec)
+	
+	A(loadLang)
+	AT(useLang)
 
 	#undef A
 	#undef AS
+	#undef AT
+	
+	useLangAct.setCheckable(true);
+	useLangAct.setChecked( !translator.isEmpty() );
 }
 void ImageViewer::createMenus() {
 	imageMenu.addAction(&readAct);
@@ -87,41 +98,48 @@ void ImageViewer::createMenus() {
 	decompMenu.addSeparator();
 	decompMenu.addAction(&zoomIncAct);
 	decompMenu.addAction(&zoomDecAct);
+	
+	langMenu.addAction(&loadLangAct);
+	langMenu.addAction(&useLangAct);
 
 	menuBar()->addMenu(&imageMenu);
 	menuBar()->addMenu(&compMenu);
 	menuBar()->addMenu(&decompMenu);
-	//menuBar()->addMenu(langMenu);
-	//menuBar()->addMenu(helpMenu);
+	menuBar()->addMenu(&langMenu);
+	//menuBar()->addMenu(&helpMenu);
 }
 void ImageViewer::translateUi() {
 	setWindowTitle(tr("Fractal Image Compressor"));
 //	set action names and shortcuts
 	#define A(name,shortcut,text) \
-		name##Act.setText(tr(text)); \
+		name##Act.setText(text); \
 		name##Act.setShortcut(tr(shortcut));
-	A(read,		"Ctrl+R",	"Read...")
-	A(write,	"Ctrl+W",	"Write...")
-	A(compare,	"",			"Compare to...")
-	A(exit,		"Ctrl+Q",	"Quit")
+	A(read,		"Ctrl+R",	tr("Read..."))
+	A(write,	"Ctrl+W",	tr("Write..."))
+	A(compare,	"",			tr("Compare to..."))
+	A(exit,		"Ctrl+Q",	tr("Quit"))
 
-	A(settings,	"",			"Settings")
-	A(encode,	" ",		"Start encoding")
-	A(save,		"Ctrl+S",	"Save FCI...")
+	A(settings,	"",			tr("Settings"))
+	A(encode,	" ",		tr("Start encoding"))
+	A(save,		"Ctrl+S",	tr("Save FCI..."))
 
-	A(load,		"Ctrl+L", 	"Load FCI...")
-	A(clear,	"Ctrl+C", 	"Clear image")
-	A(iterate,	"Ctrl+I",	"Iterate image")
-	A(zoomInc,	"Ctrl++",	"Increase zoom")
-	A(zoomDec,	"Ctrl+-",	"Decrease zoom")
+	A(load,		"Ctrl+L", 	tr("Load FCI..."))
+	A(clear,	"Ctrl+C", 	tr("Clear image"))
+	A(iterate,	"Ctrl+I",	tr("Iterate image"))
+	A(zoomInc,	"Ctrl++",	tr("Increase zoom"))
+	A(zoomDec,	"Ctrl+-",	tr("Decrease zoom"))
+	
+	A(loadLang,	"",			tr("Load language..."))
+	A(useLang,	"",			tr("Use language"))
 	#undef A
 
 //	set the tiles of menu items
 	#define M(name,title) \
-		name##Menu.setTitle(tr(title));
-	M(image,	"&Image");
-	M(comp,		"&Compression");
-	M(decomp,	"&Decompression");
+		name##Menu.setTitle(title);
+	M(image,	tr("&Image"));
+	M(comp,		tr("&Compression"));
+	M(decomp,	tr("&Decompression"));
+	M(lang,		tr("&Language"))
 	#undef M
 }
 void ImageViewer::updateActions() {
@@ -142,6 +160,8 @@ void ImageViewer::updateActions() {
 	iterateAct.setEnabled( mode != IRoot::Clear );
 	zoomIncAct.setEnabled( mode != IRoot::Clear && zoom<3 );
 	zoomDecAct.setEnabled( mode != IRoot::Clear && zoom>0 );
+	
+	useLangAct.setEnabled( !translator.isEmpty() );
 }
 
 ////	Private slots
@@ -308,6 +328,25 @@ void ImageViewer::zoomDec() {
 	if (!rezoom())
 		++zoom, QMessageBox::information( this, tr("Error"), tr("Zooming failed.") );
 }
+void ImageViewer::loadLang() {
+	QString fname= QFileDialog::getOpenFileName( this, tr("Load Language")
+        , QApplication::applicationDirPath(), tr("Translation Definitions (*.qm)") );
+    if (fname.isEmpty())
+        return;
+    if (translator.load(fname)) {
+        useLangAct.setChecked(true);
+        useLang(true);
+    } else
+        QMessageBox::warning( this, tr("Error"), tr("Cannot load %1.").arg(fname) );
+    updateActions();
+}
+void ImageViewer::useLang(bool use) {
+	if (use)
+		QApplication::installTranslator(&translator);
+	else
+    	QApplication::removeTranslator(&translator);
+	translateUi();
+}
 
 bool ImageViewer::rezoom() {
 //	create a stream that contains the "saved image"
@@ -391,7 +430,7 @@ void SettingsDialog::currentItemChanged(QTreeWidgetItem *curItem,QTreeWidgetItem
 	ASSERT(curMod);
 //	clear the settings box and make the module fill it
 	clearQtContainer( setBox->children() );
-	setBox->setTitle( tr("%1 module settings") .arg(curMod->info().name) );
+	setBox->setTitle( tr("%1 module settings") .arg(QObject::tr(curMod->info().name)) );
 	curMod->adjustSettings(-1,0,setBox);
 }
 void SettingsDialog::settingChanges(int which) {
@@ -494,8 +533,8 @@ void Module::adjustSettings(int which,QTreeWidgetItem *myTree,QGroupBox *setBox)
 			setBox->setLayout(layout);
 			const SettingTypeItem *typeItem= info().setType;
 			for (int i=0; i<setLength; ++i,++typeItem) { // add a line - one option
-				QString desc(typeItem->desc);
-				QLabel *label= new QLabel( typeItem->label, setBox );
+				QString desc= QObject::tr(typeItem->desc);
+				QLabel *label= new QLabel( QObject::tr(typeItem->label), setBox );
 				label->setToolTip(desc);
 
 				QWidget *widget= newSettingsWidget( typeItem->type.type, setBox );
@@ -579,7 +618,7 @@ namespace NOSPACE {
 		ItemAdder(QWidget *widget): box( debugCast<QComboBox*>(widget) ) {}
 		void operator()(int i) {
 			const Module::TypeInfo &info= ModuleFactory::prototype(i).info();
-			box->addItem(info.name);
+			box->addItem(QObject::tr(info.name));
 			box->setItemData( box->count()-1, QObject::tr(info.desc), Qt::ToolTipRole );
 		}
 	};
@@ -615,7 +654,7 @@ void Module::settingsType2widget(QWidget *widget,const SettingTypeItem &typeItem
 		break;
 		}
 	case Combo:
-		debugCast<QComboBox*>(widget)->addItems( QString(type.data.text).split('\n') );
+		debugCast<QComboBox*>(widget)->addItems( QObject::tr(type.data.text).split('\n') );
 		break;
 	default:
 		ASSERT(false);
