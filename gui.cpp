@@ -184,6 +184,9 @@ void ImageViewer::read() {
 		image= image.convertToFormat(QImage::Format_RGB32);
 //  display it
 	changePixmap(QPixmap::fromImage(image));
+//	clear the old modules
+	delete modules_encoding;
+	modules_encoding= 0;
 	updateActions();
 }
 void ImageViewer::write() {
