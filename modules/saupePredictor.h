@@ -72,8 +72,9 @@ protected:
 	/** Normalizes and possibly shrinks a domain block */
 	static void refineDomain( const SummedPixels &pixMatrix, int x0, int y0
 		, bool allowInversion, int realLevel, int predLevel, SReal *pixelResult );
-	/** Normalizes and possibly shrinks a range block */
-	static void refineRange
+	/** Normalizes and possibly shrinks a range block, returns true on success.
+	 *	Failure occurs when the shrunken block contains at most one pixel (pointless to predict). */
+	static bool refineRange
 		( const NewPredictorData &data, int predLevel, SReal *pixelResult );
 
 

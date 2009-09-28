@@ -30,9 +30,9 @@ IStdEncPredictor::IOneRangePredictor* MSaupePredictor
 
 namespace MatrixWalkers {
 	/** Creates a Checked structure to walk a linear array as a matrix */
-	template<class T,class I> Checked<T,I> makeLinearizer(T* start,I inCount,I outCount) {
+	template<class T,class I> Checked<T,I> makeLinearizer(T* start,I colSkip,I width,I height) {
 		return Checked<T,I>
-			( MatrixSlice<T,I>::makeRaw(start,inCount), Block(0,0,outCount,inCount) );
+			( MatrixSlice<T,I>::makeRaw(start,colSkip), Block(0,0,width,height) );
 	}
 	
 	/** Walker that iterates over rectangles in a matrix and returns their sums,
@@ -100,15 +100,16 @@ namespace NOSPACE {
 		ASSERT( finite(multiply) && finite(avg) );
 	//	construct the operator and the walker on the result
 		AddMulCopy<Real> oper( -avg, multiply );
-		Checked<KDReal> linWalker= makeLinearizer(pixelResult,predWidth,predHeight);
+		Checked<KDReal> resWalker=
+			makeLinearizer( pixelResult, powers[predLevel], predWidth, predHeight );
 	//	decide the shrinking method
 		if (levelDiff==0)		// no shrinking
-			walkOperate( linWalker, Rotation_0<SReal>(pixMatrix.pixels,x0,y0), oper );
+			walkOperate( resWalker, Rotation_0<SReal>(pixMatrix.pixels,x0,y0), oper );
 		else if (levelDiff==1)	// shrinking by groups of four
-			walkOperate( linWalker
+			walkOperate( resWalker
 				, HalfShrinkerMul<SReal>(pixMatrix.pixels,multiply,x0,y0), oper );
 		else // levelDiff>=2	// shrinking by bigger groups - using the summer
-			walkOperate( linWalker
+			walkOperate( resWalker
 				, makeSumWalker(pixMatrix,x0,y0,realLevel,predLevel), oper );
 	}
 }
@@ -131,22 +132,25 @@ void MSaupePredictor::refineDomain( const SummedPixels &pixMatrix, int x0, int y
 	refineBlock( pixMatrix, x0, y0, predSide, predSide, multiply, avg
 	, realLevel, predLevel, pixelResult );
 }
-void MSaupePredictor::refineRange
+bool MSaupePredictor::refineRange
 ( const NewPredictorData &data, int predLevel, SReal *pixelResult ) {
 	const ISquareRanges::RangeNode &rb= *data.rangeBlock;
+	int levelDiff= rb.level-predLevel
+	, shrWidth= rShift(rb.width(),levelDiff)
+	, shrHeight= rShift(rb.height(),levelDiff);
 	Real avg, multiply;
 	if ( data.isRegular || predLevel==rb.level ) { // no cropping of the block
 	//	compute the average and standard deviation (data needed for normalization)
 		avg= data.rSum/data.pixCount;
 		multiply= ( data.isRegular ? powers[rb.level] : sqrt(data.pixCount) ) / data.rnDev;
 	} else { // the block needs cropping
+		if ( shrWidth*shrHeight <= 1 )
+			return false;
 	//	crop the range block so it doesn't contain parts of shrinked pixels
 		int mask= powers[rb.level-predLevel]-1;
-		int adjWidth= rb.width() & mask;
-		int adjHeight= rb.height() & mask;
+		int adjWidth= rb.width() & ~mask;
+		int adjHeight= rb.height() & ~mask;
 		int pixCount= adjWidth*adjHeight;
-		if (pixCount==0)
-			return;
 	//	compute the coefficients needed for normalization, assertion tests in ::refineBlock
 		Real sum, sum2;
 		data.rangePixels->getSums( rb.x0, rb.y0, rb.x0+adjWidth, rb.y0+adjHeight )
@@ -155,10 +159,9 @@ void MSaupePredictor::refineRange
 		multiply= 1 / sqrt( sum2 - sqr(sum)/pixCount );
 	}
 //	do the actual work
-	int levelDiff= rb.level-predLevel;
-	refineBlock( *data.rangePixels, rb.x0, rb.y0
-		, rShift(rb.width(),levelDiff), rShift(rb.height(),levelDiff)
+	refineBlock( *data.rangePixels, rb.x0, rb.y0, shrWidth, shrHeight
 		, multiply, avg, rb.level, predLevel, pixelResult );
+	return true;
 }
 
 MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data) {
@@ -244,13 +247,15 @@ MSaupePredictor::OneRangePredictor::OneRangePredictor
 //	compute SE-normalizing accelerator
 	errorNorm.initialize(data,predLevel);
 	
-	refineRange( data, predLevel, points );
+	if (!refineRange( data, predLevel, points ))
+		return;
 
 //	if rotations are allowed, rotate the refined block
 	if (allowRotations) {
 		using namespace MatrixWalkers;
-	//	create walker for the refined (and not rotated) block
-		Checked<KDReal> refBlockWalker= makeLinearizer( points, predSideLen, predSideLen );
+	//	create walker for the refined (and not rotated) block (including eventual NaNs)
+		Checked<KDReal> refBlockWalker=
+			makeLinearizer( points, predSideLen, predSideLen, predSideLen );
 		
 		MatrixSlice<KDReal> rotMatrix= MatrixSlice<KDReal>::makeRaw(points,predSideLen);
 		Block shiftedBlock( 0, 0, predSideLen, predSideLen );
@@ -284,11 +289,11 @@ MSaupePredictor::OneRangePredictor::OneRangePredictor
 
 MSaupePredictor::Predictions& MSaupePredictor::OneRangePredictor
 ::getChunk(float maxPredictedSE,Predictions &store) {
-	ASSERT( PtrInt(heaps.size())==heapCount && PtrInt(infoHeap.size())<=heapCount );
 	if ( infoHeap.empty() || predsRemain<=0 ) {
 		store.clear();
 		return store;
 	}
+	ASSERT( PtrInt(heaps.size())==heapCount && PtrInt(infoHeap.size())<=heapCount );
 //	get the number of predictions to make (may be larger for the first chunk)
 	int predCount= chunkSize;
 	if (firstChunk) {
