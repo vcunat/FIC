@@ -7,22 +7,19 @@
 extern const int powers[31];
 
 /** Helper template function computing the square of a number */
-template<typename T> inline T sqr(T i)
-	{ return i*i; }
+template<class T> inline T sqr(T i)		{ return i*i; }
 /** Helper template function computing the cube of a number */
-template<typename T> inline T cube(T i)
-	{ return i*i*i; }
+template<class T> inline T cube(T i)	{ return i*i*i; }
 
 /** Returns i*2^bits */
-template<typename T> inline T lShift(T i,T bits)
+template<class T> inline T lShift(T i,T bits)
 	{ ASSERT(bits>=0); return i<<bits; }
-	
 /** Returns i/2^bits */
-template<typename T> inline T rShift(T i,T bits)
+template<class T> inline T rShift(T i,T bits)
 	{ ASSERT(bits>=0 && i>=0); return i>>bits; }
 	
 /** This function is missing in earlier GCC versions, here implemented via exp2 and log2 */
-template<typename T> inline T exp10(T val) 
+template<class T> inline T exp10(T val) 
 	{ return exp2( val*log2(T(10)) ); }
 
 /** Returns ceil(log2(i)) */
@@ -76,9 +73,10 @@ template<int power,class R> struct Float2int {
 		{ return checkBoundsFunc( 0, convert(r), powers[power]-1 ); }
 };
 
+/** A simple for_each wrapper for iterating the whole STL-like container */
 template<class C,class F> inline F for_each(C &container,F functor)
 	{ return for_each( container.begin(), container.end(), functor ); }
-
+	
 /** Counts the number of '\n' characters in a C-string */
 inline int countEOLs(const char *s) {
 	int result= 0;
@@ -117,6 +115,43 @@ template<class C> inline void clearContainer(const C &container)
 /** Clears a QList of pointers (and deletes the pointers) */
 template<class C> inline void clearQtContainer(C container)
 	{ while (!container.isEmpty()) delete container.takeFirst(); }	
+
+/** General stuff for quantizing real numbers into integers */
+namespace Quantizer {
+	/** Quantizes f that belongs to [0,\p possib/2^\p scale] into [0,\p possib-1] */
+	template<class R> inline
+	int quantizeByPower(R f,int scale,int possib) {
+		ASSERT( f>=0 && f<=possib/(R)powers[scale] );
+		int result= (int)trunc(ldexp(f,scale));
+		ASSERT( result>=0 && result<=possib );
+		return result<possib ? result : --result;
+	}
+	/** Performs the opposite to ::quantizeByPower */
+	template<class R> inline
+	R dequantizeByPower(int i,int scale,int DEBUG_ONLY(possib)) {
+		ASSERT( i>=0 && i<possib );
+		R result= ldexp(i+R(0.5),-scale);
+		ASSERT( result>=0 && result<= possib/(R)powers[scale] );
+		return result;
+	}
+
+	template<class R> class QuantBase {
+	protected:
+		int scale	///  how much should the values be scaled (like in ::quantizeByPower)
+		, possib;	///< the number of possibilities for quantization
+	public:
+		/** Quantizes a value */
+		int quant(R val) const
+			{ return quantizeByPower<R>(val,scale,possib); }
+		/** Dequantizes a value */
+		R dequant(int i) const
+			{ return dequantizeByPower<R>(i,scale,possib); }
+		/** Quant-rounds a value - returns its state after quantization and dequantization */
+		R qRound(R val) const
+			{ return dequant(quant(val)); }
+	};
+} // Quantizer namespace
+
 
 template <class T,int bulkKb=64>
 class BulkAllocator {

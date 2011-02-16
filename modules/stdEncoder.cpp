@@ -7,41 +7,10 @@ using namespace std;
 
 /// \file
 
-/** Quantizing stuff used by MStdEncoder \relates MStdEncoder */
+/* Quantizing stuff used by MStdEncoder \relates MStdEncoder */
 namespace Quantizer {
-	/** Quantizes f that belongs to [0,\p possib/2^\p scale] into [0,\p possib-1] */
-	inline int quantizeByPower(Real f,int scale,int possib) {
-		ASSERT( f>=0 && f<=possib/(Real)powers[scale] );
-		int result= (int)trunc(ldexp(f,scale));
-		ASSERT( result>=0 && result<=possib );
-		return result<possib ? result : --result;
-	}
-	/** Performs the opposite to ::quantizeByPower */
-	inline Real dequantizeByPower(int i,int scale,int DEBUG_ONLY(possib)) {
-		ASSERT( i>=0 && i<possib );
-		Real result= ldexp(i+Real(0.5),-scale);
-		ASSERT( result>=0 && result<= possib/(Real)powers[scale] );
-		return result;
-	}
-
-	class QuantBase {
-	protected:
-		int scale	///  how much should the values be scaled (like in ::quantizeByPower)
-		, possib;	///< the number of possibilities for quantization
-	public:
-		/** Quantizes a value */
-		int quant(Real val) const
-			{ return quantizeByPower(val,scale,possib); }
-		/** Dequantizes a value */
-		Real dequant(int i) const
-			{ return dequantizeByPower(i,scale,possib); }
-		/** Quant-rounds a value - returns its state after quantization and dequantization */
-		Real qRound(Real val) const
-			{ return dequant(quant(val)); }
-	};
-
 	/** (De)%Quantizer for range-block averages, only initializes QuantBase correctly */
-	class Average: public QuantBase {
+	class Average: public QuantBase<Real> {
 	public:
 		Average(int possibLog2) {
 			ASSERT(possibLog2>0);
@@ -50,9 +19,8 @@ namespace Quantizer {
 			possib= powers[possibLog2];
 		}	
 	};
-
 	/** (De)%Quantizer for range-block deviations, only initializes QuantBase correctly */
-	class Deviation: public QuantBase {
+	class Deviation: public QuantBase<Real> {
 	public:
 		Deviation(int possibLog2) {
 			ASSERT(possibLog2>0);
@@ -718,7 +686,7 @@ void MStdEncoder::decodeAct( DecodeAct action, int count ) {
 				Real constCoeff= info.qrAvg - linCoeff*dSum/pixCount;
 			//	map the nonconstant blocks
 				using namespace MatrixWalkers;
-				MulAddCopyChecked<Real> oper( linCoeff, constCoeff, 0, 1 );
+				MulAddChecked<Real> oper( linCoeff, constCoeff, 0, 1 );
 				walkOperateCheckRotate( Checked<SReal>(planeBlock->pixels, **it), oper
 				, info.decAccel.pool->pixels, info.decAccel.domBlock, info.rotation );
 			}

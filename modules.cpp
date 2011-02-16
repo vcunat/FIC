@@ -12,6 +12,7 @@
 #include "modules/vliCodec.h"
 #include "modules/saupePredictor.h"
 #include "modules/noPredictor.h"
+#include "modules/diffColor.h"
 
 #include "fileUtil.h"
 
@@ -21,7 +22,7 @@ using namespace std;
 
 typedef Loki::TL::MakeTypelist< MRoot, MColorModel, MSquarePixels, MQuadTree, MStdDomains
 , MQuality2SE_std, MStdEncoder, MDifferentialVLICodec, MSaupePredictor, MNoPredictor
-, MQuality2SE_alt >
+, MQuality2SE_alt, MDiffColor >
 ::Result Modules;
 
 const int powers[31]= { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2*1024			/* 2^11 */

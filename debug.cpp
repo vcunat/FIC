@@ -133,18 +133,19 @@ namespace NOSPACE {
 		using namespace MatrixWalkers;
 	//	changing rotation because of transposed CheckedImage
 		rotation= Rotation::compose(1,rotation);
-
+	
 		walkOperateCheckRotate( CheckedImage<QImage,QRgb>(image), assigner
 		, matrix, block, rotation );
 		
 		return image;
 	}
-	struct GrayImageAssigner {
+}
+namespace MatrixWalkers {
+	struct GrayImageAssigner: public OperatorBase {
 		void operator()(QRgb &rgb,const SReal &pixel) {
 			int gray= Float2int<8,Real>::convertCheck(pixel);
 			rgb= qRgb(gray,gray,255); // not gray colour (intentionally)
 		}
-		void innerEnd() const {}
 	};
 	struct GrayImageMulAddAssigner: public GrayImageAssigner {
 		Real mul, add;
@@ -155,7 +156,9 @@ namespace NOSPACE {
 			{ GrayImageAssigner::operator()( rgb, pixel*mul+add ); }
 	};
 }
+
 QWidget* MStdEncoder::debugModule(QPixmap &pixmap,const QPoint &click) {
+	using namespace MatrixWalkers;
 	const ISquareRanges::RangeList &ranges= planeBlock->ranges->getRangeList();
 	
 	QWidget *widget= new QWidget;

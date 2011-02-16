@@ -17,9 +17,14 @@ QMAKE_CXXFLAGS_DEBUG *= -ggdb
 
 QMAKE_CXXFLAGS_RELEASE *= -ffunction-sections -msse2
 unix {
-  contains(QMAKE_CC,gcc) {
-  	QMAKE_CXXFLAGS_RELEASE *= -frepo
-  }
+	contains(QMAKE_CC,gcc) {
+		QMAKE_CXXFLAGS_RELEASE *= -frepo
+	}
+	CONFIG(debug,debug|release) {
+		TARGET = debug/$$TARGET
+	} else {
+		TARGET = release/$$TARGET
+	}
 }
 contains(QMAKE_CC,icc) {
 	QMAKE_CXXFLAGS_RELEASE -= -O2

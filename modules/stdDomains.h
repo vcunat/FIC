@@ -103,9 +103,9 @@ namespace MatrixWalkers {
 		: Base(matrix,x0,y0) {}
 
 		T get() {
-			TMatrix &c= current;
-			T *cs= c.start;
-			return ldexp( cs[0] + cs[1] + cs[c.colSkip] + cs[c.colSkip+1], -2 ); 
+			T *now= current.start;
+			I skip= current.colSkip;
+			return ldexp( (now[0]+now[1]) + (now[skip]+now[skip+1]), -2 ); 
 		}
 		void outerStep() { Base::outerStep(); Base::outerStep(); }
 		void innerStep() { Base::innerStep(); Base::innerStep(); }
@@ -121,11 +121,12 @@ namespace MatrixWalkers {
 		: Base(matrix), addHalf(false) {}
 
 		T get() {
+			T *now= current.start;
+			I skip= current.colSkip;
 			Real groups[2]; // groups[0]= sum of a full line, groups[1]= sum of a half line
-			T *cs= current.start;
-			groups[addHalf]= cs[0] + cs[current.colSkip] + cs[current.colSkip*2];
-			++cs;
-			groups[!addHalf]= cs[0] + cs[current.colSkip] + cs[current.colSkip*2];
+			groups[addHalf]= Real(now[0]) + now[skip] + now[skip*2];
+			++now;
+			groups[!addHalf]= Real(now[0]) + now[skip] + now[skip*2];
 			return (ldexp(groups[0],1)+groups[1]) * Real(1.0/9.0);
 		}
 		void innerStep() {
@@ -150,12 +151,12 @@ namespace MatrixWalkers {
 		VertShrinker(TMatrix matrix)
 		: Base(matrix), addHalf(false) {}
 
-		T get() { 
+		T get() {
+			T *now= current.start;
 			Real groups[2]; // groups[0]= sum of a full line, groups[1]= sum of a half line
-			T *cs= current.start;
-			groups[addHalf]= cs[0] + cs[1] + cs[2];
-			cs+= current.colSkip;
-			groups[!addHalf]= cs[0] + cs[1] + cs[2];
+			groups[addHalf]= Real(now[0]) + now[1] + now[2];
+			now+= current.colSkip;
+			groups[!addHalf]= Real(now[0]) + now[1] + now[2];
 			return (ldexp(groups[0],1)+groups[1]) * Real(1.0/9.0);
 		}
 		void innerStep() { 
@@ -180,9 +181,9 @@ namespace MatrixWalkers {
 		: Base( matrix, side-1, 0 ) {} // the diamond begins on top-middle
 
 		T get() {
-			TMatrix &c= current;
-			T *cs= c.start;
-			return ldexp( cs[0] + cs[1] + cs[c.colSkip] + cs[c.colSkip+1], -2 ); 
+			T *now= current.start;
+			I skip= current.colSkip;
+			return ldexp( (now[0]+now[1]) + (now[skip]+now[skip+1]), -2 ); 
 		}
 		void outerStep() { lastStart+= current.colSkip+1; }
 		void innerStep() { current.start+= 1-current.colSkip; }
