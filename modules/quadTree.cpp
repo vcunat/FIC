@@ -5,18 +5,9 @@ using namespace std;
 
 /** Struct for computing (acts as a functor) and storing max.\ and min.\
  *	levels of leaf range blocks */
-struct MQuadTree::NodeExtremes {
-	int min, max;
-
-	NodeExtremes()
-	: min( numeric_limits<int>::infinity() ), max( -numeric_limits<int>::infinity() ) {}
-	void operator()(const MQuadTree::RangeNode *node) {
-		int now= node->level;
-		if (now<min)
-			min= now;
-		if (now>max)
-			max= now;
-	}
+struct MQuadTree::NodeExtremes: public MinMax<int> {
+	void operator()(const MQuadTree::RangeNode *node) 
+		{ apply(node->level); }
 };
 
 
@@ -161,6 +152,15 @@ bool MQuadTree::Node::encode(const PlaneBlock &toEncode) {
 		
 	MQuadTree *mod= debugCast<MQuadTree*>(toEncode.ranges);
 	ASSERT( mod && level>=mod->minLevel() );
+	
+	#ifndef NDEBUG
+	{
+		Real s1,s2;
+		toEncode.getSums(*this).unpack(s1,s2);
+		ASSERT( !isNaN(s1) && !isNaN(s2) );
+	}
+	#endif
+	
 	const IColorTransformer::PlaneSettings &plSet= *toEncode.settings;
 	int pixCount= size();
 //	check for minimal level -> cannot be divided, find the best domain

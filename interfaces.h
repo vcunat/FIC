@@ -115,8 +115,11 @@ struct IColorTransformer: public Interface<IColorTransformer> {
 	/** Represents a one-color image, together with some setttings.
 	 *	In returned instances the pointed-to memory is always owned by this module. */
 	struct Plane {
-		mutable SMatrix pixels;	///< a matrix of pixels with values in [0,1]
-		const PlaneSettings *settings; ///< the settings for the plane
+		mutable SMatrix pixels;			///< a matrix of pixels with values in [0,1]
+		const PlaneSettings *settings;	///< the settings for the plane
+		
+		/** Releases all referenced memory, implemented below ::PlaneSettings (destructor troubles) */
+		inline void free();
 	};
 	
 	/** List of planes (the pointed-to memory is owned by the module) */
@@ -152,7 +155,11 @@ struct IColorTransformer::PlaneSettings {
 		, quality(quality_), moduleQ2SE(moduleQ2SE_), updateInfo(updateInfo_) {}
 }; // PlaneSettings struct
 
-
+void IColorTransformer::Plane::free() {
+	pixels.free();
+	delete settings;
+	settings= 0;
+}
 
 
 /** Interface for modules handling pixel-shape changes

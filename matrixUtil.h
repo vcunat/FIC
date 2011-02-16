@@ -479,7 +479,7 @@ namespace MatrixWalkers {
 	}; // CheckedImage class template
 	
 
-	/** A convenience base type for operators to use with walkOperate() */
+	/** A convenience base type for operators to use with walkOperate(). */
 	struct OperatorBase {
 		void innerEnd() {}
 	};
@@ -499,27 +499,81 @@ namespace MatrixWalkers {
 	};
 
 	/** An operator performing a= (b+::toAdd)*::toMul */
-	template<class T> struct AddMulCopy: public OperatorBase {
+	template<class T> struct AddMul: public OperatorBase {
 		const T toAdd, toMul;
 
-		AddMulCopy(T add,T mul)
+		AddMul(T add,T mul)
 		: toAdd(add), toMul(mul) {}
 
-		template<class R1,class R2> void operator()(R1 &res,R2 f) const
-			{ res= (f+toAdd)*toMul; }
+		template<class R> T apply(R val) const
+			{ return (val+toAdd)*toMul; }
+		template<class R1,class R2> void operator()(R1 &res,R2 val) const
+			{ res= apply(val); }
+	};
+
+	/** An operator performing a= b*::toMul+::toAdd) */
+	template<class T> struct MulAdd: public OperatorBase {
+		const T toMul, toAdd;
+
+		MulAdd(T mul,T add)
+		: toMul(mul), toAdd(add) {}
+
+		template<class R> T apply(R val) const
+			{ return val*toMul+toAdd; }
+		template<class R1,class R2> void operator()(R1 &res,R2 val) const
+			{ res= apply(val); }
 	};
 
 	/** An operator performing a= b*::toMul+::toAdd
 	 *	and moving the result into [::min,::max] bounds */
-	template<class T> struct MulAddCopyChecked: public OperatorBase {
-		const T toMul, toAdd, min, max;
+	template<class T> struct MulAddChecked: public MulAdd<T> {
+		const T min, max;
 
-		MulAddCopyChecked(T mul,T add,T minVal,T maxVal)
-		: toMul(mul), toAdd(add), min(minVal), max(maxVal) {}
+		MulAddChecked(T mul,T add,T minVal,T maxVal)
+		: MulAdd<T>(mul,add), min(minVal), max(maxVal) {}
 		
-		template<class R1,class R2> void operator()(R1 &res,R2 f) const
-			{ res= checkBoundsFunc( min, f*toMul+toAdd, max ); }
+		template<class R> T apply(R val) const
+			{ return checkBoundsFunc( min, MulAdd<T>::apply(val), max ); }
+		template<class R1,class R2> void operator()(R1 &res,R2 val) const
+			{ res= apply(val); }
 	};
 } // MatrixWalkers namespace
+
+
+/** Functor accumulating the minimum and maximum value */
+template<class T> struct MinMax {
+	T min, max;
+
+	MinMax()
+	: min( std::numeric_limits<T>::infinity() )
+	, max( -std::numeric_limits<T>::infinity() ) {}
+	
+	MinMax(T first)
+	: min(first), max(first) {}
+	
+	void apply(T val) {
+		if (val<min)
+			min= val;
+		if (val>max)
+			max= val;
+	}
+	
+	MatrixWalkers::AddMul<T> get01normalizer() const {
+		T toMul= 1/(max-min);
+		if ( !isfinite(toMul) )
+			toMul= 1;
+		return MatrixWalkers::AddMul<T>( -min, toMul );
+	}
+	MatrixWalkers::MulAdd<T> get01denormalizer() const {
+		return MatrixWalkers::MulAdd<T>( max-min, min );
+	}
+	
+	void symmetrize(/*T middle=0*/) {
+		using namespace std;
+		max= std::max( abs(min), abs(max) );
+		min= -max;
+	}
+}; // MinMax struct
+
 
 #endif // MATRIXUTIL_HEADER_

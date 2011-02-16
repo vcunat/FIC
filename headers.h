@@ -12,7 +12,6 @@
 #include <limits>		// numeric_limits
 #include <vector>		// std::vector
 
-
 /* Qt forwards, pointers to these types are needed for some methods */
 class QImage;
 class QGroupBox;

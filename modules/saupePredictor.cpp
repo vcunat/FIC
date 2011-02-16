@@ -79,9 +79,9 @@ namespace MatrixWalkers {
 		: HalfShrinker<T,I>(matrix,x0,y0), toMul(toMul_) {}
 		
 		T get() { 
-			TMatrix &c= current;
-			T *cs= c.start;
-			return toMul * ( cs[0] + cs[1] + cs[c.colSkip] + cs[c.colSkip+1] );
+			T *now= current.start;
+			I skip= current.colSkip;
+			return toMul * ( (R(now[0])+now[1]) + (R(now[skip])+now[skip+1]) );
 		}
 	};
 } // MatrixWalkers namespace
@@ -99,7 +99,7 @@ namespace NOSPACE {
 			multiply= ldexp(multiply,-2*levelDiff);
 		ASSERT( finite(multiply) && finite(avg) );
 	//	construct the operator and the walker on the result
-		AddMulCopy<Real> oper( -avg, multiply );
+		AddMul<Real> oper( -avg, multiply );
 		Checked<KDReal> resWalker=
 			makeLinearizer( pixelResult, powers[predLevel], predWidth, predHeight );
 	//	decide the shrinking method
@@ -204,17 +204,6 @@ MSaupePredictor::Tree* MSaupePredictor::createTree(const NewPredictorData &data)
 }
 
 namespace MatrixWalkers {
-	/** Transformer performing an affine function */
-	template<class T> struct AddMulCopyTo2nd {
-		T toAdd, toMul;
-
-		AddMulCopyTo2nd(T add,T mul)
-		: toAdd(add), toMul(mul) {}
-
-		template<class R1,class R2> void operator()(R1 f,R2 &res) const
-			{ res= (f+toAdd)*toMul; }
-		void innerEnd() const {}
-	};
 	/** A simple assigning operator - assigns its second argument into the first one */
 	struct Assigner: public OperatorBase {
 		template<class R1,class R2> void operator()(const R1 &src,R2 &dest) const
